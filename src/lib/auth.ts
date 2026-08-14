@@ -2,7 +2,7 @@ export interface AuthUser {
   id: string;
   fullName: string;
   email: string;
-  role: "PATIENT" | "ADMIN" | "DOCTOR" | "PHARMACIST" | "INSURANCE_OFFICER";
+  role: "PATIENT" | "ADMIN" | "SUPER_ADMIN" | "DOCTOR" | "PHARMACIST" | "INSURANCE_OFFICER" | "LAB_OFFICER";
 }
 
 const TOKEN_KEY = "healthbridge_token";
@@ -49,14 +49,18 @@ export const isAuthenticated = (): boolean => {
 
 export const getRoleRedirectPath = (role: string): string => {
   switch (role) {
+    case "SUPER_ADMIN":
+      return "/super-admin/dashboard";
     case "ADMIN":
-      return "/patient/dashboard"; // As requested, redirect to placeholder page
+      return "/admin/dashboard";
     case "DOCTOR":
-      return "/patient/dashboard";
+      return "/doctor/dashboard";
     case "PHARMACIST":
-      return "/patient/dashboard";
+      return "/pharmacist/dashboard";
     case "INSURANCE_OFFICER":
-      return "/patient/dashboard";
+      return "/insurance-officer/dashboard";
+    case "LAB_OFFICER":
+      return "/lab-officer/dashboard";
     case "PATIENT":
     default:
       return "/patient/dashboard";
