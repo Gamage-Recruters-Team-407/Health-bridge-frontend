@@ -6,8 +6,10 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, Eye, EyeOff, ShieldCheck, Loader2 } from "lucide-react";
 import HeaderLogo from "@/components/HeaderLogo";
 import AuthFooter from "@/components/AuthFooter";
+import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { authService } from "@/services/auth.service";
 import { saveAuthData } from "@/lib/auth";
+
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -256,6 +258,21 @@ export default function RegisterPage() {
               </button>
             </div>
           </form>
+
+          {/* Or continue with Google */}
+          <div className="relative my-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-slate-100" />
+            </div>
+            <div className="relative flex justify-center text-[11px] text-slate-400">
+              <span className="bg-white px-3">Or continue with</span>
+            </div>
+          </div>
+
+          <GoogleSignInButton
+            variant="full"
+            onError={(msg) => setError(msg)}
+          />
         </div>
       </main>
 
@@ -263,3 +280,4 @@ export default function RegisterPage() {
     </div>
   );
 }
+
