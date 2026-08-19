@@ -6,15 +6,17 @@ import type { AnalyticsPeriod } from "@/src/types/analytics";
 type AnalyticsHeaderProps = {
   period: AnalyticsPeriod;
   onPeriodChange: (period: AnalyticsPeriod) => void;
+  title?: string;
+  subtitle?: string;
 };
 
-export default function AnalyticsHeader({ period, onPeriodChange }: AnalyticsHeaderProps) {
+export default function AnalyticsHeader({ period, onPeriodChange, title = "Analytics & Reporting", subtitle = "Healthcare performance, financial insights, and operational overview." }: AnalyticsHeaderProps) {
   return (
     <header className="flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
       <div>
         <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-blue-600">Health Bridge insights</p>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">Analytics &amp; Reporting</h1>
-        <p className="mt-2 text-sm text-slate-500">Healthcare performance, financial insights, and operational overview.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-slate-950 sm:text-3xl">{title}</h1>
+        <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
       </div>
       <div className="flex flex-col items-start gap-2 sm:items-end">
         <p className="text-[11px] text-slate-400">Last updated: Today, 10:42 AM</p>
