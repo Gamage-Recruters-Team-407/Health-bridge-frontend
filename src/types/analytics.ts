@@ -253,3 +253,36 @@ export type PopulationHealthAnalyticsData = {
 };
 
 export type PopulationHealthAnalyticsByPeriod = Record<AnalyticsPeriod, PopulationHealthAnalyticsData>;
+
+export type ReportCategory = "Healthcare" | "Financial" | "Operational" | "Population Health" | "Hospital Performance" | "Laboratory Performance" | "Executive Summary";
+export type ReportFormat = "PDF" | "Excel";
+export type ReportStatus = "Completed" | "Generating" | "Failed" | "Scheduled";
+export type ReportPeriod = "Today" | "This Week" | "This Month" | "This Quarter" | "This Year" | "Custom Range";
+
+export type AnalyticsReport = {
+  id: string;
+  name: string;
+  category: ReportCategory;
+  period: ReportPeriod;
+  generatedDate: string;
+  format: ReportFormat;
+  status: ReportStatus;
+  summary: string;
+  metrics: { label: string; value: string }[];
+};
+
+export type ScheduledAnalyticsReport = {
+  id: string;
+  report: string;
+  frequency: string;
+  nextRun: string;
+  status: "Active" | "Paused";
+};
+
+export type ReportActivityPoint = {
+  month: string;
+  healthcare: number;
+  financial: number;
+  operational: number;
+  populationHealth: number;
+};
