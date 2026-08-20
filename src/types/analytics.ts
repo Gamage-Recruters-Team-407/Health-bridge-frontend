@@ -105,3 +105,151 @@ export type FinancialAnalyticsData = {
 };
 
 export type FinancialAnalyticsByPeriod = Record<AnalyticsPeriod, FinancialAnalyticsData>;
+
+export type OperationalResourceTrendPoint = {
+  month: string;
+  beds: number;
+  staff: number;
+  equipment: number;
+  laboratory: number;
+};
+
+export type OperationalBedOccupancy = {
+  department: string;
+  occupancy: number;
+  status: "Healthy" | "Watch" | "Critical";
+};
+
+export type OperationalStaffUtilization = {
+  category: string;
+  available: number;
+  active: number;
+  utilization: number;
+};
+
+export type OperationalPatientFlowPoint = {
+  month: string;
+  admissions: number;
+  discharges: number;
+  emergencyVisits: number;
+};
+
+export type OperationalAppointmentEfficiency = {
+  month: string;
+  scheduled: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
+  averageWait: number;
+  onTimeRate: number;
+};
+
+export type OperationalLabPerformance = {
+  month: string;
+  testsReceived: number;
+  completedTests: number;
+  pendingTests: number;
+  criticalResults: number;
+  averageTurnaround: number;
+};
+
+export type OperationalCapacityStatus = {
+  resource: string;
+  utilization: number;
+  target: number;
+  status: "Healthy" | "Watch" | "Capacity Pressure";
+};
+
+export type OperationalPerformanceRow = {
+  department: string;
+  bedOccupancy: number;
+  staffUtilization: number;
+  averageWait: number;
+  appointmentCompletion: number;
+  labTurnaround: number;
+  status: "Healthy" | "Watch" | "Attention" | "Capacity Pressure";
+};
+
+export type OperationalAnalyticsData = {
+  kpis: AnalyticsKpi[];
+  resourceTrend: OperationalResourceTrendPoint[];
+  bedOccupancy: OperationalBedOccupancy[];
+  staffUtilization: OperationalStaffUtilization[];
+  patientFlow: OperationalPatientFlowPoint[];
+  appointmentEfficiency: OperationalAppointmentEfficiency[];
+  labPerformance: OperationalLabPerformance[];
+  capacityStatus: OperationalCapacityStatus[];
+  performance: OperationalPerformanceRow[];
+};
+
+export type OperationalAnalyticsByPeriod = Record<AnalyticsPeriod, OperationalAnalyticsData>;
+
+export type PopulationGrowthPoint = {
+  month: string;
+  totalPopulation: number;
+  newPatients: number;
+};
+
+export type PopulationDistributionPoint = {
+  label: string;
+  count: number;
+  percentage: number;
+};
+
+export type PopulationConditionPoint = {
+  condition: string;
+  affectedPatients: number;
+  prevalence: number;
+};
+
+export type PopulationRiskPoint = {
+  risk: "Low Risk" | "Moderate Risk" | "High Risk";
+  count: number;
+  percentage: number;
+};
+
+export type PopulationUtilizationPoint = {
+  ageGroup: string;
+  appointments: number;
+  consultations: number;
+  labTests: number;
+};
+
+export type RegionalHealthPoint = {
+  region: string;
+  registeredPatients: number;
+  highRiskRate: number;
+  screeningRate: number;
+};
+
+export type PreventiveCarePoint = {
+  month: string;
+  screenings: number;
+  routineCheckups: number;
+  followUpCompletion: number;
+};
+
+export type PopulationHealthSummaryRow = {
+  populationGroup: string;
+  patients: number;
+  highRisk: number;
+  chronicConditions: number;
+  screeningRate: number;
+  healthcareUtilization: number;
+  status: "Healthy" | "Stable" | "Watch" | "Attention";
+};
+
+export type PopulationHealthAnalyticsData = {
+  kpis: AnalyticsKpi[];
+  populationGrowth: PopulationGrowthPoint[];
+  ageDistribution: PopulationDistributionPoint[];
+  genderDistribution: PopulationDistributionPoint[];
+  commonConditions: PopulationConditionPoint[];
+  healthRisk: PopulationRiskPoint[];
+  utilizationByAge: PopulationUtilizationPoint[];
+  regionalPatterns: RegionalHealthPoint[];
+  preventiveCare: PreventiveCarePoint[];
+  summary: PopulationHealthSummaryRow[];
+};
+
+export type PopulationHealthAnalyticsByPeriod = Record<AnalyticsPeriod, PopulationHealthAnalyticsData>;
