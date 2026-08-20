@@ -19,7 +19,7 @@ const iconPaths: Record<string, string> = {
 };
 
 export default function AnalyticsKpiCard({ kpi }: { kpi: AnalyticsKpi }) {
-  const isPositive = kpi.direction === "up";
+  const isPositive = kpi.trendPositive ?? kpi.direction === "up";
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-3.5 shadow-[0_6px_20px_rgba(15,23,42,0.04)] sm:p-4">
       <div className="flex items-start justify-between gap-3">
