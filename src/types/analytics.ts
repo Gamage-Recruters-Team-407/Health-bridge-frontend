@@ -1,6 +1,7 @@
 export type AnalyticsPeriod = "today" | "week" | "month" | "year";
 
 export type TrendDirection = "up" | "down";
+export type TrendImpact = "positive" | "negative" | "neutral";
 
 export type AnalyticsKpi = {
   label: string;
@@ -8,6 +9,7 @@ export type AnalyticsKpi = {
   change: string;
   direction: TrendDirection;
   trendPositive?: boolean;
+  trendImpact?: TrendImpact;
   comparison: string;
   icon: string;
   accent: string;
