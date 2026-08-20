@@ -1,18 +1,11 @@
-export type InvoiceStatus =
-  | "DRAFT"
-  | "ISSUED"
-  | "CANCELLED";
-
-export type PaymentStatus =
-  | "UNPAID"
-  | "PARTIALLY_PAID"
-  | "PAID";
+export type InvoiceStatus = "DRAFT" | "ISSUED" | "CANCELLED";
+export type PaymentStatus = "UNPAID" | "PARTIALLY_PAID" | "PAID" | "PENDING";
 
 export interface BillingItem {
   id?: string;
-  itemCode: string;
+  itemCode?: string;
   description: string;
-  category: string;
+  category?: string;
   quantity: number;
   unitPrice: number;
   totalPrice?: number;
@@ -20,24 +13,32 @@ export interface BillingItem {
 
 export interface Invoice {
   id: string;
-  invoiceNumber: string;
+  invoiceNumber?: string;
   patientId: string;
   patientName: string;
-  hospitalId: string;
-  subTotal: number;
+  hospitalId?: string;
+  subTotal?: number;
+  subtotal?: number;
   discount: number;
   tax: number;
   totalAmount: number;
-  status: InvoiceStatus;
-  paymentStatus: PaymentStatus;
-  invoiceDate: string;
+  grandTotal?: number;
+  status: InvoiceStatus | string;
+  paymentStatus: PaymentStatus | string;
+  invoiceDate?: string;
+  createdAt?: string;
+  items?: BillingItem[];
 }
 
 export interface InvoiceRequest {
   patientId: string;
   patientName: string;
-  hospitalId: string;
+  hospitalId?: string;
   discount: number;
   tax: number;
-  items: BillingItem[];
+  items: {
+    description: string;
+    quantity: number;
+    unitPrice: number;
+  }[];
 }

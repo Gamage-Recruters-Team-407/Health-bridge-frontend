@@ -1,31 +1,32 @@
-export type InventoryStatus =
-  | "IN_STOCK"
-  | "LOW_STOCK"
-  | "OUT_OF_STOCK"
-  | "EXPIRED";
+export type InventoryStatus = "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "EXPIRED";
 
 export interface HospitalInventory {
   id: string;
-  itemCode: string;
+  itemCode?: string;
   itemName: string;
   category: string;
-  supplier: string;
+  description?: string;
   quantity: number;
-  minimumStock: number;
+  minimumStock?: number;
+  reorderLevel?: number;
   unit: string;
-  unitCost: number;
-  expiryDate: string;
-  status: InventoryStatus;
+  unitPrice: number;
+  unitCost?: number;
+  supplierName?: string;
+  supplier?: string;
+  expiryDate?: string;
+  status?: InventoryStatus;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface InventoryRequest {
-  itemCode: string;
   itemName: string;
   category: string;
-  supplier: string;
+  description?: string;
   quantity: number;
-  minimumStock: number;
   unit: string;
-  unitCost: number;
-  expiryDate: string;
+  reorderLevel: number;
+  unitPrice: number;
+  supplierName?: string;
 }
