@@ -46,7 +46,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
+const adminNavGroups: NavGroup[] = [
   {
     groupTitle: "Core Modules",
     items: [
@@ -76,6 +76,20 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+const patientNavGroups: NavGroup[] = [
+  {
+    groupTitle: "Patient Portal",
+    items: [
+      { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
+      { title: "Doctors", href: "/patient/doctors", icon: UserCheck },
+      { title: "Appointments", href: "/patient/appointments", icon: Calendar },
+      { title: "Medical Records", href: "/patient/medical-records", icon: FileSpreadsheet },
+      { title: "Prescriptions", href: "/patient/prescriptions", icon: FileText },
+      { title: "Settings", href: "/patient/settings", icon: AlertTriangle },
+    ],
+  }
+];
+
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed = false,
   onToggleCollapse,
@@ -85,6 +99,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userName = "Dr. Anura Jayasinghe",
 }) => {
   const pathname = usePathname();
+  const activeGroups = userRole === "PATIENT" ? patientNavGroups : adminNavGroups;
 
   const sidebarContent = (
     <div
@@ -137,7 +152,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       {/* Navigation Group Items */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-200">
-        {navGroups.map((group, groupIdx) => (
+        {activeGroups.map((group, groupIdx) => (
           <div key={groupIdx} className="space-y-1">
             {!collapsed && (
               <h3 className="px-3 text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-2">
