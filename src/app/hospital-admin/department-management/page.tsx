@@ -1,7 +1,8 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { Department, DepartmentStats } from '@/src/types/department';
+import React, { useState, useMemo, useEffect } from 'react';
+import { Department, DepartmentStats } from '../../../types/department';
+import { departmentService } from '../../../services/departmentService';
 import {
   Building2,
   CheckCircle2,
@@ -178,6 +179,21 @@ export default function ManageDepartmentPage() {
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Inactive'>('All');
   const [sortBy, setSortBy] = useState<'id' | 'name' | 'doctors' | 'staff'>('id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Fetch departments from Backend API
+  useEffect(() => {
+    const fetchFromApi = async () => {
+      try {
+        const data = await departmentService.getAll();
+        if (data && data.length > 0) {
+          setDepartments(data);
+        }
+      } catch (err) {
+        console.warn('Backend API disconnected or loading, using initial departments state:', err);
+      }
+    };
+    fetchFromApi();
+  }, []);
   
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -284,49 +300,77 @@ export default function ManageDepartmentPage() {
   };
 
   // Handle Add / Edit Submit
-  const handleSaveDepartment = (e: React.FormEvent) => {
+  const handleSaveDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.head || !formData.location) {
       alert('Please fill in all required fields (Name, Head, Location).');
       return;
     }
 
-    if (editingDepartment) {
-      // Update existing
-      setDepartments((prev) =>
-        prev.map((d) => (d.id === editingDepartment.id ? ({ ...d, ...formData } as Department) : d))
-      );
-      setEditingDepartment(null);
-    } else {
-      // Add new
-      const newDept: Department = {
-        id: formData.id || `DEP-${String(departments.length + 1).padStart(3, '0')}`,
-        name: formData.name || '',
-        head: formData.head || '',
-        doctorsCount: Number(formData.doctorsCount) || 0,
-        staffCount: Number(formData.staffCount) || 0,
-        location: formData.location || '',
-        status: formData.status || 'Active',
-        description: formData.description || '',
-        contactEmail: formData.contactEmail || '',
-        contactPhone: formData.contactPhone || ''
-      };
-      setDepartments((prev) => [newDept, ...prev]);
-      setIsAddModalOpen(false);
+    try {
+      if (editingDepartment) {
+        const updated = await departmentService.update(editingDepartment.id, formData);
+        setDepartments((prev) =>
+          prev.map((d) => (d.id === editingDepartment.id ? updated : d))
+        );
+        setEditingDepartment(null);
+      } else {
+        const created = await departmentService.create(formData);
+        setDepartments((prev) => [created, ...prev]);
+        setIsAddModalOpen(false);
+      }
+    } catch (err) {
+      console.warn('API save error, updating local state:', err);
+      if (editingDepartment) {
+        setDepartments((prev) =>
+          prev.map((d) => (d.id === editingDepartment.id ? ({ ...d, ...formData } as Department) : d))
+        );
+        setEditingDepartment(null);
+      } else {
+        const newDept: Department = {
+          id: formData.id || `DEP-${String(departments.length + 1).padStart(3, '0')}`,
+          name: formData.name || '',
+          head: formData.head || '',
+          doctorsCount: Number(formData.doctorsCount) || 0,
+          staffCount: Number(formData.staffCount) || 0,
+          location: formData.location || '',
+          status: formData.status || 'Active',
+          description: formData.description || '',
+          contactEmail: formData.contactEmail || '',
+          contactPhone: formData.contactPhone || ''
+        };
+        setDepartments((prev) => [newDept, ...prev]);
+        setIsAddModalOpen(false);
+      }
     }
   };
 
   // Toggle Status
-  const handleToggleStatus = (id: string) => {
-    setDepartments((prev) =>
-      prev.map((d) => (d.id === id ? { ...d, status: d.status === 'Active' ? 'Inactive' : 'Active' } : d))
-    );
+  const handleToggleStatus = async (id: string) => {
+    const targetDept = departments.find((d) => d.id === id);
+    const nextStatus = targetDept && targetDept.status === 'Active' ? 'Inactive' : 'Active';
+    try {
+      const updated = await departmentService.updateStatus(id, nextStatus);
+      setDepartments((prev) =>
+        prev.map((d) => (d.id === id ? updated : d))
+      );
+    } catch (err) {
+      console.warn('API status toggle error, updating local state:', err);
+      setDepartments((prev) =>
+        prev.map((d) => (d.id === id ? { ...d, status: nextStatus } : d))
+      );
+    }
     setActiveMenuId(null);
   };
 
   // Delete Department
-  const handleDeleteDepartment = () => {
+  const handleDeleteDepartment = async () => {
     if (deletingDepartment) {
+      try {
+        await departmentService.delete(deletingDepartment.id);
+      } catch (err) {
+        console.warn('API delete error, updating local state:', err);
+      }
       setDepartments((prev) => prev.filter((d) => d.id !== deletingDepartment.id));
       setDeletingDepartment(null);
       setActiveMenuId(null);
