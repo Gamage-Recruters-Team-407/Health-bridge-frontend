@@ -19,6 +19,10 @@ export const EmergencyTypeSelector: React.FC<EmergencyTypeSelectorProps> = ({
   selectedType,
   onSelect
 }) => {
+  const [customType, setCustomType] = React.useState('');
+
+  const isOtherSelected = selectedType === 'Other' || (selectedType !== null && !EMERGENCY_TYPES.some(t => t.type === selectedType));
+
   return (
     <div className={styles.card}>
       <h3 className={styles.typeSelectorTitle}>Specific Emergency Type</h3>
@@ -29,11 +33,57 @@ export const EmergencyTypeSelector: React.FC<EmergencyTypeSelectorProps> = ({
             type={item.type}
             icon={item.icon}
             colorClass={item.colorClass}
-            isSelected={selectedType === item.type}
-            onClick={() => onSelect(item.type)}
+            isSelected={item.type === 'Other' ? isOtherSelected : selectedType === item.type}
+            onClick={() => {
+              if (item.type !== 'Other') {
+                setCustomType('');
+              }
+              onSelect(item.type);
+            }}
           />
         ))}
       </div>
+      {selectedType === 'Other' && (
+        <div style={{ marginTop: '16px', display: 'flex', gap: '8px' }}>
+          <input
+            type="text"
+            placeholder="Please specify your emergency..."
+            value={customType}
+            onChange={(e) => setCustomType(e.target.value)}
+            style={{
+              flex: 1,
+              padding: '12px 16px',
+              borderRadius: '8px',
+              border: '1px solid #E2E8F0',
+              fontSize: '14px',
+              color: '#0F172A',
+              backgroundColor: '#FFFFFF',
+              outline: 'none',
+              boxSizing: 'border-box'
+            }}
+          />
+          <button
+            onClick={() => {
+              if (customType.trim()) {
+                onSelect(customType as EmergencyType);
+              }
+            }}
+            style={{
+              padding: '0 20px',
+              backgroundColor: '#3B82F6',
+              color: '#FFFFFF',
+              border: 'none',
+              borderRadius: '8px',
+              fontSize: '14px',
+              fontWeight: 500,
+              cursor: 'pointer',
+              whiteSpace: 'nowrap'
+            }}
+          >
+            Confirm
+          </button>
+        </div>
+      )}
     </div>
   );
 };

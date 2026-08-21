@@ -6,16 +6,27 @@ import { SOSButtonAnimation } from './SOSButtonAnimation';
 
 interface SOSButtonProps {
   onTrigger: () => void;
+  onCancel?: () => void;
   holdDuration?: number; // in milliseconds
+  isActive?: boolean;
 }
 
 export const SOSButton: React.FC<SOSButtonProps> = ({ 
   onTrigger, 
-  holdDuration = 3000 
+  onCancel,
+  holdDuration = 3000,
+  isActive = false
 }) => {
   const [isHolding, setIsHolding] = useState(false);
   const [progress, setProgress] = useState(0);
-  const [isTriggered, setIsTriggered] = useState(false);
+  const [isTriggered, setIsTriggered] = useState(isActive);
+
+  useEffect(() => {
+    setIsTriggered(isActive);
+    if (!isActive) {
+      setProgress(0);
+    }
+  }, [isActive]);
   
   const holdTimerRef = useRef<NodeJS.Timeout | null>(null);
   const progressIntervalRef = useRef<NodeJS.Timeout | null>(null);
@@ -56,13 +67,6 @@ export const SOSButton: React.FC<SOSButtonProps> = ({
       setIsTriggered(true);
       vibrate([100, 50, 100, 50, 200]); // Distinct success pattern
       onTrigger();
-      
-      // Reset after some time if needed (optional based on UX)
-      // setTimeout(() => {
-      //   setIsTriggered(false);
-      //   setProgress(0);
-      // }, 3000);
-      
     }, holdDuration);
   };
 
@@ -85,8 +89,8 @@ export const SOSButton: React.FC<SOSButtonProps> = ({
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUpOrLeave}
         onPointerLeave={handlePointerUpOrLeave}
-        onContextMenu={(e) => e.preventDefault()} // Prevent context menu on long press
-        style={{ touchAction: 'none' }} // Prevent scrolling while holding
+        onContextMenu={(e) => e.preventDefault()}
+        style={{ touchAction: 'none' }}
       >
         <SOSButtonAnimation progress={progress} />
         <button 
@@ -95,13 +99,45 @@ export const SOSButton: React.FC<SOSButtonProps> = ({
         >
           <div className={styles.sosTitle}>🚨 SOS</div>
           <div className={styles.sosSubtitle}>
-            {isTriggered ? 'SENT' : 'Hold for 3 seconds'}
+            {isTriggered ? 'ACTIVE' : 'Hold for 3 seconds'}
           </div>
         </button>
       </div>
-      <p className={styles.sosHelperText}>
-        Press and hold to prevent accidental emergency requests.
-      </p>
+      {!isTriggered ? (
+        <p className={styles.sosHelperText}>
+          Press and hold to prevent accidental emergency requests.
+        </p>
+      ) : (
+        <button
+          onClick={() => {
+            setIsTriggered(false);
+            setProgress(0);
+            if (onCancel) onCancel();
+          }}
+          style={{
+            marginTop: '24px',
+            padding: '12px 32px',
+            backgroundColor: '#F1F5F9',
+            color: '#DC2626',
+            border: '2px solid #DC2626',
+            borderRadius: '999px',
+            fontSize: '16px',
+            fontWeight: 700,
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px'
+          }}
+        >
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          Cancel Emergency
+        </button>
+      )}
     </div>
   );
 };
