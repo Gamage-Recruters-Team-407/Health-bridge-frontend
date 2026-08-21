@@ -2,17 +2,28 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { invoiceService } from "@/services/invoiceService";
+import { getStoredUser, getToken } from "@/lib/auth";
 import { Invoice } from "@/types/invoice";
 
 export default function BillingPage() {
+  const router = useRouter();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    const token = getToken();
+    const user = getStoredUser();
+
+    if (!token || !user) {
+      router.replace("/login");
+      return;
+    }
+
     loadInvoices();
-  }, []);
+  }, [router]);
 
   async function loadInvoices() {
     try {
