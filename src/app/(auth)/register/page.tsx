@@ -18,7 +18,7 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import HeaderLogo from "@/components/HeaderLogo";
-import HealthcareIllustration from "@/components/HealthcareIllustration";
+import RegisterIllustration from "@/components/RegisterIllustration";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { authService } from "@/services/auth.service";
 import { saveAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -143,7 +143,7 @@ export default function RegisterPage() {
 
               {/* Graphic Illustration */}
               <div className="pt-2">
-                <HealthcareIllustration />
+                <RegisterIllustration />
               </div>
             </div>
 
