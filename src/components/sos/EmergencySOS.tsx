@@ -35,8 +35,8 @@ const initialContacts: EmergencyContact[] = [
 ];
 
 export const EmergencySOS: React.FC = () => {
-  const [selectedType, setSelectedType] = useState<EmergencyType | null>(null);
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
+  const [hasArrived, setHasArrived] = useState(false);
   const [isAddContactOpen, setIsAddContactOpen] = useState(false);
   const [location, setLocation] = useState<LocationInfo>(initialLocation);
   const [isLocationManuallySet, setIsLocationManuallySet] = useState(false);
@@ -44,8 +44,7 @@ export const EmergencySOS: React.FC = () => {
   const [patient, setPatient] = useState<PatientInfo>(defaultPatient);
   const [contacts, setContacts] = useState<EmergencyContact[]>(initialContacts);
   
-  const [hasArrived, setHasArrived] = useState(false);
-  
+
   const recognitionRef = useRef<any>(null);
   // We use a ref for manual set to avoid adding it to the useEffect dependency array 
   // which would cause watchPosition to restart constantly.
@@ -196,6 +195,7 @@ export const EmergencySOS: React.FC = () => {
 
   const handleSOSCancel = () => {
     setIsEmergencyActive(false);
+    setHasArrived(false);
     
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
       window.speechSynthesis.cancel();
@@ -239,7 +239,7 @@ export const EmergencySOS: React.FC = () => {
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <PatientInfoCard patient={patient} />
-          <EmergencyTypeSelector selectedType={selectedType} onSelect={setSelectedType} />
+          <EmergencyContacts contacts={contacts} onCall={handleCall} onAddContact={handleAddContact} />
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -263,7 +263,6 @@ export const EmergencySOS: React.FC = () => {
               }
             }}
           />
-          <EmergencyContacts contacts={contacts} onCall={handleCall} onAddContact={handleAddContact} />
         </div>
       </div>
       
