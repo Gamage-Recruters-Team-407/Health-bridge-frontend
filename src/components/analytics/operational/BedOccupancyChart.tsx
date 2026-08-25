@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { OperationalBedOccupancy } from "@/src/types/analytics";
+import type { OperationalBedOccupancy } from "@/types/analytics";
 
 const statusColors = { Healthy: "#60a5fa", Watch: "#f59e0b", Critical: "#e11d48" };
 

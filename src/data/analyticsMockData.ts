@@ -1,4 +1,4 @@
-import type { AnalyticsDashboardData, AnalyticsPeriod } from "@/src/types/analytics";
+import type { AnalyticsDashboardData, AnalyticsPeriod } from "@/types/analytics";
 
 export const analyticsPeriods: { label: string; value: AnalyticsPeriod }[] = [
   { label: "Today", value: "today" },

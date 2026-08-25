@@ -1,19 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { operationalAnalyticsMockData } from "@/src/data/operationalAnalyticsMockData";
-import type { AnalyticsPeriod } from "@/src/types/analytics";
-import AnalyticsHeader from "@/src/components/analytics/AnalyticsHeader";
-import AnalyticsKpiCard from "@/src/components/analytics/AnalyticsKpiCard";
-import AppointmentEfficiency from "@/src/components/analytics/operational/AppointmentEfficiency";
-import BedOccupancyChart from "@/src/components/analytics/operational/BedOccupancyChart";
-import CapacityStatus from "@/src/components/analytics/operational/CapacityStatus";
-import LabOperationalPerformance from "@/src/components/analytics/operational/LabOperationalPerformance";
-import OperationalPanel from "@/src/components/analytics/operational/OperationalPanel";
-import OperationalPerformanceTable from "@/src/components/analytics/operational/OperationalPerformanceTable";
-import PatientFlowChart from "@/src/components/analytics/operational/PatientFlowChart";
-import ResourceUtilizationTrend from "@/src/components/analytics/operational/ResourceUtilizationTrend";
-import StaffUtilizationChart from "@/src/components/analytics/operational/StaffUtilizationChart";
+import { operationalAnalyticsMockData } from "@/data/operationalAnalyticsMockData";
+import type { AnalyticsPeriod } from "@/types/analytics";
+import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
+import AnalyticsKpiCard from "@/components/analytics/AnalyticsKpiCard";
+import AppointmentEfficiency from "@/components/analytics/operational/AppointmentEfficiency";
+import BedOccupancyChart from "@/components/analytics/operational/BedOccupancyChart";
+import CapacityStatus from "@/components/analytics/operational/CapacityStatus";
+import LabOperationalPerformance from "@/components/analytics/operational/LabOperationalPerformance";
+import OperationalPanel from "@/components/analytics/operational/OperationalPanel";
+import OperationalPerformanceTable from "@/components/analytics/operational/OperationalPerformanceTable";
+import PatientFlowChart from "@/components/analytics/operational/PatientFlowChart";
+import ResourceUtilizationTrend from "@/components/analytics/operational/ResourceUtilizationTrend";
+import StaffUtilizationChart from "@/components/analytics/operational/StaffUtilizationChart";
 
 export default function OperationalAnalyticsShell() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("today");

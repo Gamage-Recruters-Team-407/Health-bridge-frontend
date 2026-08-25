@@ -1,18 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { financialAnalyticsMockData } from "@/src/data/financialAnalyticsMockData";
-import type { AnalyticsPeriod } from "@/src/types/analytics";
-import AnalyticsHeader from "@/src/components/analytics/AnalyticsHeader";
-import AnalyticsKpiCard from "@/src/components/analytics/AnalyticsKpiCard";
-import DepartmentRevenueChart from "@/src/components/analytics/financial/DepartmentRevenueChart";
-import FinancialPanel from "@/src/components/analytics/financial/FinancialPanel";
-import FinancialPerformanceTable from "@/src/components/analytics/financial/FinancialPerformanceTable";
-import PaymentStatusChart from "@/src/components/analytics/financial/PaymentStatusChart";
-import RevenueBySourceChart from "@/src/components/analytics/financial/RevenueBySourceChart";
-import RevenueGrowth from "@/src/components/analytics/financial/RevenueGrowth";
-import RevenueTrendChart from "@/src/components/analytics/financial/RevenueTrendChart";
-import TransactionActivityChart from "@/src/components/analytics/financial/TransactionActivityChart";
+import { financialAnalyticsMockData } from "@/data/financialAnalyticsMockData";
+import type { AnalyticsPeriod } from "@/types/analytics";
+import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
+import AnalyticsKpiCard from "@/components/analytics/AnalyticsKpiCard";
+import DepartmentRevenueChart from "@/components/analytics/financial/DepartmentRevenueChart";
+import FinancialPanel from "@/components/analytics/financial/FinancialPanel";
+import FinancialPerformanceTable from "@/components/analytics/financial/FinancialPerformanceTable";
+import PaymentStatusChart from "@/components/analytics/financial/PaymentStatusChart";
+import RevenueBySourceChart from "@/components/analytics/financial/RevenueBySourceChart";
+import RevenueGrowth from "@/components/analytics/financial/RevenueGrowth";
+import RevenueTrendChart from "@/components/analytics/financial/RevenueTrendChart";
+import TransactionActivityChart from "@/components/analytics/financial/TransactionActivityChart";
 
 export default function FinancialAnalyticsShell() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("today");

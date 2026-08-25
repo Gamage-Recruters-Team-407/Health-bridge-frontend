@@ -1,4 +1,4 @@
-import type { ReportCategory, ReportFormat, ReportPeriod } from "@/src/types/analytics";
+import type { ReportCategory, ReportFormat, ReportPeriod } from "@/types/analytics";
 
 type GenerateReportPanelProps = { reportType: ReportCategory; period: ReportPeriod; department: string; format: ReportFormat; isGenerating: boolean; onReportTypeChange: (value: ReportCategory) => void; onPeriodChange: (value: ReportPeriod) => void; onDepartmentChange: (value: string) => void; onFormatChange: (value: ReportFormat) => void; onGenerate: () => void; reportTypes: { label: string; value: ReportCategory }[]; periods: ReportPeriod[]; departments: string[] };
 

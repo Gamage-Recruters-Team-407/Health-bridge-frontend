@@ -1,4 +1,4 @@
-import HealthcareAnalyticsShell from "@/src/components/analytics/healthcare/HealthcareAnalyticsShell";
+import HealthcareAnalyticsShell from "@/components/analytics/healthcare/HealthcareAnalyticsShell";
 
 export default function HealthcareAnalyticsPage() {
   return <HealthcareAnalyticsShell />;

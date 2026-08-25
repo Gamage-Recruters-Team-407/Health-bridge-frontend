@@ -1,16 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { recentReports as initialReports, reportActivity, reportCategories, reportDepartments, reportPeriods, reportSummaryKpis, reportTypes, scheduledReports } from "@/src/data/reportAnalyticsMockData";
-import type { AnalyticsReport, ReportCategory, ReportFormat, ReportPeriod } from "@/src/types/analytics";
-import GenerateReportPanel from "@/src/components/analytics/reports/GenerateReportPanel";
-import ReportActivityChart from "@/src/components/analytics/reports/ReportActivityChart";
-import ReportCategoryCards from "@/src/components/analytics/reports/ReportCategoryCards";
-import ReportPreview from "@/src/components/analytics/reports/ReportPreview";
-import ReportSummaryCards from "@/src/components/analytics/reports/ReportSummaryCards";
-import RecentReportsTable from "@/src/components/analytics/reports/RecentReportsTable";
-import ReportsPanel from "@/src/components/analytics/reports/ReportsPanel";
-import ScheduledReports from "@/src/components/analytics/reports/ScheduledReports";
+import { recentReports as initialReports, reportActivity, reportCategories, reportDepartments, reportPeriods, reportSummaryKpis, reportTypes, scheduledReports } from "@/data/reportAnalyticsMockData";
+import type { AnalyticsReport, ReportCategory, ReportFormat, ReportPeriod } from "@/types/analytics";
+import GenerateReportPanel from "@/components/analytics/reports/GenerateReportPanel";
+import ReportActivityChart from "@/components/analytics/reports/ReportActivityChart";
+import ReportCategoryCards from "@/components/analytics/reports/ReportCategoryCards";
+import ReportPreview from "@/components/analytics/reports/ReportPreview";
+import ReportSummaryCards from "@/components/analytics/reports/ReportSummaryCards";
+import RecentReportsTable from "@/components/analytics/reports/RecentReportsTable";
+import ReportsPanel from "@/components/analytics/reports/ReportsPanel";
+import ScheduledReports from "@/components/analytics/reports/ScheduledReports";
 
 const defaultReportType: ReportCategory = "Healthcare";
 

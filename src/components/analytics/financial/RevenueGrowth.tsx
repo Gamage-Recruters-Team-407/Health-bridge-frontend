@@ -1,4 +1,4 @@
-import type { FinancialRevenueGrowth } from "@/src/types/analytics";
+import type { FinancialRevenueGrowth } from "@/types/analytics";
 
 export default function RevenueGrowth({ data }: { data: FinancialRevenueGrowth[] }) {
   const maximum = Math.max(...data.map((entry) => entry.growth));

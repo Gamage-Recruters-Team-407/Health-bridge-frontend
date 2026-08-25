@@ -1,7 +1,7 @@
 "use client";
 
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { RevenuePoint } from "@/src/types/analytics";
+import type { RevenuePoint } from "@/types/analytics";
 
 export default function RevenueTrendChart({ data }: { data: RevenuePoint[] }) {
   return (

@@ -1,4 +1,4 @@
-import type { AnalyticsKpi, FinancialAnalyticsByPeriod, FinancialAnalyticsData } from "@/src/types/analytics";
+import type { AnalyticsKpi, FinancialAnalyticsByPeriod, FinancialAnalyticsData } from "@/types/analytics";
 
 const baseKpis: AnalyticsKpi[] = [
   { label: "Total Revenue", value: "Rs. 2.84M", change: "+14.8%", direction: "up", comparison: "vs previous month", icon: "R", accent: "blue" },

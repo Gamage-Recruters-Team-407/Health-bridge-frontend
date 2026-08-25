@@ -1,4 +1,4 @@
-import type { AnalyticsKpi } from "@/src/types/analytics";
+import type { AnalyticsKpi } from "@/types/analytics";
 
 const accentStyles: Record<string, string> = {
   blue: "bg-blue-50 text-blue-600",

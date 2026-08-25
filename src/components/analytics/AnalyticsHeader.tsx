@@ -1,7 +1,7 @@
 "use client";
 
-import { analyticsPeriods } from "@/src/data/analyticsMockData";
-import type { AnalyticsPeriod } from "@/src/types/analytics";
+import { analyticsPeriods } from "@/data/analyticsMockData";
+import type { AnalyticsPeriod } from "@/types/analytics";
 
 type AnalyticsHeaderProps = {
   period: AnalyticsPeriod;

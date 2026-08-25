@@ -1,17 +1,17 @@
 "use client";
 
 import { useState } from "react";
-import { healthcareAnalyticsMockData } from "@/src/data/healthcareAnalyticsMockData";
-import type { AnalyticsPeriod } from "@/src/types/analytics";
-import AnalyticsHeader from "@/src/components/analytics/AnalyticsHeader";
-import AnalyticsKpiCard from "@/src/components/analytics/AnalyticsKpiCard";
-import AppointmentAnalyticsChart from "@/src/components/analytics/healthcare/AppointmentAnalyticsChart";
-import ClinicalActivityChart from "@/src/components/analytics/healthcare/ClinicalActivityChart";
-import DepartmentHealthcareActivity from "@/src/components/analytics/healthcare/DepartmentHealthcareActivity";
-import HealthcarePerformanceTable from "@/src/components/analytics/healthcare/HealthcarePerformanceTable";
-import HealthcarePanel from "@/src/components/analytics/healthcare/HealthcarePanel";
-import PatientDemographics from "@/src/components/analytics/healthcare/PatientDemographics";
-import PatientGrowthChart from "@/src/components/analytics/healthcare/PatientGrowthChart";
+import { healthcareAnalyticsMockData } from "@/data/healthcareAnalyticsMockData";
+import type { AnalyticsPeriod } from "@/types/analytics";
+import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
+import AnalyticsKpiCard from "@/components/analytics/AnalyticsKpiCard";
+import AppointmentAnalyticsChart from "@/components/analytics/healthcare/AppointmentAnalyticsChart";
+import ClinicalActivityChart from "@/components/analytics/healthcare/ClinicalActivityChart";
+import DepartmentHealthcareActivity from "@/components/analytics/healthcare/DepartmentHealthcareActivity";
+import HealthcarePerformanceTable from "@/components/analytics/healthcare/HealthcarePerformanceTable";
+import HealthcarePanel from "@/components/analytics/healthcare/HealthcarePanel";
+import PatientDemographics from "@/components/analytics/healthcare/PatientDemographics";
+import PatientGrowthChart from "@/components/analytics/healthcare/PatientGrowthChart";
 
 export default function HealthcareAnalyticsShell() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("today");

@@ -1,4 +1,4 @@
-import type { HealthcarePerformanceRow } from "@/src/types/healthcareAnalytics";
+import type { HealthcarePerformanceRow } from "@/types/healthcareAnalytics";
 
 const statusStyles = { Healthy: "bg-emerald-50 text-emerald-700", Watch: "bg-amber-50 text-amber-700", Attention: "bg-rose-50 text-rose-700" };
 

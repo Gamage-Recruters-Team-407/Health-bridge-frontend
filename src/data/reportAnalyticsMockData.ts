@@ -1,4 +1,4 @@
-import type { AnalyticsKpi, AnalyticsReport, ReportActivityPoint, ReportCategory, ReportPeriod, ReportStatus, ScheduledAnalyticsReport } from "@/src/types/analytics";
+import type { AnalyticsKpi, AnalyticsReport, ReportActivityPoint, ReportCategory, ReportPeriod, ReportStatus, ScheduledAnalyticsReport } from "@/types/analytics";
 
 export const reportSummaryKpis: AnalyticsKpi[] = [
   { label: "Reports Generated", value: "128", change: "+12.5%", direction: "up", trendImpact: "positive", comparison: "vs previous month", icon: "D", accent: "blue" },

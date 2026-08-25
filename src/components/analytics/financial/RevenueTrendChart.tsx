@@ -1,7 +1,7 @@
 "use client";
 
 import { Area, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { FinancialRevenueTrendPoint } from "@/src/types/analytics";
+import type { FinancialRevenueTrendPoint } from "@/types/analytics";
 
 const money = (value: unknown) => `Rs. ${Number(value ?? 0).toFixed(2)}M`;
 

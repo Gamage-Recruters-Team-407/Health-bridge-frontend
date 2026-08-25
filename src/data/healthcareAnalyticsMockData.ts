@@ -1,4 +1,4 @@
-import type { HealthcareAnalyticsByPeriod, HealthcareAnalyticsData } from "@/src/types/healthcareAnalytics";
+import type { HealthcareAnalyticsByPeriod, HealthcareAnalyticsData } from "@/types/healthcareAnalytics";
 
 const baseHealthcareData: HealthcareAnalyticsData = {
   kpis: [

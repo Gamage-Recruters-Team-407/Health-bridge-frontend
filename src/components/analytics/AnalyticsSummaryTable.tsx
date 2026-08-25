@@ -1,4 +1,4 @@
-import type { DepartmentPerformance } from "@/src/types/analytics";
+import type { DepartmentPerformance } from "@/types/analytics";
 
 const statusStyles = { Healthy: "bg-emerald-50 text-emerald-700", Watch: "bg-amber-50 text-amber-700", Attention: "bg-rose-50 text-rose-700" };
 

@@ -1,4 +1,4 @@
-import type { ReportCategory } from "@/src/types/analytics";
+import type { ReportCategory } from "@/types/analytics";
 
 type Category = { category: ReportCategory; description: string; lastGenerated: string; icon: string };
 const iconPaths: Record<string, string> = { H: "M4 20V8l8-5 8 5v12M8 20v-6h8v6M3 20h18", F: "M12 2v20m5-16.5A4.5 4.5 0 0 0 12 4c-2.49 0-4.5 1.57-4.5 3.5S9.51 11 12 11s4.5 1.57 4.5 3.5S14.49 18 12 18a4.5 4.5 0 0 1-5-1.5", O: "M4 7h16M4 12h16M4 17h10", P: "M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm7 8a7 7 0 0 0-14 0m14 0H5", B: "M3 18v-6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6M3 18h18M3 21v-3m18 3v-3", L: "M6 3v18h14M9 17h2m-2-4h5m-5-4h8" };

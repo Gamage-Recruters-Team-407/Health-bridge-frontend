@@ -1,7 +1,7 @@
 "use client";
 
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import type { PatientTrendPoint } from "@/src/types/analytics";
+import type { PatientTrendPoint } from "@/types/analytics";
 
 export default function PatientTrendChart({ data }: { data: PatientTrendPoint[] }) {
   return (

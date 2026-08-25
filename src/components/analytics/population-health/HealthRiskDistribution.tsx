@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import type { PopulationRiskPoint } from "@/src/types/analytics";
+import type { PopulationRiskPoint } from "@/types/analytics";
 
 const colors = ["#34d399", "#f59e0b", "#e11d48"];
 

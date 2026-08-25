@@ -1,4 +1,4 @@
-import type { OperationalAppointmentEfficiency } from "@/src/types/analytics";
+import type { OperationalAppointmentEfficiency } from "@/types/analytics";
 
 export default function AppointmentEfficiency({ data }: { data: OperationalAppointmentEfficiency[] }) {
   const latest = data[data.length - 1];

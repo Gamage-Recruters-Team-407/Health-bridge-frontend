@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import type { PopulationDistributionPoint } from "@/src/types/analytics";
+import type { PopulationDistributionPoint } from "@/types/analytics";
 
 const colors = ["#2563eb", "#14b8a6", "#f59e0b"];
 

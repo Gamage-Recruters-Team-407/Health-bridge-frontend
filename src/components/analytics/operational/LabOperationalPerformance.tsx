@@ -1,4 +1,4 @@
-import type { OperationalLabPerformance } from "@/src/types/analytics";
+import type { OperationalLabPerformance } from "@/types/analytics";
 
 export default function LabOperationalPerformance({ data }: { data: OperationalLabPerformance[] }) {
   const latest = data[data.length - 1];

@@ -1,4 +1,4 @@
-import type { AnalyticsKpi, PopulationHealthAnalyticsByPeriod, PopulationHealthAnalyticsData } from "@/src/types/analytics";
+import type { AnalyticsKpi, PopulationHealthAnalyticsByPeriod, PopulationHealthAnalyticsData } from "@/types/analytics";
 
 const baseKpis: AnalyticsKpi[] = [
   { label: "Total Population", value: "12,480", change: "+8.4%", direction: "up", trendImpact: "positive", comparison: "vs previous period", icon: "P", accent: "blue" },

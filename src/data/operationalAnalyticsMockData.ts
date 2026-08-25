@@ -1,4 +1,4 @@
-import type { AnalyticsKpi, OperationalAnalyticsByPeriod, OperationalAnalyticsData } from "@/src/types/analytics";
+import type { AnalyticsKpi, OperationalAnalyticsByPeriod, OperationalAnalyticsData } from "@/types/analytics";
 
 const baseKpis: AnalyticsKpi[] = [
   { label: "Bed Occupancy", value: "78%", change: "+4.2%", direction: "up", trendImpact: "neutral", comparison: "vs previous period", icon: "H", accent: "blue" },

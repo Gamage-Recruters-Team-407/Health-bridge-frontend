@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { analyticsMockData } from "@/src/data/analyticsMockData";
-import type { AnalyticsPeriod } from "@/src/types/analytics";
-import AnalyticsHeader from "@/src/components/analytics/AnalyticsHeader";
-import AnalyticsKpiCard from "@/src/components/analytics/AnalyticsKpiCard";
-import AnalyticsSummaryTable from "@/src/components/analytics/AnalyticsSummaryTable";
-import DepartmentPerformance from "@/src/components/analytics/DepartmentPerformance";
-import PatientTrendChart from "@/src/components/analytics/PatientTrendChart";
-import ResourceUtilizationChart from "@/src/components/analytics/ResourceUtilizationChart";
-import RevenueTrendChart from "@/src/components/analytics/RevenueTrendChart";
+import { analyticsMockData } from "@/data/analyticsMockData";
+import type { AnalyticsPeriod } from "@/types/analytics";
+import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
+import AnalyticsKpiCard from "@/components/analytics/AnalyticsKpiCard";
+import AnalyticsSummaryTable from "@/components/analytics/AnalyticsSummaryTable";
+import DepartmentPerformance from "@/components/analytics/DepartmentPerformance";
+import PatientTrendChart from "@/components/analytics/PatientTrendChart";
+import ResourceUtilizationChart from "@/components/analytics/ResourceUtilizationChart";
+import RevenueTrendChart from "@/components/analytics/RevenueTrendChart";
 
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_20px_rgba(15,23,42,0.04)] sm:p-5"><div className="mb-4"><h2 className="text-sm font-bold text-slate-900">{title}</h2><p className="mt-1 text-xs text-slate-400">{description}</p></div>{children}</section>;

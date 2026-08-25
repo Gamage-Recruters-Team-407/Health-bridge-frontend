@@ -1,5 +1,5 @@
-import type { AnalyticsReport } from "@/src/types/analytics";
-import ReportStatusBadge from "@/src/components/analytics/reports/ReportStatusBadge";
+import type { AnalyticsReport } from "@/types/analytics";
+import ReportStatusBadge from "@/components/analytics/reports/ReportStatusBadge";
 
 export default function ReportPreview({ report }: { report?: AnalyticsReport }) {
   if (!report) return <div className="flex min-h-[220px] items-center justify-center rounded-xl border border-dashed border-slate-200 bg-slate-50/70 p-6 text-center"><div><div className="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-blue-50 text-blue-600" aria-hidden="true">+</div><p className="mt-3 text-sm font-semibold text-slate-700">Select or generate a report to preview its summary.</p><p className="mt-1 text-xs text-slate-400">Preview content is generated from local analytics mock data.</p></div></div>;

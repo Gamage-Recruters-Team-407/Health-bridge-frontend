@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import type { DemographicPoint } from "@/src/types/healthcareAnalytics";
+import type { DemographicPoint } from "@/types/healthcareAnalytics";
 
 const ageColors = ["#bfdbfe", "#93c5fd", "#60a5fa", "#3b82f6", "#1d4ed8"];
 const genderColors = ["#2563eb", "#14b8a6", "#f59e0b"];

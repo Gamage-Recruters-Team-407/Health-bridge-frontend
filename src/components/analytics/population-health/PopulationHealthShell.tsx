@@ -1,20 +1,20 @@
 "use client";
 
 import { useState } from "react";
-import { populationHealthMockData } from "@/src/data/populationHealthMockData";
-import type { AnalyticsPeriod } from "@/src/types/analytics";
-import AnalyticsHeader from "@/src/components/analytics/AnalyticsHeader";
-import AnalyticsKpiCard from "@/src/components/analytics/AnalyticsKpiCard";
-import AgeDistributionChart from "@/src/components/analytics/population-health/AgeDistributionChart";
-import CommonConditionsChart from "@/src/components/analytics/population-health/CommonConditionsChart";
-import GenderDistributionChart from "@/src/components/analytics/population-health/GenderDistributionChart";
-import HealthcareUtilizationByAge from "@/src/components/analytics/population-health/HealthcareUtilizationByAge";
-import HealthRiskDistribution from "@/src/components/analytics/population-health/HealthRiskDistribution";
-import PopulationGrowthChart from "@/src/components/analytics/population-health/PopulationGrowthChart";
-import PopulationHealthPanel from "@/src/components/analytics/population-health/PopulationHealthPanel";
-import PopulationHealthSummaryTable from "@/src/components/analytics/population-health/PopulationHealthSummaryTable";
-import PreventiveCareTrend from "@/src/components/analytics/population-health/PreventiveCareTrend";
-import RegionalHealthPatterns from "@/src/components/analytics/population-health/RegionalHealthPatterns";
+import { populationHealthMockData } from "@/data/populationHealthMockData";
+import type { AnalyticsPeriod } from "@/types/analytics";
+import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
+import AnalyticsKpiCard from "@/components/analytics/AnalyticsKpiCard";
+import AgeDistributionChart from "@/components/analytics/population-health/AgeDistributionChart";
+import CommonConditionsChart from "@/components/analytics/population-health/CommonConditionsChart";
+import GenderDistributionChart from "@/components/analytics/population-health/GenderDistributionChart";
+import HealthcareUtilizationByAge from "@/components/analytics/population-health/HealthcareUtilizationByAge";
+import HealthRiskDistribution from "@/components/analytics/population-health/HealthRiskDistribution";
+import PopulationGrowthChart from "@/components/analytics/population-health/PopulationGrowthChart";
+import PopulationHealthPanel from "@/components/analytics/population-health/PopulationHealthPanel";
+import PopulationHealthSummaryTable from "@/components/analytics/population-health/PopulationHealthSummaryTable";
+import PreventiveCareTrend from "@/components/analytics/population-health/PreventiveCareTrend";
+import RegionalHealthPatterns from "@/components/analytics/population-health/RegionalHealthPatterns";
 
 export default function PopulationHealthShell() {
   const [period, setPeriod] = useState<AnalyticsPeriod>("today");

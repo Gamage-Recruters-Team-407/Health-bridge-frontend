@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import type { FinancialPaymentStatus } from "@/src/types/analytics";
+import type { FinancialPaymentStatus } from "@/types/analytics";
 
 const colors = ["#2563eb", "#f59e0b", "#e11d48", "#8b5cf6"];
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
-import type { ResourceUtilizationPoint } from "@/src/types/analytics";
+import type { ResourceUtilizationPoint } from "@/types/analytics";
 
 const colors = ["#2563eb", "#7c3aed", "#f59e0b", "#0d9488"];
 

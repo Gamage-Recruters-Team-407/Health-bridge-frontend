@@ -1,4 +1,4 @@
-import type { OperationalPerformanceRow } from "@/src/types/analytics";
+import type { OperationalPerformanceRow } from "@/types/analytics";
 
 const statusStyles: Record<OperationalPerformanceRow["status"], string> = { Healthy: "bg-emerald-50 text-emerald-700", Watch: "bg-amber-50 text-amber-700", Attention: "bg-rose-50 text-rose-700", "Capacity Pressure": "bg-rose-50 text-rose-700" };
 
