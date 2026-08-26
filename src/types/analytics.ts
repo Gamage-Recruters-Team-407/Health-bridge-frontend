@@ -6,11 +6,11 @@ export type TrendImpact = "positive" | "negative" | "neutral";
 export type AnalyticsKpi = {
   label: string;
   value: string;
-  change: string;
-  direction: TrendDirection;
+  change?: string;
+  direction?: TrendDirection;
   trendPositive?: boolean;
   trendImpact?: TrendImpact;
-  comparison: string;
+  comparison?: string;
   icon: string;
   accent: string;
 };
@@ -28,7 +28,12 @@ export type RevenuePoint = {
 export type ResourceUtilizationPoint = {
   resource: string;
   utilization: number;
-  capacity: number;
+  capacity?: number;
+};
+
+export type DepartmentPerformancePoint = {
+  department: string;
+  performance: number;
 };
 
 export type DepartmentPerformance = {
@@ -37,7 +42,7 @@ export type DepartmentPerformance = {
   appointments: number;
   utilization: number;
   revenue: number;
-  status: "Healthy" | "Watch" | "Attention";
+  status: string;
 };
 
 export type AnalyticsDashboardData = {
@@ -285,4 +290,41 @@ export type ReportActivityPoint = {
   financial: number;
   operational: number;
   populationHealth: number;
+};
+
+export type AnalyticsDashboardPresentation = {
+  kpis: AnalyticsKpi[];
+  patientTrends: PatientTrendPoint[];
+  revenue: RevenuePoint[];
+  resources: ResourceUtilizationPoint[];
+  departmentPerformance: DepartmentPerformancePoint[];
+  operationalSummary: DepartmentPerformance[];
+};
+
+export type AnalyticsDataAvailability = "LIVE" | "PARTIAL" | "UNAVAILABLE" | "MOCK";
+
+export type AnalyticsKpiDto = { label: string; value: number };
+export type PatientTrendDto = { month: string; patients: number };
+export type RevenueTrendDto = { month: string; revenue: number };
+export type ResourceUtilizationDto = { resource: string; utilization: number };
+export type DepartmentPerformanceDto = { department: string; performance: number };
+export type OperationalSummaryDto = {
+  department: string;
+  patients: number;
+  appointments: number;
+  utilization: number;
+  revenue: number;
+  status: string;
+};
+
+export type AnalyticsDashboardResponseDto = {
+  generatedAt: string;
+  period: string;
+  dataAvailability: AnalyticsDataAvailability;
+  kpis: AnalyticsKpiDto[];
+  patientTrends: PatientTrendDto[];
+  revenueTrend: RevenueTrendDto[];
+  resourceUtilization: ResourceUtilizationDto[];
+  departmentPerformance: DepartmentPerformanceDto[];
+  operationalSummary: OperationalSummaryDto[];
 };

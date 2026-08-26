@@ -1,16 +1,23 @@
 "use client";
 
-import { analyticsPeriods } from "@/data/analyticsMockData";
 import type { AnalyticsPeriod } from "@/types/analytics";
+
+const analyticsPeriods: { label: string; value: AnalyticsPeriod }[] = [
+  { label: "Today", value: "today" },
+  { label: "This Week", value: "week" },
+  { label: "This Month", value: "month" },
+  { label: "This Year", value: "year" },
+];
 
 type AnalyticsHeaderProps = {
   period: AnalyticsPeriod;
   onPeriodChange: (period: AnalyticsPeriod) => void;
   title?: string;
   subtitle?: string;
+  lastUpdated?: string;
 };
 
-export default function AnalyticsHeader({ period, onPeriodChange, title = "Analytics & Reporting", subtitle = "Healthcare performance, financial insights, and operational overview." }: AnalyticsHeaderProps) {
+export default function AnalyticsHeader({ period, onPeriodChange, title = "Analytics & Reporting", subtitle = "Healthcare performance, financial insights, and operational overview.", lastUpdated = "Today, 10:42 AM" }: AnalyticsHeaderProps) {
   return (
     <header className="flex flex-col gap-5 border-b border-slate-200 pb-6 sm:flex-row sm:items-end sm:justify-between">
       <div>
@@ -19,7 +26,7 @@ export default function AnalyticsHeader({ period, onPeriodChange, title = "Analy
         <p className="mt-2 text-sm text-slate-500">{subtitle}</p>
       </div>
       <div className="flex flex-col items-start gap-2 sm:items-end">
-        <p className="text-[11px] text-slate-400">Last updated: Today, 10:42 AM</p>
+        <p className="text-[11px] text-slate-400">Last updated: {lastUpdated}</p>
         <div className="flex max-w-full flex-wrap gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1" aria-label="Time period">
           {analyticsPeriods.map((option) => (
             <button

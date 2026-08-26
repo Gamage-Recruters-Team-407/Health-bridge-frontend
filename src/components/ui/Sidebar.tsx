@@ -19,6 +19,7 @@ import {
   ChevronRight,
   LogOut,
   TestTube2,
+  ChartNoAxesCombined,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -71,6 +72,7 @@ const navGroups: NavGroup[] = [
       { title: "Payments", href: "/payments", icon: CreditCard },
       { title: "Emergency Response", href: "/emergency", icon: AlertTriangle, badge: "Live", badgeVariant: "danger" },
       { title: "Notifications", href: "/notifications", icon: Bell },
+      { title: "Analytics & Reporting", href: "/analytics/dashboard", icon: ChartNoAxesCombined },
       { title: "Dev20 Test Bench", href: "/dev20-test", icon: TestTube2, badge: "Dev UI", badgeVariant: "purple" },
     ],
   },
@@ -147,7 +149,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {group.items.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+              const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href)) || (item.href === "/analytics/dashboard" && pathname?.startsWith("/analytics"));
 
               return (
                 <Link

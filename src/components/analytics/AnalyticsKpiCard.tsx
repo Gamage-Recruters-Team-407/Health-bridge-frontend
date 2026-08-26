@@ -34,10 +34,10 @@ export default function AnalyticsKpiCard({ kpi }: { kpi: AnalyticsKpi }) {
         </span>
       </div>
       <p className="mt-3 text-2xl font-bold tracking-tight text-slate-950">{kpi.value}</p>
-      <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
-        <span className={impactStyles}>{kpi.direction === "up" ? "↗" : "↘"} {kpi.change}</span>
-        <span className="text-slate-400">{kpi.comparison}</span>
-      </div>
+      {(kpi.change || kpi.comparison) && <div className="mt-2.5 flex flex-wrap items-center gap-2 text-xs">
+        {kpi.change && kpi.direction && <span className={impactStyles}>{kpi.direction === "up" ? "↗" : "↘"} {kpi.change}</span>}
+        {kpi.comparison && <span className="text-slate-400">{kpi.comparison}</span>}
+      </div>}
     </article>
   );
 }
