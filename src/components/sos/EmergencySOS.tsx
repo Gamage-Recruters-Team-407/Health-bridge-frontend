@@ -29,11 +29,6 @@ const initialLocation: LocationInfo = {
   estimatedArrivalMins: { min: 8, max: 12 },
 };
 
-const initialContacts: EmergencyContact[] = [
-  { id: '1', name: 'John Johnson', relationship: 'Husband', phoneNumber: '+1234567890' },
-  { id: '2', name: 'Emily Johnson', relationship: 'Sister', phoneNumber: '+0987654321' },
-];
-
 export const EmergencySOS: React.FC = () => {
   const [isEmergencyActive, setIsEmergencyActive] = useState(false);
   const [hasArrived, setHasArrived] = useState(false);
@@ -42,23 +37,63 @@ export const EmergencySOS: React.FC = () => {
   const [isLocationManuallySet, setIsLocationManuallySet] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [patient, setPatient] = useState<PatientInfo>(defaultPatient);
-  const [contacts, setContacts] = useState<EmergencyContact[]>(initialContacts);
+  const [contacts, setContacts] = useState<EmergencyContact[]>([]);
   
-
   const recognitionRef = useRef<any>(null);
-  // We use a ref for manual set to avoid adding it to the useEffect dependency array 
-  // which would cause watchPosition to restart constantly.
   const isManuallySetRef = useRef(false);
+  
   useEffect(() => {
     isManuallySetRef.current = isLocationManuallySet;
   }, [isLocationManuallySet]);
 
   useEffect(() => {
-    // Reset hasArrived when emergency toggles
     if (!isEmergencyActive) setHasArrived(false);
   }, [isEmergencyActive]);
 
+  const [alertHistory, setAlertHistory] = useState<any[]>([]);
+
+  const fetchHistory = async () => {
+    try {
+      const user = getStoredUser();
+      const userId = user?.id || 'user-123';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+      const res = await fetch(`http://localhost:8088/api/sos/history?userId=${userId}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlertHistory(data.alerts || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch SOS history:", e);
+    }
+  };
+
+  const fetchContacts = async () => {
+    try {
+      const user = getStoredUser();
+      const userId = user?.id || 'user-123';
+      const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+      const res = await fetch(`http://localhost:8088/api/contacts?userId=${userId}`, {
+        headers: {
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContacts(data.contacts || []);
+      }
+    } catch (e) {
+      console.error("Failed to fetch contacts:", e);
+    }
+  };
+
   useEffect(() => {
+    fetchHistory();
+    fetchContacts();
+
     // 0. Setup User
     const user = getStoredUser();
     if (user) {
@@ -68,10 +103,8 @@ export const EmergencySOS: React.FC = () => {
         id: user.id || prev.id
       }));
 
-      // Fetch live user profile
       const fetchProfile = async () => {
         try {
-          // Assuming an axios instance or fetch to /api/users/profile
           const res = await fetch('http://localhost:8088/api/users/profile', {
             headers: {
               'Authorization': `Bearer ${localStorage.getItem('healthbridge_token')}`
@@ -98,7 +131,7 @@ export const EmergencySOS: React.FC = () => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
       watchId = navigator.geolocation.watchPosition(
         async (position) => {
-          if (isManuallySetRef.current) return; // Don't override user's manual pin drag
+          if (isManuallySetRef.current) return;
           
           const lat = position.coords.latitude;
           const lon = position.coords.longitude;
@@ -111,9 +144,7 @@ export const EmergencySOS: React.FC = () => {
             if (!isManuallySetRef.current) setLocation(prev => ({ ...prev, address: `Lat: ${lat.toFixed(4)}, Lon: ${lon.toFixed(4)}`, latitude: lat, longitude: lon }));
           }
         },
-        (error) => {
-          // Keep current fallback or previous location if error
-        },
+        (error) => {},
         { enableHighAccuracy: true, maximumAge: 0, timeout: 5000 }
       );
     }
@@ -125,11 +156,10 @@ export const EmergencySOS: React.FC = () => {
         const recognition = new SpeechRecognition();
         recognition.continuous = true;
         recognition.interimResults = true;
-        recognition.lang = 'en-US'; // Use standard English model for better accuracy
+        recognition.lang = 'en-US';
 
         recognition.onstart = () => setIsListening(true);
         recognition.onend = () => {
-          // Auto-restart listening if it stops unexpectedly
           if (!isEmergencyActive) recognition.start();
         };
 
@@ -139,8 +169,7 @@ export const EmergencySOS: React.FC = () => {
             currentTranscript += event.results[i][0].transcript + ' ';
           }
           
-          // Show what is being heard on screen
-          const lastWords = currentTranscript.split(' ').slice(-15).join(' '); // Keep only last few words for UI
+          const lastWords = currentTranscript.split(' ').slice(-15).join(' ');
           const displayEl = document.getElementById('voice-transcript-display');
           if (displayEl) {
             displayEl.innerText = `Heard: "${lastWords.trim()}..."`;
@@ -150,7 +179,7 @@ export const EmergencySOS: React.FC = () => {
           
           if (cleanedTranscript.includes('emergency help')) {
             handleSOSTrigger();
-            recognition.stop(); // Stop listening once triggered
+            recognition.stop();
           }
         };
 
@@ -174,26 +203,52 @@ export const EmergencySOS: React.FC = () => {
     };
   }, [isEmergencyActive]);
 
-  const handleSOSTrigger = () => {
+  const [alertId, setAlertId] = useState<string | null>(null);
+
+  const handleSOSTrigger = async () => {
     setIsEmergencyActive(true);
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([100, 50, 100, 50, 200]);
     }
     
-    // Audio confirmation
     if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-      // Cancel any ongoing speech
       window.speechSynthesis.cancel();
-      
       const msg = new SpeechSynthesisUtterance("Emergency request activated. Priority 1 dispatch initiated. Please stay calm.");
-      msg.rate = 0.9; // Slightly slower for clarity
+      msg.rate = 0.9;
       msg.pitch = 1.1;
       msg.volume = 1.0;
       window.speechSynthesis.speak(msg);
     }
+
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+      const res = await fetch('http://localhost:8088/api/sos/trigger', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        },
+        body: JSON.stringify({
+          emergencyType: 'General Emergency',
+          location: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            address: location.address
+          }
+        })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAlertId(data.alertId);
+        console.log("SOS Triggered successfully on backend:", data.alertId);
+        fetchHistory();
+      }
+    } catch (e) {
+      console.error("Failed to trigger SOS on backend:", e);
+    }
   };
 
-  const handleSOSCancel = () => {
+  const handleSOSCancel = async () => {
     setIsEmergencyActive(false);
     setHasArrived(false);
     
@@ -201,6 +256,23 @@ export const EmergencySOS: React.FC = () => {
       window.speechSynthesis.cancel();
       const msg = new SpeechSynthesisUtterance("Emergency request cancelled.");
       window.speechSynthesis.speak(msg);
+    }
+
+    if (alertId) {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+        await fetch(`http://localhost:8088/api/sos/${alertId}/cancel`, {
+          method: 'PUT',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        console.log("SOS Cancelled successfully on backend");
+        setAlertId(null);
+        fetchHistory();
+      } catch (e) {
+        console.error("Failed to cancel SOS on backend:", e);
+      }
     }
   };
 
@@ -210,6 +282,25 @@ export const EmergencySOS: React.FC = () => {
 
   const handleAddContact = () => {
     setIsAddContactOpen(true);
+  };
+
+  const handleDeleteContact = async (id: string) => {
+    if (confirm('Are you sure you want to remove this emergency contact?')) {
+      try {
+        const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+        const res = await fetch(`http://localhost:8088/api/contacts/${id}`, {
+          method: 'DELETE',
+          headers: {
+            ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+          }
+        });
+        if (res.ok) {
+          fetchContacts();
+        }
+      } catch (e) {
+        console.error("Failed to delete contact:", e);
+      }
+    }
   };
 
   return (
@@ -239,7 +330,12 @@ export const EmergencySOS: React.FC = () => {
       }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
           <PatientInfoCard patient={patient} />
-          <EmergencyContacts contacts={contacts} onCall={handleCall} onAddContact={handleAddContact} />
+          <EmergencyContacts 
+            contacts={contacts} 
+            onCall={handleCall} 
+            onAddContact={handleAddContact} 
+            onDeleteContact={handleDeleteContact}
+          />
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
@@ -252,24 +348,67 @@ export const EmergencySOS: React.FC = () => {
               setIsLocationManuallySet(true);
               setLocation(prev => ({ ...prev, latitude: lat, longitude: lng }));
               
-              // Reverse geocode the new pin location
               try {
                 const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
                 const data = await res.json();
                 const address = data.display_name || `${lat.toFixed(4)}, ${lng.toFixed(4)}`;
                 setLocation(prev => ({ ...prev, address }));
-              } catch (e) {
-                // Ignore error, keep old address if it fails
-              }
+              } catch (e) {}
             }}
           />
         </div>
       </div>
       
+      {/* SOS History Section */}
+      <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '24px' }}>
+        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A', marginBottom: '16px' }}>Past Emergencies</h3>
+        {alertHistory.length === 0 ? (
+          <p style={{ color: '#64748B', fontSize: '14px' }}>No emergency history found.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            {alertHistory.map((alert, i) => (
+              <div key={alert.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px solid #F1F5F9' }}>
+                <div>
+                  <div style={{ fontWeight: 600, color: '#334155' }}>{alert.emergencyType || 'General Emergency'}</div>
+                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                    {new Date(alert.triggeredAt).toLocaleString()}
+                  </div>
+                </div>
+                <div style={{ 
+                  padding: '4px 10px', 
+                  borderRadius: '999px', 
+                  fontSize: '12px', 
+                  fontWeight: 'bold',
+                  backgroundColor: alert.status === 'ACTIVE' ? '#FEE2E2' : '#F1F5F9',
+                  color: alert.status === 'ACTIVE' ? '#DC2626' : '#64748B'
+                }}>
+                  {alert.status}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <AddContactDialog 
         isOpen={isAddContactOpen} 
         onClose={() => setIsAddContactOpen(false)} 
-        onAdd={(newContact) => setContacts([...contacts, newContact])} 
+        onAdd={async (newContact) => {
+          try {
+            const user = getStoredUser();
+            const userId = user?.id || 'user-123';
+            const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+            const res = await fetch(`http://localhost:8088/api/contacts?userId=${userId}`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+              },
+              body: JSON.stringify(newContact)
+            });
+            if (res.ok) fetchContacts();
+          } catch(e) { console.error("Failed to add contact", e); }
+        }} 
       />
 
       <EmergencyFAB />

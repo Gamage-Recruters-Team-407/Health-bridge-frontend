@@ -8,12 +8,14 @@ interface EmergencyContactsProps {
   contacts: EmergencyContact[];
   onCall: (phoneNumber: string) => void;
   onAddContact: () => void;
+  onDeleteContact?: (id: string) => void;
 }
 
 export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({ 
   contacts, 
   onCall,
-  onAddContact
+  onAddContact,
+  onDeleteContact
 }) => {
   return (
     <div className={styles.card}>
@@ -27,6 +29,7 @@ export const EmergencyContacts: React.FC<EmergencyContactsProps> = ({
             key={contact.id} 
             contact={contact} 
             onCall={onCall} 
+            onDelete={onDeleteContact}
           />
         ))}
       </div>
