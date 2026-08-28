@@ -40,7 +40,8 @@ export const AddContactDialog: React.FC<AddContactDialogProps> = ({
         id: Math.random().toString(36).substring(7),
         name,
         relationship,
-        phoneNumber
+        phoneNumber,
+        phone: phoneNumber
       });
       setName('');
       setRelationship('');
@@ -82,9 +83,11 @@ export const AddContactDialog: React.FC<AddContactDialogProps> = ({
             <input 
               required
               type="tel" 
+              pattern="^[0-9]{10}$"
+              title="Phone number must be exactly 10 digits. Example: 0771234567"
               value={phoneNumber} 
-              onChange={e => setPhoneNumber(e.target.value)}
-              placeholder="E.g. +94 77 123 4567"
+              onChange={e => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="E.g. 0771234567"
               style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', boxSizing: 'border-box', color: '#0F172A', backgroundColor: '#FFFFFF', fontSize: '14px', outline: 'none' }}
             />
           </div>
