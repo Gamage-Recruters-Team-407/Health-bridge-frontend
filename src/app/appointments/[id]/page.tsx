@@ -8,6 +8,7 @@ import AppointmentModuleShell from "@/components/appointment/AppointmentModuleSh
 import { useAppointments } from "@/hooks/useAppointments";
 import { appointmentService } from "@/services/appointmentService";
 import { Appointment, AppointmentFormValues, Doctor } from "@/types/appointment";
+import { CalendarDays, ClipboardCheck, MapPin, Video } from "lucide-react";
 
 interface AppointmentDetailsPageProps {
   params: Promise<{ id: string }>;
@@ -48,6 +49,7 @@ export default function AppointmentDetailsPage({
   const [cancelReason, setCancelReason] = useState("");
   const [actionMessage, setActionMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [visitChecklist, setVisitChecklist] = useState([false, false, false]);
   const { cancelAppointment, rescheduleAppointment } = useAppointments();
 
   useEffect(() => {
@@ -197,67 +199,31 @@ export default function AppointmentDetailsPage({
           <section className="grid gap-6 xl:grid-cols-[1.25fr_0.75fr]">
             <div className="space-y-6">
               <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">
-                      Appointment ID
-                    </p>
-                    <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                      {appointment.id}
-                    </h2>
-                    <p className="mt-3 text-sm text-slate-500">
-                      {appointment.status === "UPCOMING"
-                        ? "Confirmed and ready to manage."
-                        : appointment.status === "COMPLETED"
-                        ? "This consultation is completed."
-                        : "This appointment has been cancelled."}
-                    </p>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-100 text-xl font-bold text-blue-700">
+                      {doctor.name.replace("Dr. ", "").split(" ").map((part) => part[0]).join("").slice(0, 2)}
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900">{doctor.name}</h2>
+                      <p className="text-sm font-medium text-blue-700">{doctor.specialization}</p>
+                      <p className="mt-1 text-xs text-slate-500">★ {doctor.rating.toFixed(1)} ({doctor.reviews} reviews)</p>
+                    </div>
                   </div>
-                  <span className="inline-flex rounded-full bg-blue-50 px-3 py-1 text-sm font-semibold text-blue-700">
-                    {appointment.status}
+                  <span className={`rounded-full px-3 py-1 text-xs font-semibold ${appointment.status === "UPCOMING" ? "bg-emerald-50 text-emerald-700" : appointment.status === "COMPLETED" ? "bg-slate-100 text-slate-600" : "bg-rose-50 text-rose-700"}`}>
+                    {appointment.status === "UPCOMING" ? "Confirmed" : appointment.status}
                   </span>
                 </div>
               </article>
 
               <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                <h3 className="text-xl font-semibold text-slate-900">Consultation Details</h3>
-                <div className="mt-5 grid gap-4 md:grid-cols-2">
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Doctor</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {appointment.doctorName}
-                    </p>
-                    <p className="mt-1 text-sm text-blue-700">
-                      {appointment.doctorSpecialization}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Date & Time</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {formatDate(appointment.appointmentDate)}
-                    </p>
-                    <p className="mt-1 text-sm text-slate-600">
-                      {formatTime(appointment.appointmentTime)}
-                    </p>
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Visit Type</p>
-                    <p className="mt-1 text-lg font-semibold text-slate-900">
-                      {appointment.appointmentType === "VIDEO"
-                        ? "Video Consultation"
-                        : "In-person Visit"}
-                    </p>
-                    {appointment.hospital ? (
-                      <p className="mt-1 text-sm text-slate-600">{appointment.hospital}</p>
-                    ) : null}
-                  </div>
-                  <div className="rounded-2xl bg-slate-50 p-4">
-                    <p className="text-sm text-slate-500">Reason</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-700">
-                      {appointment.reason}
-                    </p>
-                  </div>
+                <h3 className="border-b border-slate-100 pb-4 text-xs font-semibold uppercase tracking-[0.18em] text-slate-500">Consultation Details</h3>
+                <div className="mt-5 grid gap-5 sm:grid-cols-2">
+                  <div className="flex gap-3"><CalendarDays className="mt-1 h-5 w-5 text-blue-600" /><div><p className="text-xs text-slate-500">Date & Time</p><p className="mt-1 font-semibold text-slate-900">{formatDate(appointment.appointmentDate)}</p><p className="text-sm text-slate-600">{formatTime(appointment.appointmentTime)}</p></div></div>
+                  <div className="flex gap-3">{appointment.appointmentType === "VIDEO" ? <Video className="mt-1 h-5 w-5 text-blue-600" /> : <MapPin className="mt-1 h-5 w-5 text-blue-600" />}<div><p className="text-xs text-slate-500">Appointment Type</p><p className="mt-1 font-semibold text-slate-900">{appointment.appointmentType === "VIDEO" ? "Video Consultation" : "In-person Visit"}</p><p className="text-sm text-slate-600">{appointment.appointmentType === "VIDEO" ? "Secure telehealth link" : appointment.hospital}</p></div></div>
                 </div>
+                <div className="mt-5 rounded-2xl bg-slate-50 p-4"><p className="text-xs text-slate-500">Reason for visit</p><p className="mt-1 text-sm leading-6 text-slate-700">{appointment.reason}</p></div>
+                {appointment.status === "UPCOMING" ? <div className="mt-5 flex flex-col gap-4 rounded-2xl bg-blue-50 p-4 sm:flex-row sm:items-center sm:justify-between"><div><p className="font-semibold text-slate-900">Ready to join?</p><p className="text-xs text-slate-600">Your meeting room opens 10 minutes before the scheduled time.</p></div>{appointment.appointmentType === "VIDEO" ? <button type="button" className="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-700"><Video className="h-4 w-4" /> Join Meeting</button> : null}</div> : null}
                 {appointment.notes ? (
                   <div className="mt-4 rounded-2xl border border-blue-100 bg-blue-50 p-4 text-sm text-blue-800">
                     {appointment.notes}
@@ -298,12 +264,8 @@ export default function AppointmentDetailsPage({
 
             <aside className="space-y-6">
               <article className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-lg font-semibold text-slate-900">Before Your Visit</h3>
-                <ul className="mt-4 space-y-3 text-sm text-slate-600">
-                  <li>Update your latest medical information before the appointment.</li>
-                  <li>Prepare recent test reports or lab work if relevant.</li>
-                  <li>List any symptom changes so you can share them during the visit.</li>
-                </ul>
+                <div className="flex items-center gap-2"><ClipboardCheck className="h-5 w-5 text-blue-600" /><h3 className="text-lg font-semibold text-slate-900">Before Your Visit</h3></div>
+                <div className="mt-4 space-y-3 text-sm text-slate-600">{["Update your latest medical information.", "Prepare recent test reports or lab work.", "List any symptom changes to discuss."].map((item, index) => <label key={item} className="flex cursor-pointer gap-3"><input type="checkbox" checked={visitChecklist[index]} onChange={() => setVisitChecklist((current) => current.map((value, i) => i === index ? !value : value))} className="mt-0.5 h-4 w-4 accent-blue-600" /><span className={visitChecklist[index] ? "text-slate-400 line-through" : ""}>{item}</span></label>)}</div>
               </article>
 
               {appointment.status === "UPCOMING" ? (
@@ -316,6 +278,7 @@ export default function AppointmentDetailsPage({
                     >
                       Reschedule Appointment
                     </button>
+                    <button type="button" className="flex w-full items-center justify-center gap-2 rounded-2xl border border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-50"><CalendarDays className="h-4 w-4" /> Add to Calendar</button>
                     <button
                       type="button"
                       onClick={() => setShowCancelModal(true)}
