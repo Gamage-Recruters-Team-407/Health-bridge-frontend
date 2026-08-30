@@ -50,7 +50,7 @@ export default function AppointmentDetailsPage({
   const [actionMessage, setActionMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [visitChecklist, setVisitChecklist] = useState([false, false, false]);
-  const { cancelAppointment, rescheduleAppointment } = useAppointments();
+  const { cancelAppointment, rescheduleAppointment } = useAppointments({}, false);
 
   useEffect(() => {
     let cancelled = false;

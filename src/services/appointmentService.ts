@@ -8,8 +8,32 @@ import {
   DoctorAvailabilitySlot,
 } from "@/types/appointment";
 
-const APPOINTMENTS_KEY = "healthbridge_appointments";
 const PATIENT_ID = "patient-demo-001";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+
+const apiRequest = async <T,>(path: string, options?: RequestInit): Promise<T> => {
+  const controller = new AbortController();
+  const timeout = window.setTimeout(() => controller.abort(), 8000);
+  try {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      signal: controller.signal,
+      headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
+    });
+    if (!response.ok) {
+      const message = await response.text();
+      throw new Error(message || `Request failed (${response.status})`);
+    }
+    return response.json() as Promise<T>;
+  } catch (error) {
+    if (error instanceof DOMException && error.name === "AbortError") {
+      throw new Error("The appointment server is taking too long to respond. Please try again.");
+    }
+    throw error;
+  } finally {
+    window.clearTimeout(timeout);
+  }
+};
 
 const slotTimes = [
   "09:00",
@@ -70,21 +94,11 @@ const doctors: Doctor[] = [
   },
 ];
 
-const addDays = (date: Date, days: number) => {
-  const next = new Date(date);
-  next.setDate(next.getDate() + days);
-  return next;
-};
-
 const toDateString = (date: Date) => {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
   const day = String(date.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
-};
-
-const toIsoString = (date: Date) => {
-  return new Date(date).toISOString();
 };
 
 const fromDateAndTime = (date: string, time: string) => {
@@ -93,107 +107,7 @@ const fromDateAndTime = (date: string, time: string) => {
 
 const today = () => toDateString(new Date());
 
-const createSeedAppointments = (): Appointment[] => {
-  const now = new Date();
-  const seedBase = new Date(now);
-  seedBase.setHours(9, 0, 0, 0);
-
-  return [
-    {
-      id: "APT-1001",
-      patientId: PATIENT_ID,
-      doctorId: doctors[0].id,
-      doctorName: doctors[0].name,
-      doctorSpecialization: doctors[0].specialization,
-      hospital: doctors[0].hospital,
-      appointmentDate: toDateString(addDays(seedBase, 2)),
-      appointmentTime: "09:30",
-      appointmentType: doctors[0].appointmentType || "VIDEO",
-      reason: "Follow-up on irregular heartbeat symptoms",
-      status: "UPCOMING",
-      createdAt: toIsoString(addDays(seedBase, -3)),
-      updatedAt: toIsoString(addDays(seedBase, -1)),
-      notes: "Secure telehealth link will open 10 minutes before the appointment.",
-    },
-    {
-      id: "APT-1002",
-      patientId: PATIENT_ID,
-      doctorId: doctors[1].id,
-      doctorName: doctors[1].name,
-      doctorSpecialization: doctors[1].specialization,
-      hospital: doctors[1].hospital,
-      appointmentDate: toDateString(addDays(seedBase, 5)),
-      appointmentTime: "14:00",
-      appointmentType: doctors[1].appointmentType || "IN_PERSON",
-      reason: "Skin allergy consultation",
-      status: "UPCOMING",
-      createdAt: toIsoString(addDays(seedBase, -4)),
-      updatedAt: toIsoString(addDays(seedBase, -2)),
-    },
-    {
-      id: "APT-0990",
-      patientId: PATIENT_ID,
-      doctorId: doctors[3].id,
-      doctorName: doctors[3].name,
-      doctorSpecialization: doctors[3].specialization,
-      hospital: doctors[3].hospital,
-      appointmentDate: toDateString(addDays(seedBase, -10)),
-      appointmentTime: "10:00",
-      appointmentType: doctors[3].appointmentType || "VIDEO",
-      reason: "Routine wellness check",
-      status: "COMPLETED",
-      createdAt: toIsoString(addDays(seedBase, -18)),
-      updatedAt: toIsoString(addDays(seedBase, -10)),
-      notes: "General wellness guidance shared after visit.",
-    },
-    {
-      id: "APT-0985",
-      patientId: PATIENT_ID,
-      doctorId: doctors[2].id,
-      doctorName: doctors[2].name,
-      doctorSpecialization: doctors[2].specialization,
-      hospital: doctors[2].hospital,
-      appointmentDate: toDateString(addDays(seedBase, -4)),
-      appointmentTime: "15:00",
-      appointmentType: doctors[2].appointmentType || "IN_PERSON",
-      reason: "Knee pain consultation",
-      status: "CANCELLED",
-      createdAt: toIsoString(addDays(seedBase, -11)),
-      updatedAt: toIsoString(addDays(seedBase, -5)),
-      cancelledAt: toIsoString(addDays(seedBase, -5)),
-      cancellationReason: "Patient requested a later date.",
-    },
-  ];
-};
-
 const clone = <T,>(value: T): T => JSON.parse(JSON.stringify(value)) as T;
-
-const getStoredAppointments = (): Appointment[] => {
-  if (typeof window === "undefined") {
-    return createSeedAppointments();
-  }
-
-  const raw = window.localStorage.getItem(APPOINTMENTS_KEY);
-  if (!raw) {
-    const seed = createSeedAppointments();
-    window.localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(seed));
-    return seed;
-  }
-
-  try {
-    return JSON.parse(raw) as Appointment[];
-  } catch {
-    const seed = createSeedAppointments();
-    window.localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(seed));
-    return seed;
-  }
-};
-
-const saveAppointments = (appointments: Appointment[]) => {
-  if (typeof window !== "undefined") {
-    window.localStorage.setItem(APPOINTMENTS_KEY, JSON.stringify(appointments));
-  }
-};
 
 const normalizeStatus = (appointment: Appointment): Appointment => {
   if (appointment.status !== "UPCOMING") {
@@ -209,7 +123,7 @@ const normalizeStatus = (appointment: Appointment): Appointment => {
     return {
       ...appointment,
       status: "COMPLETED",
-      updatedAt: toIsoString(new Date()),
+      updatedAt: new Date().toISOString(),
     };
   }
 
@@ -348,24 +262,14 @@ const delay = async () => {
 
 export const appointmentService = {
   async getAppointments(filters?: AppointmentFilters): Promise<Appointment[]> {
-    await delay();
-    const appointments = getStoredAppointments();
-    const normalized = appointments.map(normalizeStatus);
-    saveAppointments(normalized);
-    return clone(applyFilters(normalized, filters));
+    const query = new URLSearchParams({ patientId: PATIENT_ID });
+    if (filters?.status && filters.status !== "ALL") query.set("status", filters.status);
+    const appointments = await apiRequest<Appointment[]>(`/appointments?${query}`);
+    return applyFilters(appointments, filters);
   },
 
   async getAppointmentById(id: string): Promise<Appointment> {
-    await delay();
-    const appointment = getStoredAppointments()
-      .map(normalizeStatus)
-      .find((item) => item.id === id);
-
-    if (!appointment) {
-      throw new Error("Appointment not found.");
-    }
-
-    return clone(appointment);
+    return apiRequest<Appointment>(`/appointments/${encodeURIComponent(id)}`);
   },
 
   async getSummary(): Promise<AppointmentSummary> {
@@ -423,106 +327,53 @@ export const appointmentService = {
       throw new Error("Doctor not found.");
     }
 
-    const appointments = getStoredAppointments().map(normalizeStatus);
+    let appointments: Appointment[] = [];
+    try {
+      appointments = await this.getAppointments();
+    } catch {
+      // Availability can still be displayed while the appointment list is unavailable.
+      // The booking request performs the authoritative server-side slot check.
+    }
     return clone(createAvailabilitySlots(doctorId, date, appointments, ignoreAppointmentId));
   },
 
   async createAppointment(values: AppointmentFormValues): Promise<Appointment> {
-    await delay();
-    const appointments = getStoredAppointments().map(normalizeStatus);
-    validateBooking(appointments, values);
-
     const doctor = doctors.find((item) => item.id === values.doctorId)!;
-    const now = new Date();
-    const appointment: Appointment = {
-      id: `APT-${Math.floor(1000 + Math.random() * 9000)}`,
-      patientId: PATIENT_ID,
-      doctorId: doctor.id,
-      doctorName: doctor.name,
-      doctorSpecialization: doctor.specialization,
-      hospital: doctor.hospital,
-      appointmentDate: values.appointmentDate,
-      appointmentTime: values.appointmentTime,
-      appointmentType: doctor.appointmentType || "IN_PERSON",
-      reason: values.reason.trim(),
-      status: "UPCOMING",
-      createdAt: toIsoString(now),
-      updatedAt: toIsoString(now),
-      notes:
-        doctor.appointmentType === "VIDEO"
-          ? "Meeting room opens 10 minutes before the scheduled time."
-          : "Please arrive 15 minutes early for registration.",
-    };
-
-    const nextAppointments = [...appointments, appointment];
-    saveAppointments(nextAppointments);
-    return clone(appointment);
+    const appointments = await this.getAppointments();
+    validateBooking(appointments, values);
+    return apiRequest<Appointment>("/appointments", {
+      method: "POST",
+      body: JSON.stringify({
+        patientId: PATIENT_ID,
+        doctorId: doctor.id,
+        doctorName: doctor.name,
+        doctorSpecialization: doctor.specialization,
+        hospital: doctor.hospital,
+        appointmentDate: values.appointmentDate,
+        appointmentTime: values.appointmentTime,
+        appointmentType: doctor.appointmentType || "IN_PERSON",
+        reason: values.reason.trim(),
+      }),
+    });
   },
 
   async rescheduleAppointment(
     appointmentId: string,
     values: AppointmentFormValues
   ): Promise<Appointment> {
-    await delay();
-    const appointments = getStoredAppointments().map(normalizeStatus);
-    const current = appointments.find((item) => item.id === appointmentId);
-
-    if (!current) {
-      throw new Error("Appointment not found.");
-    }
-
-    if (current.status !== "UPCOMING") {
-      throw new Error("Only upcoming appointments can be rescheduled.");
-    }
-
+    const appointments = await this.getAppointments();
     validateBooking(appointments, values, appointmentId);
-
-    const updated = appointments.map((item) =>
-      item.id === appointmentId
-        ? {
-            ...item,
-            appointmentDate: values.appointmentDate,
-            appointmentTime: values.appointmentTime,
-            reason: values.reason.trim(),
-            updatedAt: toIsoString(new Date()),
-          }
-        : item
-    );
-
-    saveAppointments(updated);
-    return clone(updated.find((item) => item.id === appointmentId)!);
+    return apiRequest<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}`, {
+      method: "PUT",
+      body: JSON.stringify({ patientId: PATIENT_ID, doctorId: values.doctorId, appointmentDate: values.appointmentDate, appointmentTime: values.appointmentTime, reason: values.reason.trim() }),
+    });
   },
 
   async cancelAppointment({
     appointmentId,
     reason,
   }: CancelAppointmentInput): Promise<Appointment> {
-    await delay();
-    const appointments = getStoredAppointments().map(normalizeStatus);
-    const current = appointments.find((item) => item.id === appointmentId);
-
-    if (!current) {
-      throw new Error("Appointment not found.");
-    }
-
-    if (current.status !== "UPCOMING") {
-      throw new Error("Only upcoming appointments can be cancelled.");
-    }
-
-    const updated = appointments.map((item) =>
-      item.id === appointmentId
-        ? {
-            ...item,
-            status: "CANCELLED" as const,
-            cancellationReason: reason?.trim() || "Cancelled by patient.",
-            cancelledAt: toIsoString(new Date()),
-            updatedAt: toIsoString(new Date()),
-          }
-        : item
-    );
-
-    saveAppointments(updated);
-    return clone(updated.find((item) => item.id === appointmentId)!);
+    return apiRequest<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}/cancel?reason=${encodeURIComponent(reason || "")}`, { method: "PATCH" });
   },
 };
 
