@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   AppointmentFormValues,
   Doctor,
@@ -19,10 +19,16 @@ interface AppointmentFormProps {
   onSubmit: (values: AppointmentFormValues) => Promise<void>;
 }
 
-const TODAY = "2026-08-20";
-
 const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error ? error.message : fallback;
+};
+
+const getToday = () => {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 };
 
 export default function AppointmentForm({
@@ -47,7 +53,7 @@ export default function AppointmentForm({
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [error, setError] = useState("");
 
-  const today = useMemo(() => TODAY, []);
+  const today = getToday();
   const initialDate = initialValues?.appointmentDate || "";
   const initialTime = initialValues?.appointmentTime || "";
 

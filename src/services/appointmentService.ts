@@ -10,7 +10,6 @@ import {
 
 const APPOINTMENTS_KEY = "healthbridge_appointments";
 const PATIENT_ID = "patient-demo-001";
-const CURRENT_DATE = "2026-08-20";
 
 const slotTimes = [
   "09:00",
@@ -92,10 +91,12 @@ const fromDateAndTime = (date: string, time: string) => {
   return new Date(`${date}T${time}:00`);
 };
 
-const today = () => CURRENT_DATE;
+const today = () => toDateString(new Date());
 
 const createSeedAppointments = (): Appointment[] => {
-  const now = new Date("2026-08-20T09:00:00");
+  const now = new Date();
+  const seedBase = new Date(now);
+  seedBase.setHours(9, 0, 0, 0);
 
   return [
     {
@@ -105,13 +106,13 @@ const createSeedAppointments = (): Appointment[] => {
       doctorName: doctors[0].name,
       doctorSpecialization: doctors[0].specialization,
       hospital: doctors[0].hospital,
-      appointmentDate: toDateString(addDays(now, 2)),
+      appointmentDate: toDateString(addDays(seedBase, 2)),
       appointmentTime: "09:30",
       appointmentType: doctors[0].appointmentType || "VIDEO",
       reason: "Follow-up on irregular heartbeat symptoms",
       status: "UPCOMING",
-      createdAt: toIsoString(addDays(now, -3)),
-      updatedAt: toIsoString(addDays(now, -1)),
+      createdAt: toIsoString(addDays(seedBase, -3)),
+      updatedAt: toIsoString(addDays(seedBase, -1)),
       notes: "Secure telehealth link will open 10 minutes before the appointment.",
     },
     {
@@ -121,13 +122,13 @@ const createSeedAppointments = (): Appointment[] => {
       doctorName: doctors[1].name,
       doctorSpecialization: doctors[1].specialization,
       hospital: doctors[1].hospital,
-      appointmentDate: toDateString(addDays(now, 5)),
+      appointmentDate: toDateString(addDays(seedBase, 5)),
       appointmentTime: "14:00",
       appointmentType: doctors[1].appointmentType || "IN_PERSON",
       reason: "Skin allergy consultation",
       status: "UPCOMING",
-      createdAt: toIsoString(addDays(now, -4)),
-      updatedAt: toIsoString(addDays(now, -2)),
+      createdAt: toIsoString(addDays(seedBase, -4)),
+      updatedAt: toIsoString(addDays(seedBase, -2)),
     },
     {
       id: "APT-0990",
@@ -136,13 +137,13 @@ const createSeedAppointments = (): Appointment[] => {
       doctorName: doctors[3].name,
       doctorSpecialization: doctors[3].specialization,
       hospital: doctors[3].hospital,
-      appointmentDate: toDateString(addDays(now, -10)),
+      appointmentDate: toDateString(addDays(seedBase, -10)),
       appointmentTime: "10:00",
       appointmentType: doctors[3].appointmentType || "VIDEO",
       reason: "Routine wellness check",
       status: "COMPLETED",
-      createdAt: toIsoString(addDays(now, -18)),
-      updatedAt: toIsoString(addDays(now, -10)),
+      createdAt: toIsoString(addDays(seedBase, -18)),
+      updatedAt: toIsoString(addDays(seedBase, -10)),
       notes: "General wellness guidance shared after visit.",
     },
     {
@@ -152,14 +153,14 @@ const createSeedAppointments = (): Appointment[] => {
       doctorName: doctors[2].name,
       doctorSpecialization: doctors[2].specialization,
       hospital: doctors[2].hospital,
-      appointmentDate: toDateString(addDays(now, -4)),
+      appointmentDate: toDateString(addDays(seedBase, -4)),
       appointmentTime: "15:00",
       appointmentType: doctors[2].appointmentType || "IN_PERSON",
       reason: "Knee pain consultation",
       status: "CANCELLED",
-      createdAt: toIsoString(addDays(now, -11)),
-      updatedAt: toIsoString(addDays(now, -5)),
-      cancelledAt: toIsoString(addDays(now, -5)),
+      createdAt: toIsoString(addDays(seedBase, -11)),
+      updatedAt: toIsoString(addDays(seedBase, -5)),
+      cancelledAt: toIsoString(addDays(seedBase, -5)),
       cancellationReason: "Patient requested a later date.",
     },
   ];
@@ -289,13 +290,18 @@ const createAvailabilitySlots = (
     return {
       id: `${doctorId}-${date}-${time}`,
       time,
-      label: new Intl.DateTimeFormat("en-US", {
-        hour: "numeric",
-        minute: "2-digit",
-      }).format(new Date(`2026-01-01T${time}:00`)),
-      isAvailable,
-    };
-  });
+        label: formatTimeLabel(time),
+        isAvailable,
+      };
+    });
+};
+
+const formatTimeLabel = (time: string) => {
+  const [hoursRaw, minutes] = time.split(":");
+  const hours = Number(hoursRaw);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const normalizedHours = ((hours + 11) % 12) + 1;
+  return `${normalizedHours}:${minutes} ${suffix}`;
 };
 
 const validateBooking = (
