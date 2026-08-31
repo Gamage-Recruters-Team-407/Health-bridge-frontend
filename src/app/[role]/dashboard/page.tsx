@@ -6,6 +6,7 @@ import { ShieldCheck, User as UserIcon, LogOut, HeartPulse } from "lucide-react"
 import HeaderLogo from "@/components/HeaderLogo";
 import AuthFooter from "@/components/AuthFooter";
 import { getStoredUser, clearAuthData, AuthUser, getRoleRedirectPath } from "@/lib/auth";
+import Link from "next/link";
 
 // Maps URL slug → expected role value
 const SLUG_TO_ROLE: Record<string, string> = {
@@ -73,6 +74,14 @@ export default function RoleDashboardPage() {
                 {user?.role || "PATIENT"}
               </span>
             </div>
+            
+
+<Link
+  href="/support/admin"
+  className="inline-flex items-center gap-2 rounded-lg bg-teal-600 px-4 py-2 text-sm font-medium text-white hover:bg-teal-700"
+>
+  Support 
+</Link>
 
             <button
               onClick={handleLogout}
