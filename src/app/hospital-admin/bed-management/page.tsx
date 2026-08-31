@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
-import { Bed, BedStatus, WardType, PatientInfo, DepartmentOccupancy } from '@/src/types/bed';
+import { Bed, BedStatus, WardType, PatientInfo, DepartmentOccupancy, BedOverviewStats } from '@/types/bed';
 import {
   Bed as BedIcon,
   CheckCircle2,
@@ -187,12 +187,20 @@ const DEPARTMENT_OCCUPANCY: DepartmentOccupancy[] = [
   { department: 'Maternity', occupancyPercentage: 10 }
 ];
 
+const API_BASE_URL = 'http://localhost:8088/api/beds';
+
 export default function BedManagementPage() {
   const [beds, setBeds] = useState<Bed[]>(INITIAL_BEDS);
   const [selectedWard, setSelectedWard] = useState<WardType>('ICU');
   const [statusFilter, setStatusFilter] = useState<BedStatus | 'All'>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // Backend Stats & Occupancy
+  const [backendStats, setBackendStats] = useState<BedOverviewStats | null>(null);
+  const [deptOccupancies, setDeptOccupancies] = useState<DepartmentOccupancy[]>(DEPARTMENT_OCCUPANCY);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -226,13 +234,55 @@ export default function BedManagementPage() {
     priority: 'Routine' as 'Routine' | 'Urgent'
   });
 
-  // Compute Overall Stats
+  // Fetch Beds, Stats & Occupancy from Backend
+  const fetchBedData = React.useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const [bedsRes, statsRes, occRes] = await Promise.all([
+        fetch(API_BASE_URL),
+        fetch(`${API_BASE_URL}/stats`),
+        fetch(`${API_BASE_URL}/occupancy`)
+      ]);
+
+      if (bedsRes.ok) {
+        const bedsData = await bedsRes.json();
+        if (Array.isArray(bedsData) && bedsData.length > 0) {
+          setBeds(bedsData);
+        }
+      }
+
+      if (statsRes.ok) {
+        const statsData = await statsRes.json();
+        setBackendStats(statsData);
+      }
+
+      if (occRes.ok) {
+        const occData = await occRes.json();
+        if (Array.isArray(occData) && occData.length > 0) {
+          setDeptOccupancies(occData);
+        }
+      }
+    } catch (err) {
+      console.warn('Backend server connection warning. Fallback to client state.', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    fetchBedData();
+  }, [fetchBedData]);
+
+  // Compute Overall Stats (Fallback to local memo if backendStats is null)
   const stats = useMemo(() => {
-    const total = 240; // Total hospital beds count per wireframe
-    const occupied = beds.filter((b) => b.status === 'Occupied').length + 185; // matching wireframe numbers
+    if (backendStats) {
+      return backendStats;
+    }
+    const total = 240;
+    const occupied = beds.filter((b) => b.status === 'Occupied').length + 185;
     const available = beds.filter((b) => b.status === 'Available').length + 30;
     const maintenance = beds.filter((b) => b.status === 'Maintenance').length + 8;
-
     const occPercentage = Math.round((occupied / total) * 100);
 
     return {
@@ -240,9 +290,10 @@ export default function BedManagementPage() {
       occupiedBeds: occupied,
       occupiedPercentage: occPercentage,
       availableBeds: available,
-      maintenanceBeds: maintenance
+      maintenanceBeds: maintenance,
+      cleaningBeds: beds.filter((b) => b.status === 'Cleaning').length
     };
-  }, [beds]);
+  }, [beds, backendStats]);
 
   // Filtered Beds
   const filteredBeds = useMemo(() => {
@@ -285,7 +336,7 @@ export default function BedManagementPage() {
   };
 
   // Submit Allocation
-  const handleConfirmAllocation = (e: React.FormEvent) => {
+  const handleConfirmAllocation = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!allocatingBed) return;
 
@@ -302,45 +353,101 @@ export default function BedManagementPage() {
       admissionNotes: allocateForm.admissionNotes
     };
 
-    setBeds((prev) =>
-      prev.map((b) =>
-        b.id === allocatingBed.id ? { ...b, status: 'Occupied', patient: newPatient } : b
-      )
-    );
+    try {
+      const res = await fetch(`${API_BASE_URL}/${allocatingBed.id}/allocate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(allocateForm)
+      });
+      if (res.ok) {
+        await fetchBedData();
+      } else {
+        setBeds((prev) =>
+          prev.map((b) =>
+            b.id === allocatingBed.id ? { ...b, status: 'Occupied', patient: newPatient } : b
+          )
+        );
+      }
+    } catch {
+      setBeds((prev) =>
+        prev.map((b) =>
+          b.id === allocatingBed.id ? { ...b, status: 'Occupied', patient: newPatient } : b
+        )
+      );
+    }
 
     setAllocatingBed(null);
   };
 
   // Submit Transfer
-  const handleConfirmTransfer = (e: React.FormEvent) => {
+  const handleConfirmTransfer = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!viewingBedPatient || !transferForm.destinationWard) return;
 
-    // Move patient to new bed if available, or just clear old bed status to Available
-    setBeds((prev) =>
-      prev.map((b) => {
-        if (b.id === viewingBedPatient.id) {
-          return { ...b, status: 'Available', patient: undefined };
-        }
-        if (b.id === transferForm.availableBedId) {
-          return {
-            ...b,
-            status: 'Occupied',
-            patient: viewingBedPatient.patient
-          };
-        }
-        return b;
-      })
-    );
+    try {
+      const res = await fetch(`${API_BASE_URL}/${viewingBedPatient.id}/transfer`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(transferForm)
+      });
+      if (res.ok) {
+        await fetchBedData();
+      } else {
+        setBeds((prev) =>
+          prev.map((b) => {
+            if (b.id === viewingBedPatient.id) {
+              return { ...b, status: 'Available', patient: undefined };
+            }
+            if (b.id === transferForm.availableBedId) {
+              return {
+                ...b,
+                status: 'Occupied',
+                patient: viewingBedPatient.patient
+              };
+            }
+            return b;
+          })
+        );
+      }
+    } catch {
+      setBeds((prev) =>
+        prev.map((b) => {
+          if (b.id === viewingBedPatient.id) {
+            return { ...b, status: 'Available', patient: undefined };
+          }
+          if (b.id === transferForm.availableBedId) {
+            return {
+              ...b,
+              status: 'Occupied',
+              patient: viewingBedPatient.patient
+            };
+          }
+          return b;
+        })
+      );
+    }
 
     setViewingBedPatient(null);
   };
 
   // Quick Action Handlers for Maintenance / Cleaning / Confirm Reservation
-  const handleQuickStatusChange = (bedId: string, newStatus: BedStatus) => {
-    setBeds((prev) =>
-      prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
-    );
+  const handleQuickStatusChange = async (bedId: string, newStatus: BedStatus) => {
+    try {
+      const res = await fetch(`${API_BASE_URL}/${bedId}/status?status=${newStatus}`, {
+        method: 'PATCH'
+      });
+      if (res.ok) {
+        await fetchBedData();
+      } else {
+        setBeds((prev) =>
+          prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
+        );
+      }
+    } catch {
+      setBeds((prev) =>
+        prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
+      );
+    }
   };
 
   return (
@@ -389,7 +496,7 @@ export default function BedManagementPage() {
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[11px] sm:text-xs font-bold text-slate-400 tracking-wider uppercase mb-1">Total Beds</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">stats.totalBeds || 240</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{stats.totalBeds}</p>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
               <BedIcon className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -401,8 +508,8 @@ export default function BedManagementPage() {
             <div>
               <p className="text-[11px] sm:text-xs font-bold text-slate-400 tracking-wider uppercase mb-1">Occupied</p>
               <div className="flex items-baseline gap-1.5">
-                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">192</p>
-                <span className="text-xs sm:text-sm font-semibold text-blue-600">(80%)</span>
+                <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{stats.occupiedBeds}</p>
+                <span className="text-xs sm:text-sm font-semibold text-blue-600">({stats.occupiedPercentage}%)</span>
               </div>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center shrink-0">
@@ -414,7 +521,7 @@ export default function BedManagementPage() {
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 border-l-4 border-l-emerald-500 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[11px] sm:text-xs font-bold text-slate-400 tracking-wider uppercase mb-1">Available</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">38</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{stats.availableBeds}</p>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center border border-emerald-100 shrink-0">
               <CheckCircle2 className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -425,7 +532,7 @@ export default function BedManagementPage() {
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 border-l-4 border-l-slate-600 shadow-sm flex items-center justify-between">
             <div>
               <p className="text-[11px] sm:text-xs font-bold text-slate-400 tracking-wider uppercase mb-1">Maintenance</p>
-              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">10</p>
+              <p className="text-2xl sm:text-3xl font-extrabold text-slate-900">{stats.maintenanceBeds}</p>
             </div>
             <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-slate-100 text-slate-600 flex items-center justify-center shrink-0">
               <Wrench className="w-5 h-5 sm:w-6 sm:h-6" />
@@ -435,7 +542,7 @@ export default function BedManagementPage() {
 
         {/* Occupancy Alert & Department Occupancy Chips Container */}
         <div className="flex items-center gap-2 overflow-x-auto pb-2 scrollbar-none">
-          {DEPARTMENT_OCCUPANCY.map((item, idx) => (
+          {deptOccupancies.map((item, idx) => (
             <div
               key={idx}
               className={`shrink-0 px-3.5 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
