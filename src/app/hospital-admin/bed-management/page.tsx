@@ -28,169 +28,10 @@ import {
   HelpCircle
 } from 'lucide-react';
 
-const INITIAL_BEDS: Bed[] = [
-  {
-    id: 'ICU-101',
-    code: '101',
-    ward: 'ICU',
-    status: 'Occupied',
-    bedType: 'ICU Standard',
-    patient: {
-      id: 'PID-10482',
-      firstName: 'Alex',
-      lastName: 'Fernando',
-      dob: '15 Mar 1978',
-      age: 46,
-      gender: 'Male',
-      assignedDoctor: 'Dr. Nimal Perera',
-      admissionDate: '2026-08-10',
-      expDischarge: '2026-08-22',
-      admissionNotes: 'Post-cardiac bypass recovery and monitoring required.'
-    }
-  },
-  {
-    id: 'ICU-102',
-    code: '102',
-    ward: 'ICU',
-    status: 'Available',
-    bedType: 'ICU Standard'
-  },
-  {
-    id: 'ICU-103',
-    code: '103',
-    ward: 'ICU',
-    status: 'Reserved',
-    bedType: 'ICU Standard',
-    patient: {
-      id: 'PID-10499',
-      firstName: 'Samantha',
-      lastName: 'Wickramasinghe',
-      dob: '22 Nov 1985',
-      age: 40,
-      gender: 'Female',
-      assignedDoctor: 'Dr. Sarah Fernando',
-      eta: '14:00',
-      admissionNotes: 'Transfer from Emergency Ward pending ICU clearance.'
-    }
-  },
-  {
-    id: 'ICU-104',
-    code: '104',
-    ward: 'ICU',
-    status: 'Occupied',
-    bedType: 'ICU Standard',
-    patient: {
-      id: 'PID-10311',
-      firstName: 'Jane',
-      lastName: 'Doe',
-      dob: '12 May 1968',
-      age: 55,
-      gender: 'Female',
-      assignedDoctor: 'Dr. Smith',
-      admissionDate: '2026-08-12',
-      expDischarge: '2026-08-25',
-      admissionNotes: 'Acute respiratory distress observation.'
-    }
-  },
-  {
-    id: 'ICU-105',
-    code: '105',
-    ward: 'ICU',
-    status: 'Maintenance',
-    bedType: 'Electric ICU'
-  },
-  {
-    id: 'ICU-106',
-    code: '106',
-    ward: 'ICU',
-    status: 'Cleaning',
-    bedType: 'ICU Standard'
-  },
-  {
-    id: 'GEN-201',
-    code: '201',
-    ward: 'General Ward',
-    status: 'Occupied',
-    bedType: 'General Electric',
-    patient: {
-      id: 'PID-10204',
-      firstName: 'Kamal',
-      lastName: 'Gunaratne',
-      dob: '04 Jan 1962',
-      age: 64,
-      gender: 'Male',
-      assignedDoctor: 'Dr. Ruwan Bandara',
-      admissionDate: '2026-08-15'
-    }
-  },
-  {
-    id: 'GEN-202',
-    code: '202',
-    ward: 'General Ward',
-    status: 'Available',
-    bedType: 'General Electric'
-  },
-  {
-    id: 'GEN-203',
-    code: '203',
-    ward: 'General Ward',
-    status: 'Available',
-    bedType: 'General Standard'
-  },
-  {
-    id: 'EMG-301',
-    code: '301',
-    ward: 'Emergency Ward',
-    status: 'Occupied',
-    bedType: 'Emergency Trauma',
-    patient: {
-      id: 'PID-10501',
-      firstName: 'Sunil',
-      lastName: 'De Silva',
-      dob: '19 Aug 1990',
-      age: 34,
-      gender: 'Male',
-      assignedDoctor: 'Dr. Champa Wickramasinghe'
-    }
-  },
-  {
-    id: 'CARD-401',
-    code: '401',
-    ward: 'Cardiology',
-    status: 'Available',
-    bedType: 'Cardiac Monitor'
-  },
-  {
-    id: 'PED-501',
-    code: '501',
-    ward: 'Pediatrics',
-    status: 'Occupied',
-    bedType: 'Pediatric Bed',
-    patient: {
-      id: 'PID-10520',
-      firstName: 'Nipuni',
-      lastName: 'Perera',
-      dob: '10 Jun 2018',
-      age: 8,
-      gender: 'Female',
-      assignedDoctor: 'Dr. Ayesha Silva'
-    }
-  }
-];
-
-const DEPARTMENT_OCCUPANCY: DepartmentOccupancy[] = [
-  { department: 'ICU', occupancyPercentage: 92, isAlert: true },
-  { department: 'General Ward', occupancyPercentage: 75 },
-  { department: 'Pediatrics', occupancyPercentage: 60 },
-  { department: 'Emergency Ward', occupancyPercentage: 45 },
-  { department: 'Cardiology', occupancyPercentage: 34 },
-  { department: 'Maternity', occupancyPercentage: 10 }
-];
-
 const API_BASE_URL = 'http://localhost:8088/api/beds';
 
 export default function BedManagementPage() {
-  const [beds, setBeds] = useState<Bed[]>(INITIAL_BEDS);
+  const [beds, setBeds] = useState<Bed[]>([]);
   const [selectedWard, setSelectedWard] = useState<WardType>('ICU');
   const [statusFilter, setStatusFilter] = useState<BedStatus | 'All'>('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -200,7 +41,7 @@ export default function BedManagementPage() {
 
   // Backend Stats & Occupancy
   const [backendStats, setBackendStats] = useState<BedOverviewStats | null>(null);
-  const [deptOccupancies, setDeptOccupancies] = useState<DepartmentOccupancy[]>(DEPARTMENT_OCCUPANCY);
+  const [deptOccupancies, setDeptOccupancies] = useState<DepartmentOccupancy[]>([]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -209,6 +50,16 @@ export default function BedManagementPage() {
   // Drawer / Modal States
   const [allocatingBed, setAllocatingBed] = useState<Bed | null>(null);
   const [viewingBedPatient, setViewingBedPatient] = useState<Bed | null>(null);
+  const [isAddBedOpen, setIsAddBedOpen] = useState<boolean>(false);
+
+  // Add Bed Form State
+  const [addBedForm, setAddBedForm] = useState({
+    bedId: '',
+    code: '',
+    ward: 'ICU' as WardType,
+    bedType: 'ICU Standard',
+    status: 'Available' as BedStatus
+  });
 
   // Allocate Bed Form State
   const [allocateForm, setAllocateForm] = useState({
@@ -247,7 +98,7 @@ export default function BedManagementPage() {
 
       if (bedsRes.ok) {
         const bedsData = await bedsRes.json();
-        if (Array.isArray(bedsData) && bedsData.length > 0) {
+        if (Array.isArray(bedsData)) {
           setBeds(bedsData);
         }
       }
@@ -259,7 +110,7 @@ export default function BedManagementPage() {
 
       if (occRes.ok) {
         const occData = await occRes.json();
-        if (Array.isArray(occData) && occData.length > 0) {
+        if (Array.isArray(occData)) {
           setDeptOccupancies(occData);
         }
       }
@@ -279,11 +130,11 @@ export default function BedManagementPage() {
     if (backendStats) {
       return backendStats;
     }
-    const total = 240;
-    const occupied = beds.filter((b) => b.status === 'Occupied').length + 185;
-    const available = beds.filter((b) => b.status === 'Available').length + 30;
-    const maintenance = beds.filter((b) => b.status === 'Maintenance').length + 8;
-    const occPercentage = Math.round((occupied / total) * 100);
+    const total = beds.length;
+    const occupied = beds.filter((b) => b.status === 'Occupied').length;
+    const available = beds.filter((b) => b.status === 'Available').length;
+    const maintenance = beds.filter((b) => b.status === 'Maintenance').length;
+    const occPercentage = total > 0 ? Math.round((occupied / total) * 100) : 0;
 
     return {
       totalBeds: total,
@@ -428,6 +279,39 @@ export default function BedManagementPage() {
     }
 
     setViewingBedPatient(null);
+  };
+
+  // Create New Bed
+  const handleCreateBed = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!addBedForm.bedId.trim()) {
+      alert('Bed ID is required (e.g. ICU-107).');
+      return;
+    }
+
+    try {
+      const res = await fetch(API_BASE_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(addBedForm)
+      });
+      if (res.ok) {
+        await fetchBedData();
+        setIsAddBedOpen(false);
+        setAddBedForm({
+          bedId: '',
+          code: '',
+          ward: 'ICU',
+          bedType: 'ICU Standard',
+          status: 'Available'
+        });
+      } else {
+        const errData = await res.json().catch(() => ({}));
+        alert(errData.message || 'Failed to create bed.');
+      }
+    } catch (err) {
+      console.error('Error creating bed:', err);
+    }
   };
 
   // Quick Action Handlers for Maintenance / Cleaning / Confirm Reservation
@@ -624,6 +508,25 @@ export default function BedManagementPage() {
                 List
               </button>
             </div>
+
+            {/* Add Bed Primary Button */}
+            <button
+              type="button"
+              onClick={() => {
+                setAddBedForm({
+                  bedId: '',
+                  code: '',
+                  ward: selectedWard,
+                  bedType: `${selectedWard} Standard`,
+                  status: 'Available'
+                });
+                setIsAddBedOpen(true);
+              }}
+              className="inline-flex items-center justify-center gap-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm transition-all shrink-0"
+            >
+              <Plus className="w-4 h-4" />
+              Add Bed
+            </button>
           </div>
         </div>
 
@@ -1253,6 +1156,107 @@ export default function BedManagementPage() {
                 Confirm Transfer
               </button>
             </div>
+          </div>
+        </div>
+      )}
+      {/* --- MODAL: Add New Bed --- */}
+      {isAddBedOpen && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+              <h2 className="text-lg font-bold text-slate-900">Add New Bed</h2>
+              <button
+                type="button"
+                onClick={() => setIsAddBedOpen(false)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleCreateBed} className="p-6 space-y-4 text-xs">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Bed ID *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ICU-107, CARD-401"
+                  value={addBedForm.bedId}
+                  onChange={(e) => setAddBedForm({ ...addBedForm, bedId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Bed Code</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. 107"
+                    value={addBedForm.code}
+                    onChange={(e) => setAddBedForm({ ...addBedForm, code: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Ward *</label>
+                  <select
+                    value={addBedForm.ward}
+                    onChange={(e) => setAddBedForm({ ...addBedForm, ward: e.target.value as WardType })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                  >
+                    <option value="ICU">ICU</option>
+                    <option value="General Ward">General Ward</option>
+                    <option value="Emergency Ward">Emergency Ward</option>
+                    <option value="Cardiology">Cardiology</option>
+                    <option value="Pediatrics">Pediatrics</option>
+                    <option value="Maternity">Maternity</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Bed Type</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ICU Standard, Electric"
+                    value={addBedForm.bedType}
+                    onChange={(e) => setAddBedForm({ ...addBedForm, bedType: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Status</label>
+                  <select
+                    value={addBedForm.status}
+                    onChange={(e) => setAddBedForm({ ...addBedForm, status: e.target.value as BedStatus })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Reserved">Reserved</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Cleaning">Cleaning</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsAddBedOpen(false)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors"
+                >
+                  Create Bed
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
