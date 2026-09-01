@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import {
   Table,
@@ -34,6 +35,7 @@ export default function ClaimsListPage() {
   const [search, setSearch] = useState("");
   const [activeClaim, setActiveClaim] = useState<InsuranceClaim | null>(null);
   const toast = useToast();
+  const router = useRouter();
 
   const loadClaims = () => {
     setLoading(true);
@@ -91,9 +93,14 @@ export default function ClaimsListPage() {
                   <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
                 </TableCell>
                 <TableCell>
-                  <Button size="sm" onClick={() => setActiveClaim(c)}>
-                    Review
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button size="sm" variant="outline" onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}>
+                      View
+                    </Button>
+                    <Button size="sm" onClick={() => setActiveClaim(c)}>
+                      Review
+                    </Button>
+                  </div>
                 </TableCell>
               </TableRow>
             ))
