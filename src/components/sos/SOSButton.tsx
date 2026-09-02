@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useRef, useEffect } from 'react';
-import styles from './sos-components.module.css';
+
 import { SOSButtonAnimation } from './SOSButtonAnimation';
 
 interface SOSButtonProps {
@@ -83,9 +83,9 @@ export const SOSButton: React.FC<SOSButtonProps> = ({
   }, []);
 
   return (
-    <div className={styles.sosContainer}>
+    <div className="flex flex-col items-center justify-center py-8">
       <div 
-        className={styles.sosButtonWrapper}
+        className="relative w-40 h-40 flex items-center justify-center mb-4 select-none"
         onPointerDown={handlePointerDown}
         onPointerUp={handlePointerUpOrLeave}
         onPointerLeave={handlePointerUpOrLeave}
@@ -94,17 +94,17 @@ export const SOSButton: React.FC<SOSButtonProps> = ({
       >
         <SOSButtonAnimation progress={progress} />
         <button 
-          className={`${styles.sosButton} ${isHolding ? styles.holding : ''} ${isTriggered ? styles.triggered : ''}`}
+          className={`w-[120px] h-[120px] rounded-full text-white border-0 flex flex-col items-center justify-center cursor-pointer z-10 transition-all duration-200 outline-none ${isTriggered ? 'bg-green-600 shadow-[0_4px_12px_rgba(22,163,74,0.4)]' : isHolding ? 'bg-red-600 scale-95 shadow-[0_4px_12px_rgba(239,68,68,0.4)]' : 'bg-red-500 shadow-[0_4px_12px_rgba(239,68,68,0.4)]'}`}
           aria-label="Emergency SOS"
         >
-          <div className={styles.sosTitle}>🚨 SOS</div>
-          <div className={styles.sosSubtitle}>
+          <div className="text-2xl font-extrabold leading-none mb-1">🚨 SOS</div>
+          <div className="text-xs font-medium opacity-90 text-center max-w-[80px]">
             {isTriggered ? 'ACTIVE' : 'Hold for 3 seconds'}
           </div>
         </button>
       </div>
       {!isTriggered ? (
-        <p className={styles.sosHelperText}>
+        <p className="text-[13px] text-slate-500 text-center max-w-[240px] leading-relaxed">
           Press and hold to prevent accidental emergency requests.
         </p>
       ) : (

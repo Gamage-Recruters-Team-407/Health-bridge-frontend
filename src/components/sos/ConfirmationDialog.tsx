@@ -2,7 +2,7 @@
 
 import React, { useEffect } from 'react';
 import { QRCodeSVG } from 'qrcode.react';
-import styles from './sos-components.module.css';
+
 import { Button } from '../common/Button';
 import { PatientInfo, LocationInfo } from '../../types/emergency';
 
@@ -46,11 +46,11 @@ CONDITIONS: ${patient.conditions.join(', ')}`
   const smsLink = `sms:1990?body=${smsBody}`; // 1990 is the Suwa Seriya Ambulance service in Sri Lanka
 
   return (
-    <div className={styles.dialogOverlay} onClick={onClose}>
-      <div className={styles.dialogContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-        <div className={styles.dialogIcon}>✓</div>
-        <h2 className={styles.dialogTitle}>Emergency Alert Sent!</h2>
-        <p className={styles.dialogText}>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] animate-[fadeIn_0.3s_ease]" onClick={onClose}>
+      <div className="bg-white rounded-2xl py-8 px-6 w-[90%] max-w-[340px] flex flex-col items-center text-center shadow-xl animate-[slideUp_0.3s_ease]" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+        <div className="w-16 h-16 rounded-full bg-green-100 text-green-600 flex items-center justify-center text-3xl mb-4">✓</div>
+        <h2 className="text-xl font-bold text-slate-900 mb-2">Emergency Alert Sent!</h2>
+        <p className="text-sm text-slate-600 leading-relaxed mb-6">
           Responders and contacts have been notified. Keep this screen open for paramedics.
         </p>
 

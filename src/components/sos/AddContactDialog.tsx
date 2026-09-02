@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import styles from './sos-components.module.css';
+
 import { Button } from '../common/Button';
 import { EmergencyContact } from '../../types/contact';
 
@@ -51,9 +51,9 @@ export const AddContactDialog: React.FC<AddContactDialogProps> = ({
   };
 
   return (
-    <div className={styles.dialogOverlay} onClick={onClose}>
-      <div className={styles.dialogContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-        <h2 className={styles.dialogTitle} style={{ marginTop: 0 }}>Add Emergency Contact</h2>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] animate-[fadeIn_0.3s_ease]" onClick={onClose}>
+      <div className="bg-white rounded-2xl py-8 px-6 w-[90%] max-w-[340px] flex flex-col items-center text-center shadow-xl animate-[slideUp_0.3s_ease]" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+        <h2 className="text-xl font-bold text-slate-900 mb-2" style={{ marginTop: 0 }}>Add Emergency Contact</h2>
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', textAlign: 'left' }}>
           <div>

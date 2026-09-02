@@ -1,6 +1,6 @@
 import React from 'react';
 import dynamic from 'next/dynamic';
-import styles from './sos-components.module.css';
+
 import { LocationInfo } from '../../types/emergency';
 
 const LiveMap = dynamic(() => import('./LiveMap'), { 
@@ -46,11 +46,11 @@ export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive =
   }, []);
 
   return (
-    <div className={styles.card}>
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 className={styles.locationHeader}>📍 Current Location</h3>
+        <h3 className="text-sm font-semibold text-slate-900 mb-1 flex items-center gap-1.5">📍 Current Location</h3>
       </div>
-      <p className={styles.addressText}>{location.address}</p>
+      <p className="text-sm text-slate-800 mb-3">{location.address}</p>
       
       {!isActive && (
         <p style={{ fontSize: '12px', color: '#64748B', marginTop: '-8px', marginBottom: '16px' }}>
@@ -59,10 +59,10 @@ export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive =
       )}
       
       {isActive && !ambulanceArrived && liveDistanceKm !== null && liveTimeMins !== null && (
-        <div className={styles.etaContainer} style={{ justifyContent: 'space-between', padding: '12px 16px' }}>
+        <div className="flex items-center gap-1.5 bg-green-50 px-3 py-2 rounded-lg" style={{ justifyContent: 'space-between', padding: '12px 16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span role="img" aria-label="ambulance">🚑</span>
-            <span className={styles.etaText}>
+            <span className="text-base font-bold text-green-600 m-0">
               EST. ARRIVAL: {Math.ceil(liveTimeMins)} mins
             </span>
           </div>
@@ -73,14 +73,14 @@ export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive =
       )}
 
       {isActive && ambulanceArrived && (
-        <div className={styles.etaContainer} style={{ backgroundColor: '#DC2626', color: 'white', fontWeight: 'bold' }}>
+        <div className="flex items-center gap-1.5 bg-green-50 px-3 py-2 rounded-lg" style={{ backgroundColor: '#DC2626', color: 'white', fontWeight: 'bold' }}>
           <span role="img" aria-label="siren">🚨</span>
           <span>AMBULANCE HAS ARRIVED</span>
         </div>
       )}
 
       {location.latitude && location.longitude && (
-        <div className={styles.mapContainer}>
+        <div className="h-[200px] w-full rounded-lg mt-3 overflow-hidden relative z-[1]">
           <LiveMap 
             patientLat={location.latitude} 
             patientLng={location.longitude} 
