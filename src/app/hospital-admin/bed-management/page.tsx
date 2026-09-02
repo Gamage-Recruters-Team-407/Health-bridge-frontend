@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { Bed, BedStatus, WardType, PatientInfo, DepartmentOccupancy, BedOverviewStats } from '@/types/bed';
 import {
   Bed as BedIcon,
@@ -219,12 +220,14 @@ export default function BedManagementPage() {
           )
         );
       }
+      toast.success(`Patient allocated to bed ${allocatingBed.id} successfully!`);
     } catch {
       setBeds((prev) =>
         prev.map((b) =>
           b.id === allocatingBed.id ? { ...b, status: 'Occupied', patient: newPatient } : b
         )
       );
+      toast.success(`Patient allocated to bed ${allocatingBed.id}.`);
     }
 
     setAllocatingBed(null);
@@ -260,6 +263,7 @@ export default function BedManagementPage() {
           })
         );
       }
+      toast.success(`Patient transfer requested to ${transferForm.destinationWard}!`);
     } catch {
       setBeds((prev) =>
         prev.map((b) => {
@@ -276,6 +280,7 @@ export default function BedManagementPage() {
           return b;
         })
       );
+      toast.success(`Patient transfer requested to ${transferForm.destinationWard}!`);
     }
 
     setViewingBedPatient(null);
@@ -285,7 +290,7 @@ export default function BedManagementPage() {
   const handleCreateBed = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!addBedForm.bedId.trim()) {
-      alert('Bed ID is required (e.g. ICU-107).');
+      toast.error('Bed ID is required (e.g. ICU-107).');
       return;
     }
 
@@ -297,6 +302,7 @@ export default function BedManagementPage() {
       });
       if (res.ok) {
         await fetchBedData();
+        toast.success(`Bed ${addBedForm.bedId} created successfully!`);
         setIsAddBedOpen(false);
         setAddBedForm({
           bedId: '',
@@ -307,10 +313,11 @@ export default function BedManagementPage() {
         });
       } else {
         const errData = await res.json().catch(() => ({}));
-        alert(errData.message || 'Failed to create bed.');
+        toast.error(errData.message || 'Failed to create bed.');
       }
     } catch (err) {
       console.error('Error creating bed:', err);
+      toast.error('Error creating bed.');
     }
   };
 
@@ -327,15 +334,18 @@ export default function BedManagementPage() {
           prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
         );
       }
+      toast.success(`Bed ${bedId} status changed to ${newStatus}.`);
     } catch {
       setBeds((prev) =>
         prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
       );
+      toast.success(`Bed ${bedId} status changed to ${newStatus}.`);
     }
   };
 
   return (
     <div className="min-h-screen  bg-[#f8fafc] text-slate-800 font-sans">
+      <Toaster position="top-right" reverseOrder={false} />
       {/* Top Header Navigation Bar */}
       <header className="max-w-7xl mx-auto bg-[#f8fafc] border-b border-slate-200 px-4 sm:px-8 py-3.5 flex items-center justify-between mb-6">
         <h1 className="text-xl font-bold text-slate-900 tracking-tight">Bed Management</h1>

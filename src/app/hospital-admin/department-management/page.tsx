@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { Department, DepartmentStats } from '../../../types/department';
 import { departmentService } from '../../../services/departmentService';
 import {
@@ -156,7 +157,7 @@ export default function ManageDepartmentPage() {
   const handleSaveDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.head || !formData.location) {
-      alert('Please fill in all required fields (Name, Head, Location).');
+      toast.error('Please fill in all required fields (Name, Head, Location).');
       return;
     }
 
@@ -166,18 +167,21 @@ export default function ManageDepartmentPage() {
         setDepartments((prev) =>
           prev.map((d) => (d.id === editingDepartment.id ? updated : d))
         );
+        toast.success('Department updated successfully!');
         setEditingDepartment(null);
       } else {
         const created = await departmentService.create(formData);
         setDepartments((prev) => [created, ...prev]);
+        toast.success('Department created successfully!');
         setIsAddModalOpen(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('API save error, updating local state:', err);
       if (editingDepartment) {
         setDepartments((prev) =>
           prev.map((d) => (d.id === editingDepartment.id ? ({ ...d, ...formData } as Department) : d))
         );
+        toast.success('Department updated locally.');
         setEditingDepartment(null);
       } else {
         const newDept: Department = {
@@ -193,6 +197,7 @@ export default function ManageDepartmentPage() {
           contactPhone: formData.contactPhone || ''
         };
         setDepartments((prev) => [newDept, ...prev]);
+        toast.success('Department created locally.');
         setIsAddModalOpen(false);
       }
     }
@@ -207,11 +212,13 @@ export default function ManageDepartmentPage() {
       setDepartments((prev) =>
         prev.map((d) => (d.id === id ? updated : d))
       );
+      toast.success(`Department status changed to ${nextStatus}.`);
     } catch (err) {
       console.warn('API status toggle error, updating local state:', err);
       setDepartments((prev) =>
         prev.map((d) => (d.id === id ? { ...d, status: nextStatus } : d))
       );
+      toast.success(`Department status changed to ${nextStatus}.`);
     }
     setActiveMenuId(null);
   };
@@ -225,6 +232,7 @@ export default function ManageDepartmentPage() {
         console.warn('API delete error, updating local state:', err);
       }
       setDepartments((prev) => prev.filter((d) => d.id !== deletingDepartment.id));
+      toast.success('Department deleted successfully.');
       setDeletingDepartment(null);
       setActiveMenuId(null);
     }
@@ -232,6 +240,7 @@ export default function ManageDepartmentPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-4 md:p-8 font-sans">
+      <Toaster position="top-right" reverseOrder={false} />
       {/* Top Header / Search & Profile Bar (No global navbar/sidebar, strictly content area header) */}
       {/* <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-8">
         <div className="relative flex-1 max-w-xl">
