@@ -15,13 +15,14 @@ export const ContactItem: React.FC<ContactItemProps> = ({ contact, onCall, onDel
       <div className={styles.contactInfo}>
         <h4 className={styles.contactName}>{contact.name}</h4>
         <span className={styles.contactRelation}>
-          {contact.relationship} • {contact.phone || contact.phoneNumber}
+          {contact.relationship} • {contact.phone || contact.phoneNumber || 'No phone added'}
         </span>
       </div>
       <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
         <Button 
           variant="outline" 
           onClick={() => onCall(contact.phone || contact.phoneNumber || '')}
+          disabled={!contact.phone && !contact.phoneNumber}
           icon={<span role="img" aria-label="call">📞</span>}
         >
           Call
