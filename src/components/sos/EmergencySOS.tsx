@@ -204,7 +204,7 @@ export const EmergencySOS: React.FC = () => {
 
   const [alertId, setAlertId] = useState<string | null>(null);
 
-  const handleSOSTrigger = async () => {
+  async function handleSOSTrigger() {
     setIsEmergencyActive(true);
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([100, 50, 100, 50, 200]);
@@ -250,7 +250,7 @@ export const EmergencySOS: React.FC = () => {
     }
   };
 
-  const handleSOSCancel = async () => {
+  async function handleSOSCancel() {
     setIsEmergencyActive(false);
     setHasArrived(false);
     
