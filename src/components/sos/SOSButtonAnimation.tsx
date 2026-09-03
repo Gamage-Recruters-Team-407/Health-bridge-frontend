@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './sos-components.module.css';
+
 
 interface SOSButtonAnimationProps {
   progress: number; // 0 to 1
@@ -18,7 +18,7 @@ export const SOSButtonAnimation: React.FC<SOSButtonAnimationProps> = ({
   const strokeDashoffset = circumference - progress * circumference;
 
   return (
-    <div className={styles.progressRingContainer}>
+    <div className="absolute top-0 left-0 w-40 h-40 z-[1] pointer-events-none">
       <svg width={size} height={size}>
         {/* Background Track */}
         <circle
@@ -31,7 +31,7 @@ export const SOSButtonAnimation: React.FC<SOSButtonAnimationProps> = ({
         />
         {/* Progress Ring */}
         <circle
-          className={styles.progressRingCircle}
+          className="transition-[stroke-dashoffset] duration-100 ease-linear -rotate-90 origin-center"
           stroke="#EF4444"
           fill="transparent"
           strokeWidth={strokeWidth}

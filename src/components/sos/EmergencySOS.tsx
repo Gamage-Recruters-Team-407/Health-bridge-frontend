@@ -8,7 +8,6 @@ import { LocationCard } from './LocationCard';
 import { EmergencyContacts } from './EmergencyContacts';
 import { AddContactDialog } from './AddContactDialog';
 import { ResponseLog } from './ResponseLog';
-import { EmergencyFAB } from './EmergencyFAB';
 import { ActiveEmergencyBanner } from './ActiveEmergencyBanner';
 import { VoiceWave } from './VoiceWave';
 import { EmergencyType, PatientInfo, LocationInfo } from '../../types/emergency';
@@ -205,7 +204,7 @@ export const EmergencySOS: React.FC = () => {
 
   const [alertId, setAlertId] = useState<string | null>(null);
 
-  const handleSOSTrigger = async () => {
+  async function handleSOSTrigger() {
     setIsEmergencyActive(true);
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([100, 50, 100, 50, 200]);
@@ -221,11 +220,14 @@ export const EmergencySOS: React.FC = () => {
     }
 
     try {
+      const user = getStoredUser();
+      const userId = user?.id || 'user-123';
       const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
       const res = await fetch('http://localhost:8088/api/sos/trigger', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-User-Id': userId,
           ...(token ? { 'Authorization': `Bearer ${token}` } : {})
         },
         body: JSON.stringify({
@@ -248,7 +250,7 @@ export const EmergencySOS: React.FC = () => {
     }
   };
 
-  const handleSOSCancel = async () => {
+  async function handleSOSCancel() {
     setIsEmergencyActive(false);
     setHasArrived(false);
     
@@ -411,7 +413,6 @@ export const EmergencySOS: React.FC = () => {
         }} 
       />
 
-      <EmergencyFAB />
     </div>
   );
 };
