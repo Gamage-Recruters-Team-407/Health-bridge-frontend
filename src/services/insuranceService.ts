@@ -4,6 +4,27 @@ import { InsuranceClaim, InsurancePolicy, ClaimDecisionRequest } from "@/types/i
 const BASE = "/insurance";
 
 export const insuranceService = {
+  // --- patient-facing ---
+  getMyPolicies: async (): Promise<InsurancePolicy[]> => {
+    const res = await api.get(`${BASE}/policies/my`);
+    return res.data;
+  },
+  getMyClaims: async (): Promise<InsuranceClaim[]> => {
+    const res = await api.get(`${BASE}/claims/my`);
+    return res.data;
+  },
+  submitClaim: async (
+    claim: { policyId: string; treatmentDescription: string; claimAmount: number },
+    documents: File[]
+  ): Promise<InsuranceClaim> => {
+    const formData = new FormData();
+    formData.append("claim", new Blob([JSON.stringify(claim)], { type: "application/json" }));
+    documents.forEach(file => formData.append("documents", file));
+    const res = await api.post(`${BASE}/claims`, formData);
+    return res.data;
+  },
+
+  // --- admin/insurer-facing ---
   getAllClaims: async (): Promise<InsuranceClaim[]> => {
     const res = await api.get(`${BASE}/claims`);
     return res.data;
