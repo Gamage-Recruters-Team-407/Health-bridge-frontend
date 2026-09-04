@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './sos-components.module.css';
+
 import { EmergencyType } from '../../types/emergency';
 
 interface EmergencyTypeButtonProps {
@@ -19,7 +19,7 @@ export const EmergencyTypeButton: React.FC<EmergencyTypeButtonProps> = ({
 }) => {
   return (
     <button
-      className={`${styles.typeButton} ${isSelected ? `${styles.active} ${styles[colorClass]}` : ''}`}
+      className={`flex items-center justify-center gap-1.5 h-10 rounded-full text-sm font-semibold cursor-pointer transition-all duration-200 ${isSelected ? (colorClass === 'red' ? 'bg-red-500 text-white' : colorClass === 'blue' ? 'bg-blue-500 text-white' : 'bg-slate-500 text-white') : 'bg-slate-100 text-slate-900 hover:bg-slate-200'} border-0`}
       onClick={onClick}
       aria-pressed={isSelected}
     >

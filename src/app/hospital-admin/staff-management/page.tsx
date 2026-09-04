@@ -1,7 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
-import { StaffMember, DutyStatus, StaffOverviewStats } from '@/src/types/staff';
+import React, { useState, useMemo, useEffect } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
+import { StaffMember, DutyStatus, StaffOverviewStats } from '@/types/staff';
+import { staffService } from '@/services/staffService';
 import {
   Users,
   UserCheck,
@@ -28,127 +30,12 @@ import {
   Edit2
 } from 'lucide-react';
 
-const INITIAL_STAFF: StaffMember[] = [
-  {
-    id: 'HB-4921',
-    firstName: 'Sarah',
-    lastName: 'Jenkins',
-    role: 'Senior RN - ICU',
-    department: 'ICU',
-    email: 's.jenkins@healthbridge.org',
-    phone: '+1 (555) 019-2834',
-    extension: '402',
-    dutyStatus: 'On Duty',
-    currentShift: '08:00 - 16:00',
-    avatarUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&auto=format&fit=crop&q=80',
-    initials: 'SJ',
-    dob: '1985-10-12',
-    gender: 'Female',
-    bloodGroup: 'O Negative',
-    nationalId: 'XXX-XX-8910',
-    residentialAddress: '4920 Medical Center Dr, Suite 300, Metropolis, NY 10021',
-    hireDate: '2023-03-15',
-    emergencyContactName: 'Michael Jenkins',
-    emergencyContactRelation: 'Spouse',
-    emergencyContactPhone: '+1 (555) 928-1120',
-    locationFloor: 'East Wing, Floor 3',
-    accountStatus: 'Active'
-  },
-  {
-    id: 'HB-3104',
-    firstName: 'Marcus',
-    lastName: 'Webb',
-    role: 'Attending - Cardiology',
-    department: 'Cardiology',
-    email: 'm.webb@healthbridge.org',
-    phone: '+1 (555) 392-1049',
-    extension: '812',
-    dutyStatus: 'Off Duty',
-    currentShift: 'Next: 18:00 (Tomorrow)',
-    initials: 'MW',
-    dob: '1978-04-20',
-    gender: 'Male',
-    bloodGroup: 'A Positive',
-    hireDate: '2021-06-01',
-    accountStatus: 'Active'
-  },
-  {
-    id: 'HB-5528',
-    firstName: 'David',
-    lastName: 'Chen',
-    role: 'Lead Tech - Radiology',
-    department: 'Radiology',
-    email: 'd.chen@healthbridge.org',
-    phone: '+1 (555) 482-9011',
-    extension: '210',
-    dutyStatus: 'Emergency Cover',
-    currentShift: '12:00 - 24:00',
-    avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&auto=format&fit=crop&q=80',
-    initials: 'DC',
-    dob: '1990-09-05',
-    gender: 'Male',
-    bloodGroup: 'B Positive',
-    hireDate: '2022-01-10',
-    accountStatus: 'Active'
-  },
-  {
-    id: 'HB-2109',
-    firstName: 'Elena',
-    lastName: 'Rodriguez',
-    role: 'Anesthesiologist',
-    department: 'Surgery',
-    email: 'e.rodriguez@healthbridge.org',
-    phone: '+1 (555) 192-8833',
-    extension: '305',
-    dutyStatus: 'On Duty',
-    currentShift: '07:00 - 15:00',
-    initials: 'ER',
-    dob: '1983-12-18',
-    gender: 'Female',
-    bloodGroup: 'AB Positive',
-    hireDate: '2019-11-20',
-    accountStatus: 'Active'
-  },
-  {
-    id: 'HB-8812',
-    firstName: 'Michael',
-    lastName: 'Ross',
-    role: 'Pediatric Nurse',
-    department: 'Pediatrics',
-    email: 'm.ross@healthbridge.org',
-    phone: '+1 (555) 901-2244',
-    extension: '112',
-    dutyStatus: 'Off Duty',
-    currentShift: 'Next: 08:00 (Monday)',
-    initials: 'MR',
-    dob: '1992-07-14',
-    gender: 'Male',
-    bloodGroup: 'O Positive',
-    hireDate: '2023-08-01',
-    accountStatus: 'Active'
-  },
-  {
-    id: 'HB-3394',
-    firstName: 'Sarah',
-    lastName: 'Williams',
-    role: 'Administrative Coordinator',
-    department: 'Administration',
-    email: 's.williams@healthbridge.org',
-    phone: '+1 (555) 882-3100',
-    extension: '901',
-    dutyStatus: 'On Break',
-    currentShift: '09:00 - 17:00',
-    initials: 'SW',
-    dob: '1989-02-28',
-    gender: 'Female',
-    bloodGroup: 'A Negative',
-    hireDate: '2020-04-15',
-    accountStatus: 'Active'
-  }
-];
+const INITIAL_STAFF: StaffMember[] = [];
 
 export default function StaffManagementPage() {
-  const [staffList, setStaffList] = useState<StaffMember[]>(INITIAL_STAFF);
+  const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [realStats, setRealStats] = useState<StaffOverviewStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [deptFilter, setDeptFilter] = useState('All');
   const [roleFilter, setRoleFilter] = useState('All');
@@ -183,16 +70,42 @@ export default function StaffManagementPage() {
   // Edit Profile Form State
   const [profileForm, setProfileForm] = useState<Partial<StaffMember>>({});
 
+  // Fetch Staff and Stats from Backend API
+  const fetchStaffData = async () => {
+    setLoading(true);
+    try {
+      const [data, statsData] = await Promise.all([
+        staffService.getAll(deptFilter, statusFilter, 'All', searchTerm),
+        staffService.getStats()
+      ]);
+      if (data) {
+        setStaffList(data);
+      }
+      if (statsData) {
+        setRealStats(statsData);
+      }
+    } catch (err) {
+      console.warn('Backend API connection offline or error, using current state:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchStaffData();
+  }, [deptFilter, statusFilter, searchTerm]);
+
   // Compute Overall Stats
   const stats: StaffOverviewStats = useMemo(() => {
+    if (realStats) return realStats;
     return {
-      totalActiveStaff: 842,
-      newThisMonth: 12,
-      onDutyCount: 156,
-      openShiftAlerts: 12,
-      pendingLeaveRequests: 5
+      totalActiveStaff: staffList.filter((s) => s.accountStatus !== 'Suspended').length,
+      newThisMonth: 0,
+      onDutyCount: staffList.filter((s) => s.dutyStatus === 'On Duty').length,
+      openShiftAlerts: staffList.filter((s) => s.dutyStatus === 'Emergency Cover').length,
+      pendingLeaveRequests: staffList.filter((s) => s.dutyStatus === 'On Leave').length
     };
-  }, []);
+  }, [realStats, staffList]);
 
   // Filtered Staff
   const filteredStaff = useMemo(() => {
@@ -200,12 +113,12 @@ export default function StaffManagementPage() {
       const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
       const matchesSearch =
         fullName.includes(searchTerm.toLowerCase()) ||
-        s.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.role.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        s.department.toLowerCase().includes(searchTerm.toLowerCase());
+        (s.id && s.id.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (s.role && s.role.toLowerCase().includes(searchTerm.toLowerCase())) ||
+        (s.department && s.department.toLowerCase().includes(searchTerm.toLowerCase()));
 
       const matchesDept = deptFilter === 'All' ? true : s.department === deptFilter;
-      const matchesRole = roleFilter === 'All' ? true : s.role.includes(roleFilter);
+      const matchesRole = roleFilter === 'All' ? true : s.role?.includes(roleFilter);
       const matchesStatus = statusFilter === 'All' ? true : s.dutyStatus === statusFilter;
 
       return matchesSearch && matchesDept && matchesRole && matchesStatus;
@@ -220,21 +133,30 @@ export default function StaffManagementPage() {
   }, [filteredStaff, currentPage]);
 
   // Handle Submit Onboard Form
-  const handleSaveNewStaff = (e: React.FormEvent) => {
+  const handleSaveNewStaff = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!onboardForm.fullName || !onboardForm.email) return;
+
+    const emailInput = onboardForm.email.trim().toLowerCase();
+    const isDuplicateEmail = staffList.some(
+      (s) => s.email && s.email.trim().toLowerCase() === emailInput
+    );
+
+    if (isDuplicateEmail) {
+      toast.error(`The email "${onboardForm.email}" is already registered. Staff email addresses must be unique.`);
+      return;
+    }
 
     const names = onboardForm.fullName.trim().split(' ');
     const first = names[0] || 'Staff';
     const last = names.slice(1).join(' ') || 'Member';
 
-    const newMember: StaffMember = {
-      id: `HB-${Math.floor(1000 + Math.random() * 9000)}`,
+    const newMemberPayload: Partial<StaffMember> = {
       firstName: first,
       lastName: last,
       role: onboardForm.jobTitle || 'Staff Specialist',
       department: onboardForm.department || 'General',
-      email: onboardForm.email,
+      email: onboardForm.email.trim(),
       phone: onboardForm.phone || '+1 (555) 000-0000',
       dutyStatus: 'On Duty',
       currentShift: '08:00 - 16:00',
@@ -247,20 +169,28 @@ export default function StaffManagementPage() {
       accountStatus: 'Active'
     };
 
-    setStaffList((prev) => [newMember, ...prev]);
-    setIsOnboardModalOpen(false);
-    setOnboardForm({
-      fullName: '',
-      dob: '',
-      gender: '',
-      bloodGroup: '',
-      email: '',
-      phone: '',
-      address: '',
-      jobTitle: '',
-      department: '',
-      hireDate: ''
-    });
+    try {
+      const created = await staffService.create(newMemberPayload);
+      setStaffList((prev) => [created, ...prev]);
+      fetchStaffData();
+      toast.success('New staff member onboarded successfully!');
+      setIsOnboardModalOpen(false);
+      setOnboardForm({
+        fullName: '',
+        dob: '',
+        gender: '',
+        bloodGroup: '',
+        email: '',
+        phone: '',
+        address: '',
+        jobTitle: '',
+        department: '',
+        hireDate: ''
+      });
+    } catch (err: any) {
+      const apiMsg = err.response?.data?.message || 'Email already registered. Staff email addresses must be unique.';
+      toast.error(`Failed to create staff member: ${apiMsg}`);
+    }
   };
 
   // Open Edit Profile Modal
@@ -272,28 +202,119 @@ export default function StaffManagementPage() {
   };
 
   // Save Profile Changes
-  const handleSaveProfile = (e: React.FormEvent) => {
+  const handleSaveProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingStaff) return;
 
-    setStaffList((prev) =>
-      prev.map((s) => (s.id === editingStaff.id ? ({ ...s, ...profileForm } as StaffMember) : s))
-    );
-    setEditingStaff(null);
+    if (profileForm.email && profileForm.email.trim()) {
+      const emailInput = profileForm.email.trim().toLowerCase();
+      const isDuplicateEmail = staffList.some(
+        (s) => s.id !== editingStaff.id && s.email && s.email.trim().toLowerCase() === emailInput
+      );
+
+      if (isDuplicateEmail) {
+        toast.error(`The email "${profileForm.email}" is already registered to another staff member. Staff emails must be unique.`);
+        return;
+      }
+    }
+
+    try {
+      const updated = await staffService.update(editingStaff.id, profileForm);
+      setStaffList((prev) =>
+        prev.map((s) => (s.id === editingStaff.id ? updated : s))
+      );
+      fetchStaffData();
+      toast.success('Staff profile updated successfully!');
+      setEditingStaff(null);
+    } catch (err: any) {
+      const apiMsg = err.response?.data?.message || 'Email already registered to another staff member.';
+      toast.error(`Failed to update profile: ${apiMsg}`);
+    }
   };
 
   // Suspend Account
-  const handleSuspendAccount = (id: string) => {
+  const handleSuspendAccount = async (id: string) => {
     if (confirm('Are you sure you want to suspend this employee account?')) {
-      setStaffList((prev) =>
-        prev.map((s) => (s.id === id ? { ...s, accountStatus: 'Suspended', dutyStatus: 'Off Duty' } : s))
-      );
+      try {
+        await staffService.updateAccountStatus(id, 'Suspended');
+        fetchStaffData();
+        toast.success('Staff account suspended successfully.');
+      } catch (err) {
+        console.warn('API status update failed, updating local state:', err);
+        setStaffList((prev) =>
+          prev.map((s) => (s.id === id ? { ...s, accountStatus: 'Suspended', dutyStatus: 'Off Duty' } : s))
+        );
+        toast.success('Staff account suspended.');
+      }
       setEditingStaff(null);
     }
   };
 
+  // Reset Filters Function
+  const handleResetFilters = () => {
+    setSearchTerm('');
+    setDeptFilter('All');
+    setRoleFilter('All');
+    setStatusFilter('All');
+    setCurrentPage(1);
+    fetchStaffData();
+    toast.success('Filters reset & directory refreshed.');
+  };
+
+  // Export Staff List to CSV
+  const handleExportCSV = () => {
+    const dataToExport = filteredStaff.length > 0 ? filteredStaff : staffList;
+    if (dataToExport.length === 0) {
+      toast.error('No staff data available to export.');
+      return;
+    }
+
+    const headers = [
+      'Staff ID',
+      'First Name',
+      'Last Name',
+      'Role',
+      'Department',
+      'Email',
+      'Phone',
+      'Extension',
+      'Duty Status',
+      'Current Shift',
+      'Account Status',
+      'Hire Date'
+    ];
+
+    const rows = dataToExport.map((staff) => [
+      `"${staff.id || ''}"`,
+      `"${staff.firstName || ''}"`,
+      `"${staff.lastName || ''}"`,
+      `"${staff.role || ''}"`,
+      `"${staff.department || ''}"`,
+      `"${staff.email || ''}"`,
+      `"${staff.phone || ''}"`,
+      `"${staff.extension || ''}"`,
+      `"${staff.dutyStatus || ''}"`,
+      `"${staff.currentShift || ''}"`,
+      `"${staff.accountStatus || 'Active'}"`,
+      `"${staff.hireDate || ''}"`
+    ]);
+
+    const csvContent = [headers.join(','), ...rows.map((row) => row.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `staff_directory_${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    toast.success('Staff directory exported to CSV.');
+  };
+
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-3 sm:p-6 md:p-8 font-sans">
+      <Toaster position="top-right" reverseOrder={false} />
       <main className="max-w-7xl mx-auto space-y-6">
         {/* Title & Primary Action Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -315,7 +336,9 @@ export default function StaffManagementPage() {
             </button>
             <button
               type="button"
-              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold shadow-xs transition-colors"
+              onClick={handleExportCSV}
+              className="inline-flex items-center gap-2 bg-white hover:bg-slate-50 text-slate-700 px-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold shadow-xs transition-colors cursor-pointer"
+              title="Export Staff Data to CSV"
             >
               <Download className="w-4 h-4 text-slate-400" />
               Export
@@ -453,14 +476,9 @@ export default function StaffManagementPage() {
 
             <button
               type="button"
-              onClick={() => {
-                setSearchTerm('');
-                setDeptFilter('All');
-                setRoleFilter('All');
-                setStatusFilter('All');
-              }}
-              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200"
-              title="Reset Filters"
+              onClick={handleResetFilters}
+              className="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-xl transition-colors border border-slate-200 cursor-pointer"
+              title="Reset Filters & Refresh Data"
             >
               <RotateCw className="w-4 h-4" />
             </button>
@@ -1023,15 +1041,74 @@ export default function StaffManagementPage() {
                     Job Details
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-slate-400 font-medium">Hire Date</p>
-                      <p className="font-bold text-slate-800 mt-0.5">{profileForm.hireDate || 'March 15, 2023'}</p>
+                      <label className="block text-slate-600 font-semibold mb-1">Department</label>
+                      <select
+                        value={profileForm.department || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, department: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white text-xs font-semibold text-slate-800"
+                      >
+                        <option value="">Select department</option>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="ICU">ICU</option>
+                        <option value="Radiology">Radiology</option>
+                        <option value="Surgery">Surgery</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Orthopedics">Orthopedics</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Administration">Administration</option>
+                      </select>
                     </div>
+
                     <div>
-                      <p className="text-slate-400 font-medium">Department</p>
-                      <p className="font-bold text-slate-800 mt-0.5">{profileForm.department || 'Cardiology'}</p>
+                      <label className="block text-slate-600 font-semibold mb-1">Role / Job Title</label>
+                      <input
+                        type="text"
+                        value={profileForm.role || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, role: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold text-slate-800"
+                        placeholder="e.g. Senior RN - ICU"
+                      />
                     </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-slate-600 font-semibold mb-1">Current Shift</label>
+                      <input
+                        type="text"
+                        value={profileForm.currentShift || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, currentShift: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold text-slate-800"
+                        placeholder="e.g. 08:00 - 16:00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-slate-600 font-semibold mb-1">Location / Floor</label>
+                      <input
+                        type="text"
+                        value={profileForm.locationFloor || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, locationFloor: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold text-slate-800"
+                        placeholder="e.g. East Wing, Floor 3"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="w-full sm:w-1/2">
+                    <label className="block text-slate-600 font-semibold mb-1">
+                      Hire Date <span className="text-[10px] font-normal text-slate-400">(Read-only)</span>
+                    </label>
+                    <input
+                      type="date"
+                      value={profileForm.hireDate || ''}
+                      disabled
+                      readOnly
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl bg-slate-100 text-slate-500 cursor-not-allowed outline-none text-xs font-semibold"
+                    />
                   </div>
                 </div>
               )}
@@ -1040,19 +1117,42 @@ export default function StaffManagementPage() {
                 <div className="border border-slate-200 rounded-2xl p-5 space-y-4 bg-white">
                   <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
                     <Heart className="w-4 h-4 text-red-500" />
-                    Emergency Contact
+                    Emergency Contact Information
                   </h3>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <p className="text-slate-400 font-medium">Contact Name</p>
-                      <p className="font-bold text-slate-800 mt-0.5">{profileForm.emergencyContactName || 'Michael Jenkins'}</p>
-                      <p className="text-slate-400 text-[11px]">{profileForm.emergencyContactRelation || 'Spouse'}</p>
+                      <label className="block text-slate-600 font-semibold mb-1">Contact Full Name</label>
+                      <input
+                        type="text"
+                        value={profileForm.emergencyContactName || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, emergencyContactName: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold text-slate-800"
+                        placeholder="e.g. Michael Jenkins"
+                      />
                     </div>
+
                     <div>
-                      <p className="text-slate-400 font-medium">Phone</p>
-                      <p className="font-bold text-slate-800 mt-0.5">{profileForm.emergencyContactPhone || '+1 (555) 928-1120'}</p>
+                      <label className="block text-slate-600 font-semibold mb-1">Relationship</label>
+                      <input
+                        type="text"
+                        value={profileForm.emergencyContactRelation || ''}
+                        onChange={(e) => setProfileForm({ ...profileForm, emergencyContactRelation: e.target.value })}
+                        className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold text-slate-800"
+                        placeholder="e.g. Spouse / Parent / Sibling"
+                      />
                     </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-slate-600 font-semibold mb-1">Emergency Phone Number</label>
+                    <input
+                      type="text"
+                      value={profileForm.emergencyContactPhone || ''}
+                      onChange={(e) => setProfileForm({ ...profileForm, emergencyContactPhone: e.target.value })}
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-xs font-semibold text-slate-800"
+                      placeholder="e.g. +1 (555) 928-1120"
+                    />
                   </div>
                 </div>
               )}

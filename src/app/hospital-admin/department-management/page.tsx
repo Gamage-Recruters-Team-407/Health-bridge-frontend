@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect } from 'react';
+import toast, { Toaster } from 'react-hot-toast';
 import { Department, DepartmentStats } from '../../../types/department';
 import { departmentService } from '../../../services/departmentService';
 import {
@@ -26,155 +27,8 @@ import {
   Building
 } from 'lucide-react';
 
-const INITIAL_DEPARTMENTS: Department[] = [
-  {
-    id: 'DEP-001',
-    name: 'Cardiology',
-    head: 'Dr. Nimal Perera',
-    doctorsCount: 12,
-    staffCount: 24,
-    location: 'Floor 02',
-    status: 'Active',
-    contactEmail: 'cardiology@healthbridge.lk',
-    contactPhone: '+94 11 234 5671',
-    description: 'Specialized unit for cardiovascular disease diagnosis, treatment, and cardiac care.'
-  },
-  {
-    id: 'DEP-002',
-    name: 'Neurology',
-    head: 'Dr. Sarah Fernando',
-    doctorsCount: 8,
-    staffCount: 18,
-    location: 'Floor 03',
-    status: 'Active',
-    contactEmail: 'neurology@healthbridge.lk',
-    contactPhone: '+94 11 234 5672',
-    description: 'Comprehensive neurological disorders, brain injury, and spinal treatment center.'
-  },
-  {
-    id: 'DEP-003',
-    name: 'Pediatrics',
-    head: 'Dr. Ayesha Silva',
-    doctorsCount: 10,
-    staffCount: 22,
-    location: 'Floor 01',
-    status: 'Active',
-    contactEmail: 'pediatrics@healthbridge.lk',
-    contactPhone: '+94 11 234 5673',
-    description: 'Dedicated medical care for infants, children, and adolescents.'
-  },
-  {
-    id: 'DEP-004',
-    name: 'Dermatology',
-    head: 'Dr. Kevin Perera',
-    doctorsCount: 5,
-    staffCount: 10,
-    location: 'Floor 04',
-    status: 'Inactive',
-    contactEmail: 'dermatology@healthbridge.lk',
-    contactPhone: '+94 11 234 5674',
-    description: 'Skin care, cosmetic dermatology, and dermatological surgical treatments.'
-  },
-  {
-    id: 'DEP-005',
-    name: 'Orthopedics',
-    head: 'Dr. Ruwan Bandara',
-    doctorsCount: 14,
-    staffCount: 30,
-    location: 'Floor 02',
-    status: 'Active',
-    contactEmail: 'orthopedics@healthbridge.lk',
-    contactPhone: '+94 11 234 5675',
-    description: 'Bone, joint, and musculoskeletal system trauma and surgical specialists.'
-  },
-  {
-    id: 'DEP-006',
-    name: 'Oncology',
-    head: 'Dr. Priyantha Jayasinghe',
-    doctorsCount: 9,
-    staffCount: 20,
-    location: 'Floor 05',
-    status: 'Active',
-    contactEmail: 'oncology@healthbridge.lk',
-    contactPhone: '+94 11 234 5676',
-    description: 'Cancer diagnosis, chemotherapy, radiation therapy, and patient support.'
-  },
-  {
-    id: 'DEP-007',
-    name: 'Emergency',
-    head: 'Dr. Champa Wickramasinghe',
-    doctorsCount: 15,
-    staffCount: 45,
-    location: 'Ground Floor',
-    status: 'Active',
-    contactEmail: 'emergency@healthbridge.lk',
-    contactPhone: '+94 11 234 5677',
-    description: '24/7 acute emergency care and intensive trauma response unit.'
-  },
-  {
-    id: 'DEP-008',
-    name: 'Radiology',
-    head: 'Dr. Dilshan Senanayake',
-    doctorsCount: 7,
-    staffCount: 16,
-    location: 'Basement 01',
-    status: 'Active',
-    contactEmail: 'radiology@healthbridge.lk',
-    contactPhone: '+94 11 234 5678',
-    description: 'Advanced medical imaging including MRI, CT scan, Ultrasound, and X-Ray.'
-  },
-  {
-    id: 'DEP-009',
-    name: 'Gastroenterology',
-    head: 'Dr. Mahesh Cooray',
-    doctorsCount: 6,
-    staffCount: 12,
-    location: 'Floor 03',
-    status: 'Inactive',
-    contactEmail: 'gastro@healthbridge.lk',
-    contactPhone: '+94 11 234 5679',
-    description: 'Digestive system, liver, and gastrointestinal clinical services.'
-  },
-  {
-    id: 'DEP-010',
-    name: 'Psychiatry',
-    head: 'Dr. Sanduni Rajapaksha',
-    doctorsCount: 4,
-    staffCount: 8,
-    location: 'Floor 04',
-    status: 'Active',
-    contactEmail: 'psychiatry@healthbridge.lk',
-    contactPhone: '+94 11 234 5680',
-    description: 'Mental health assessment, counseling, and psychiatric therapy.'
-  },
-  {
-    id: 'DEP-011',
-    name: 'Nephrology',
-    head: 'Dr. Thilina De Silva',
-    doctorsCount: 5,
-    staffCount: 11,
-    location: 'Floor 02',
-    status: 'Active',
-    contactEmail: 'nephrology@healthbridge.lk',
-    contactPhone: '+94 11 234 5681',
-    description: 'Kidney care, renal disease management, and hemodialysis center.'
-  },
-  {
-    id: 'DEP-012',
-    name: 'Ophthalmology',
-    head: 'Dr. Kamal Gunaratne',
-    doctorsCount: 3,
-    staffCount: 7,
-    location: 'Floor 01',
-    status: 'Active',
-    contactEmail: 'eye@healthbridge.lk',
-    contactPhone: '+94 11 234 5682',
-    description: 'Eye diseases, vision testing, and ophthalmic laser surgery.'
-  }
-];
-
 export default function ManageDepartmentPage() {
-  const [departments, setDepartments] = useState<Department[]>(INITIAL_DEPARTMENTS);
+  const [departments, setDepartments] = useState<Department[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Inactive'>('All');
   const [sortBy, setSortBy] = useState<'id' | 'name' | 'doctors' | 'staff'>('id');
@@ -185,11 +39,11 @@ export default function ManageDepartmentPage() {
     const fetchFromApi = async () => {
       try {
         const data = await departmentService.getAll();
-        if (data && data.length > 0) {
+        if (data) {
           setDepartments(data);
         }
       } catch (err) {
-        console.warn('Backend API disconnected or loading, using initial departments state:', err);
+        console.warn('Backend API disconnected or loading:', err);
       }
     };
     fetchFromApi();
@@ -303,7 +157,7 @@ export default function ManageDepartmentPage() {
   const handleSaveDepartment = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.name || !formData.head || !formData.location) {
-      alert('Please fill in all required fields (Name, Head, Location).');
+      toast.error('Please fill in all required fields (Name, Head, Location).');
       return;
     }
 
@@ -313,18 +167,21 @@ export default function ManageDepartmentPage() {
         setDepartments((prev) =>
           prev.map((d) => (d.id === editingDepartment.id ? updated : d))
         );
+        toast.success('Department updated successfully!');
         setEditingDepartment(null);
       } else {
         const created = await departmentService.create(formData);
         setDepartments((prev) => [created, ...prev]);
+        toast.success('Department created successfully!');
         setIsAddModalOpen(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.warn('API save error, updating local state:', err);
       if (editingDepartment) {
         setDepartments((prev) =>
           prev.map((d) => (d.id === editingDepartment.id ? ({ ...d, ...formData } as Department) : d))
         );
+        toast.success('Department updated locally.');
         setEditingDepartment(null);
       } else {
         const newDept: Department = {
@@ -340,6 +197,7 @@ export default function ManageDepartmentPage() {
           contactPhone: formData.contactPhone || ''
         };
         setDepartments((prev) => [newDept, ...prev]);
+        toast.success('Department created locally.');
         setIsAddModalOpen(false);
       }
     }
@@ -354,11 +212,13 @@ export default function ManageDepartmentPage() {
       setDepartments((prev) =>
         prev.map((d) => (d.id === id ? updated : d))
       );
+      toast.success(`Department status changed to ${nextStatus}.`);
     } catch (err) {
       console.warn('API status toggle error, updating local state:', err);
       setDepartments((prev) =>
         prev.map((d) => (d.id === id ? { ...d, status: nextStatus } : d))
       );
+      toast.success(`Department status changed to ${nextStatus}.`);
     }
     setActiveMenuId(null);
   };
@@ -372,6 +232,7 @@ export default function ManageDepartmentPage() {
         console.warn('API delete error, updating local state:', err);
       }
       setDepartments((prev) => prev.filter((d) => d.id !== deletingDepartment.id));
+      toast.success('Department deleted successfully.');
       setDeletingDepartment(null);
       setActiveMenuId(null);
     }
@@ -379,6 +240,7 @@ export default function ManageDepartmentPage() {
 
   return (
     <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-4 md:p-8 font-sans">
+      <Toaster position="top-right" reverseOrder={false} />
       {/* Top Header / Search & Profile Bar (No global navbar/sidebar, strictly content area header) */}
       {/* <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-8">
         <div className="relative flex-1 max-w-xl">

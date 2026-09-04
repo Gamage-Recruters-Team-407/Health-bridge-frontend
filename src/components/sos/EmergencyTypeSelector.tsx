@@ -1,5 +1,5 @@
 import React from 'react';
-import styles from './sos-components.module.css';
+
 import { EmergencyType } from '../../types/emergency';
 import { EmergencyTypeButton } from './EmergencyTypeButton';
 
@@ -24,9 +24,9 @@ export const EmergencyTypeSelector: React.FC<EmergencyTypeSelectorProps> = ({
   const isOtherSelected = selectedType === 'Other' || (selectedType !== null && !EMERGENCY_TYPES.some(t => t.type === selectedType));
 
   return (
-    <div className={styles.card}>
-      <h3 className={styles.typeSelectorTitle}>Specific Emergency Type</h3>
-      <div className={styles.typeGrid}>
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <h3 className="text-sm font-semibold text-slate-900 mb-3">Specific Emergency Type</h3>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
         {EMERGENCY_TYPES.map((item) => (
           <EmergencyTypeButton
             key={item.type}

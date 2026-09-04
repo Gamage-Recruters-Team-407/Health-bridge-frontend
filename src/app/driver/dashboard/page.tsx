@@ -2,6 +2,12 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, MapPin, StopCircle } from 'lucide-react';
+import dynamic from 'next/dynamic';
+
+const DriverMap = dynamic(() => import('./DriverMap'), { 
+  ssr: false, 
+  loading: () => <div style={{ height: '300px', backgroundColor: '#F1F5F9', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Loading Map...</div> 
+});
 
 interface LocationData {
   lat: number;
@@ -68,7 +74,7 @@ export default function DriverDashboard() {
   }, []);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui, sans-serif' }}>
+    <div style={{ padding: '24px', maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui, sans-serif', backgroundColor: '#FFFFFF', minHeight: '100vh', color: '#0F172A' }}>
       <header style={{ marginBottom: '32px', textAlign: 'center' }}>
         <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0F172A', marginBottom: '8px' }}>Ambulance Driver Portal</h1>
         <p style={{ color: '#64748B' }}>HealthBridge Emergency Network</p>
@@ -132,6 +138,19 @@ export default function DriverDashboard() {
               <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A' }}>{currentLocation?.speed ? `${Math.round(currentLocation.speed * 3.6)} km/h` : '0 km/h'}</p>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Live Map */}
+      {isDispatchActive && currentLocation && (
+        <div style={{ marginBottom: '24px' }}>
+          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase' }}>Live Route Map</h3>
+          <DriverMap 
+            driverLat={currentLocation.lat} 
+            driverLng={currentLocation.lng} 
+            patientLat={6.9271} // Mock Patient Colombo Lat
+            patientLng={79.8612} // Mock Patient Colombo Lng
+          />
         </div>
       )}
 

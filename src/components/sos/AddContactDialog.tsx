@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from 'react';
-import styles from './sos-components.module.css';
+
 import { Button } from '../common/Button';
 import { EmergencyContact } from '../../types/contact';
 
@@ -40,7 +40,8 @@ export const AddContactDialog: React.FC<AddContactDialogProps> = ({
         id: Math.random().toString(36).substring(7),
         name,
         relationship,
-        phoneNumber
+        phoneNumber,
+        phone: phoneNumber
       });
       setName('');
       setRelationship('');
@@ -50,9 +51,9 @@ export const AddContactDialog: React.FC<AddContactDialogProps> = ({
   };
 
   return (
-    <div className={styles.dialogOverlay} onClick={onClose}>
-      <div className={styles.dialogContent} onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
-        <h2 className={styles.dialogTitle} style={{ marginTop: 0 }}>Add Emergency Contact</h2>
+    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center z-[100] animate-[fadeIn_0.3s_ease]" onClick={onClose}>
+      <div className="bg-white rounded-2xl py-8 px-6 w-[90%] max-w-[340px] flex flex-col items-center text-center shadow-xl animate-[slideUp_0.3s_ease]" onClick={e => e.stopPropagation()} style={{ maxWidth: '400px' }}>
+        <h2 className="text-xl font-bold text-slate-900 mb-2" style={{ marginTop: 0 }}>Add Emergency Contact</h2>
         
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginTop: '20px', textAlign: 'left' }}>
           <div>
@@ -82,9 +83,11 @@ export const AddContactDialog: React.FC<AddContactDialogProps> = ({
             <input 
               required
               type="tel" 
+              pattern="^[0-9]{10}$"
+              title="Phone number must be exactly 10 digits. Example: 0771234567"
               value={phoneNumber} 
-              onChange={e => setPhoneNumber(e.target.value)}
-              placeholder="E.g. +94 77 123 4567"
+              onChange={e => setPhoneNumber(e.target.value.replace(/[^0-9]/g, ''))}
+              placeholder="E.g. 0771234567"
               style={{ width: '100%', padding: '12px 14px', borderRadius: '8px', border: '1px solid #CBD5E1', boxSizing: 'border-box', color: '#0F172A', backgroundColor: '#FFFFFF', fontSize: '14px', outline: 'none' }}
             />
           </div>

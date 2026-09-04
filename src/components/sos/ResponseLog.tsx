@@ -1,6 +1,6 @@
 import React from 'react';
 import { CheckCircle2, CircleDot, Circle } from 'lucide-react';
-import styles from './sos-components.module.css';
+
 
 interface LogItem {
   id: string;
@@ -93,8 +93,8 @@ export const ResponseLog: React.FC<ResponseLogProps> = ({ isActive = false, hasA
   const lineProgress = logs[5].status === 'COMPLETED' ? 100 : (completedCount * 17);
 
   return (
-    <div className={styles.card}>
-      <h3 className={styles.cardTitle} style={{ fontSize: '16px', fontWeight: 700, marginBottom: '24px', color: '#334155' }}>
+    <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
+      <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '24px', color: '#334155' }}>
         Response Log
       </h3>
       
