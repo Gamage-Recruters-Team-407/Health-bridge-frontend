@@ -1,27 +1,62 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import api from "@/lib/axios";
 
 export default function AccountSettingsPage() {
   const [accountStatus, setAccountStatus] = useState("Active");
-  const [notifications, setNotifications] = useState(true);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleDeactivate = () => {
+  useEffect(() => {
+    api
+      .get("/users/profile")
+      .then((res) => setAccountStatus(res.data.accountStatus || "Active"))
+      .catch(() => setError("Could not load account status."))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const handleDeactivate = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to deactivate your account?"
     );
-    if (confirmed) {
-      setAccountStatus("Inactive");
-      // TODO: connect to backend API later
-      console.log("Account deactivated");
+    if (!confirmed) return;
+
+    setUpdating(true);
+    setError("");
+    try {
+      const res = await api.put("/users/profile/deactivate");
+      setAccountStatus(res.data.accountStatus);
+    } catch (err) {
+      console.error(err);
+      setError("Could not deactivate account.");
+    } finally {
+      setUpdating(false);
     }
   };
 
-  const handleReactivate = () => {
-    setAccountStatus("Active");
-    // TODO: connect to backend API later
-    console.log("Account reactivated");
+  const handleReactivate = async () => {
+    setUpdating(true);
+    setError("");
+    try {
+      const res = await api.put("/users/profile/reactivate");
+      setAccountStatus(res.data.accountStatus);
+    } catch (err) {
+      console.error(err);
+      setError("Could not reactivate account.");
+    } finally {
+      setUpdating(false);
+    }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <p className="text-gray-500">Loading...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 py-10 px-4">
@@ -29,6 +64,8 @@ export default function AccountSettingsPage() {
         <h1 className="text-2xl font-bold text-gray-800 mb-8">
           Account Settings
         </h1>
+
+        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
         <div className="space-y-6">
           <div className="flex items-center justify-between border-b pb-6">
@@ -50,54 +87,20 @@ export default function AccountSettingsPage() {
             {accountStatus === "Active" ? (
               <button
                 onClick={handleDeactivate}
-                className="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-4 py-2 rounded-lg transition"
+                disabled={updating}
+                className="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
               >
-                Deactivate
+                {updating ? "Updating..." : "Deactivate"}
               </button>
             ) : (
               <button
                 onClick={handleReactivate}
-                className="bg-green-50 hover:bg-green-100 text-green-600 font-medium px-4 py-2 rounded-lg transition"
+                disabled={updating}
+                className="bg-green-50 hover:bg-green-100 text-green-600 font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
               >
-                Reactivate
+                {updating ? "Updating..." : "Reactivate"}
               </button>
             )}
-          </div>
-
-          <div className="flex items-center justify-between border-b pb-6">
-            <div>
-              <h2 className="font-semibold text-gray-800">Notifications</h2>
-              <p className="text-sm text-gray-500">
-                Receive email and app notifications
-              </p>
-            </div>
-            <button
-              onClick={() => setNotifications(!notifications)}
-              className={`w-12 h-6 rounded-full transition relative ${
-                notifications ? "bg-blue-600" : "bg-gray-300"
-              }`}
-            >
-              <span
-                className={`absolute top-0.5 w-5 h-5 bg-white rounded-full transition-transform ${
-                  notifications ? "translate-x-6" : "translate-x-0.5"
-                }`}
-              />
-            </button>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="font-semibold text-gray-800">Change Password</h2>
-              <p className="text-sm text-gray-500">
-                Update your account password
-              </p>
-            </div>
-            <a
-              href="/account/security"
-              className="bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium px-4 py-2 rounded-lg transition"
-            >
-              Change
-            </a>
           </div>
         </div>
 
