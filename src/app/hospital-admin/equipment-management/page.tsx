@@ -439,10 +439,8 @@ export default function EquipmentManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-3 sm:p-6 md:p-8 font-sans">
+    <div className="space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
-
-      <main className="max-w-7xl mx-auto space-y-6">
         {/* --- 1. TOP HEADER & SEARCH BAR (Matching Screenshot 1 & 2) --- */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-4 sm:p-6 rounded-2xl border border-slate-200/80 shadow-xs">
           <div className="flex items-center gap-3">
@@ -799,7 +797,6 @@ export default function EquipmentManagementPage() {
             </div>
           </div>
         </div>
-      </main>
 
       {/* --- 5. ASSET DETAIL MODAL / MOBILE DRAWER (Matching Screenshot 3 & 4) --- */}
       {viewingAsset && (
