@@ -6,6 +6,8 @@ import {
   getTicketByIdForAdmin,
   updateTicketStatus,
   replyAsAdmin,
+  editReplyAsAdmin,
+  deleteReplyAsAdmin,
 } from "@/services/supportService";
 import { Ticket, TicketSummary, TicketStatus } from "@/types/support";
 import StatusBadge from "@/components/support/StatusBadge";
@@ -89,6 +91,20 @@ export default function AdminTicketsPage() {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const handleEdit = async (replyId: string, message: string) => {
+    if (!selectedId) return;
+    const updated = await editReplyAsAdmin(selectedId, replyId, message);
+    setTicket(updated);
+    await loadList();
+  };
+
+  const handleDelete = async (replyId: string) => {
+    if (!selectedId) return;
+    const updated = await deleteReplyAsAdmin(selectedId, replyId);
+    setTicket(updated);
+    await loadList();
   };
 
   const filtered = filter === "ALL" ? tickets : tickets.filter((t) => t.status === filter);
@@ -214,7 +230,12 @@ export default function AdminTicketsPage() {
               </div>
               {ticket.replies.map((r) => (
                 <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
-                  <ChatBubble reply={r} isOwn={r.senderRole === "ADMIN"} />
+                  <ChatBubble
+                    reply={r}
+                    isOwn={r.senderRole === "ADMIN"}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 </div>
               ))}
             </div>
