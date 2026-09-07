@@ -17,6 +17,8 @@ export interface Ticket {
   userEmail: string;
   subject: string;
   description: string;
+  category: string;
+  contactNumber: string;
   attachmentUrl: string | null;
   status: TicketStatus;
   replies: TicketReply[];

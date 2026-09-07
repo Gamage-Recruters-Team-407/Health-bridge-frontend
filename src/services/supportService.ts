@@ -43,12 +43,16 @@ async function request<T>(
 export function createTicket(
   subject: string,
   description: string,
+  category: string,
+  contactNumber: string,
   attachment?: File | null
 ) {
   const formData = new FormData();
 
   formData.append("subject", subject);
   formData.append("description", description);
+  formData.append("category", category);
+  formData.append("contactNumber", contactNumber);
 
   if (attachment) {
     formData.append("attachment", attachment);

@@ -69,8 +69,14 @@ export default function MyTicketsPage() {
     if (selectedId) loadTicket(selectedId);
   }, [selectedId]);
 
-  const handleCreate = async (subject: string, description: string, attachment: File | null) => {
-    await createTicket(subject, description, attachment);
+  const handleCreate = async (
+    subject: string,
+    description: string,
+    category: string,
+    contactNumber: string,
+    attachment: File | null
+  ) => {
+    await createTicket(subject, description, category, contactNumber, attachment);
     await loadList();
   };
 
