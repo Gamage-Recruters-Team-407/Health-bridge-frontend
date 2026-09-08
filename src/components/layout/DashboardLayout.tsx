@@ -16,8 +16,8 @@ export interface DashboardLayoutProps {
 export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   children,
   pageTitle = "Dashboard",
-  userRole = "Chief Medical Officer",
-  userName = "Dr. Anura Jayasinghe",
+  userRole,
+  userName,
 }) => {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);

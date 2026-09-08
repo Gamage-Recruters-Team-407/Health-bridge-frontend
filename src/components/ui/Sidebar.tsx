@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import api from "@/lib/axios";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -82,15 +83,63 @@ const navGroups: NavGroup[] = [
   },
 ];
 
+function getInitials(name: string): string {
+  return (
+    name
+      .split(" ")
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part[0]?.toUpperCase())
+      .join("") || "?"
+  );
+}
+
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed = false,
   onToggleCollapse,
   mobileOpen = false,
   onCloseMobile,
-  userRole = "System Admin",
-  userName = "Dr. Anura Jayasinghe",
+  userRole: userRoleProp,
+  userName: userNameProp,
 }) => {
   const pathname = usePathname();
+
+  const [profile, setProfile] = useState<{
+    fullName: string;
+    role: string;
+    picture: string | null;
+  } | null>(null);
+
+  useEffect(() => {
+    // If the parent explicitly passes both, skip the fetch entirely.
+    if (userNameProp && userRoleProp) return;
+
+    let cancelled = false;
+
+    api
+      .get("/users/profile")
+      .then((res) => {
+        if (cancelled) return;
+        setProfile({
+          fullName: res.data.fullName || "User",
+          role: res.data.role || "",
+          picture: res.data.picture || null,
+        });
+      })
+      .catch(() => {
+        // Silently fall back to defaults; sidebar shouldn't block the page.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const userName = userNameProp || profile?.fullName || "User";
+  const userRole = userRoleProp || profile?.role || "";
+  const picture = profile?.picture || null;
+  const initials = getInitials(userName);
 
   const sidebarContent = (
     <div
@@ -209,8 +258,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         >
           <div className="relative shrink-0">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow-md">
-              {userName.charAt(0)}
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow-md overflow-hidden">
+              {picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={picture}
+                  alt={userName}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                initials
+              )}
             </div>
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
