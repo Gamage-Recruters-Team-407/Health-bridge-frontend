@@ -24,7 +24,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
 
   return (
     <ToastProvider>
-      <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans antialiased selection:bg-blue-500 selection:text-white">
+      <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 font-sans antialiased selection:bg-blue-500 dark:text-slate-100 selection:text-white">
         {/* Sidebar Navigation */}
         <Sidebar
           collapsed={collapsed}
@@ -36,7 +36,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
         />
 
         {/* Main Content Area */}
-        <div className="flex-1 flex flex-col min-w-0 min-h-screen">
+        <div className="flex-1 flex flex-col min-w-0 min-h-screen bg-slate-50">
           <Navbar
             title={pageTitle}
             onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)}
@@ -44,7 +44,7 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
             userRole={userRole}
           />
 
-          <main className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto space-y-6">
+          <main className="flex-1 px-4 md:px-6 py-4 w-full space-y-6">
             {children}
           </main>
 

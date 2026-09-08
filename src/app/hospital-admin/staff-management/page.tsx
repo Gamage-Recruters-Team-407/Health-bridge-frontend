@@ -313,9 +313,8 @@ export default function StaffManagementPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-3 sm:p-6 md:p-8 font-sans">
+    <div className="space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
-      <main className="max-w-7xl mx-auto space-y-6">
         {/* Title & Primary Action Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
@@ -692,7 +691,6 @@ export default function StaffManagementPage() {
             </button>
           </div>
         </div>
-      </main>
 
       {/* --- MODAL 1: Onboard New Staff Member (Matching Screenshot 2) --- */}
       {isOnboardModalOpen && (

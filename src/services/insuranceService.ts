@@ -41,5 +41,20 @@ export const insuranceService = {
     const res = await api.get(`${BASE}/policies/${id}`);
     return res.data;
   },
+  createPolicy: async (payload: {
+    patientId: string;
+    providerName: string;
+    policyType: string;
+    coverageAmount: number;
+    startDate: string;
+    endDate: string;
+  }): Promise<InsurancePolicy> => {
+    const res = await api.post(`${BASE}/policies`, payload);
+    return res.data;
+  },
+  verifyPolicy: async (policyNumber: string): Promise<InsurancePolicy> => {
+    const res = await api.get(`${BASE}/policies/verify/${policyNumber}`);
+    return res.data;
+  },
   getDocumentUrl: (fileId: string) => `${BASE}/documents/${fileId}`,
 };

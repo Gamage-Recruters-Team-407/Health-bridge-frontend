@@ -344,47 +344,10 @@ export default function BedManagementPage() {
   };
 
   return (
-    <div className="min-h-screen  bg-[#f8fafc] text-slate-800 font-sans">
+    <div className="space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
-      {/* Top Header Navigation Bar */}
-      <header className="max-w-7xl mx-auto bg-[#f8fafc] border-b border-slate-200 px-4 sm:px-8 py-3.5 flex items-center justify-between mb-6">
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Bed Management</h1>
 
-        <div className="flex items-center gap-3 sm:gap-5 text-slate-600">
-          <button
-            type="button"
-            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-full transition-colors relative"
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5 stroke-[1.75]" />
-          </button>
-
-          <button
-            type="button"
-            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-full transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5 stroke-[1.75]" />
-          </button>
-
-          <button
-            type="button"
-            className="p-1.5 text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 rounded-full transition-colors"
-            title="Help"
-          >
-            <HelpCircle className="w-5 h-5 stroke-[1.75]" />
-          </button>
-
-          <div className="w-8 h-8 rounded-full bg-slate-700 text-white font-bold flex items-center justify-center text-xs shadow-xs ring-2 ring-slate-200">
-            AU
-          </div>
-        </div>
-      </header>
-
-      {/* Main Workspace */}
-      <main className="max-w-7xl mx-auto px-3 sm:px-6 md:px-8 pb-8 space-y-6">
-
-        {/* 4 Overview Stat Cards */}
+      {/* 4 Overview Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Total Beds */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
@@ -819,7 +782,6 @@ export default function BedManagementPage() {
             </button>
           </div>
         </div>
-      </main>
 
       {/* --- SLIDE-OVER DRAWER: Allocate Bed --- */}
       {allocatingBed && (
