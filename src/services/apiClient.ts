@@ -19,7 +19,6 @@ class ApiClient {
       timeout: 30000,
     });
 
-    // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem(TOKEN_KEY);
@@ -38,7 +37,6 @@ class ApiClient {
       }
     );
 
-    // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
         console.log(`✅ ${response.status} ${response.config.url}`);
@@ -87,5 +85,4 @@ class ApiClient {
   }
 }
 
-const api = new ApiClient();
-export default api;
+export const apiClient = new ApiClient();

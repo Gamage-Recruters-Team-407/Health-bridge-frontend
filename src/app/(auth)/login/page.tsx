@@ -19,7 +19,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
@@ -44,13 +43,24 @@ export default function LoginPage() {
         role: data.role,
       });
 
-      // Role-based redirect
       const targetPath = getRoleRedirectPath(data.role);
       router.push(targetPath);
-    } catch (err: any) {
+    } catch (err: unknown) {
+      const response =
+        typeof err === "object" && err !== null && "response" in err
+          ? err.response
+          : undefined;
+      const data =
+        typeof response === "object" && response !== null && "data" in response
+          ? response.data
+          : undefined;
       const message =
-        err.response?.data?.message ||
-        "Invalid email or password. Please try again.";
+        typeof data === "object" &&
+        data !== null &&
+        "message" in data &&
+        typeof data.message === "string"
+          ? data.message
+          : "Invalid email or password. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
@@ -59,7 +69,6 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Top Navigation Bar */}
       <header className="w-full max-w-7xl mx-auto px-6 py-5 flex items-center justify-between">
         <HeaderLogo />
         <Link
@@ -70,14 +79,11 @@ export default function LoginPage() {
         </Link>
       </header>
 
-      {/* Main Container */}
       <main className="flex-1 flex items-center justify-center p-4 sm:p-6 lg:p-8">
         <div className="w-full max-w-6xl rounded-3xl border-2 border-blue-400/80 bg-white p-6 sm:p-10 lg:p-12 shadow-xl shadow-blue-500/5 relative overflow-hidden">
-          {/* Subtle Grid Accent Top Left */}
           <div className="absolute top-4 left-4 w-20 h-20 opacity-20 pointer-events-none bg-[radial-gradient(#0284c7_1px,transparent_1px)] [background-size:8px_8px]" />
 
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            {/* Left Hero Column */}
             <div className="lg:col-span-6 flex flex-col justify-between space-y-8">
               <div>
                 <h1 className="text-4xl sm:text-5xl font-extrabold text-slate-900 tracking-tight leading-[1.15]">
@@ -85,22 +91,17 @@ export default function LoginPage() {
                   Stronger{" "}
                   <span className="text-cyan-500">Connections.</span>
                 </h1>
-
                 <p className="mt-5 text-slate-500 text-base sm:text-lg max-w-md leading-relaxed">
                   Health Bridge connects patient, and <br />
                   Data Seamlessly for better care and outcomes.
                 </p>
-
                 <div className="w-16 h-1 bg-cyan-500 rounded-full mt-4" />
               </div>
-
-              {/* Graphic Illustration */}
               <div className="pt-2">
                 <HealthcareIllustration />
               </div>
             </div>
 
-            {/* Right Login Card Column */}
             <div className="lg:col-span-6 flex justify-center">
               <div className="w-full max-w-md bg-white rounded-3xl border border-slate-100 shadow-xl p-8 sm:p-10">
                 <div className="text-center mb-8">
@@ -120,7 +121,6 @@ export default function LoginPage() {
                 )}
 
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  {/* Email Input */}
                   <div>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -137,7 +137,6 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* Password Input */}
                   <div>
                     <div className="relative">
                       <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -165,7 +164,6 @@ export default function LoginPage() {
                     </div>
                   </div>
 
-                  {/* Forgot Password Link */}
                   <div className="flex justify-end pt-1">
                     <Link
                       href="/forgot-password"
@@ -175,7 +173,6 @@ export default function LoginPage() {
                     </Link>
                   </div>
 
-                  {/* Log in Button */}
                   <button
                     type="submit"
                     disabled={loading}
@@ -192,7 +189,6 @@ export default function LoginPage() {
                   </button>
                 </form>
 
-                {/* Sign Up Link */}
                 <div className="mt-6 text-center text-xs text-slate-500">
                   Don&apos;t have an account?{" "}
                   <Link
@@ -203,7 +199,6 @@ export default function LoginPage() {
                   </Link>
                 </div>
 
-                {/* Or continue with */}
                 <div className="relative my-6">
                   <div className="absolute inset-0 flex items-center">
                     <div className="w-full border-t border-slate-100" />
@@ -213,7 +208,6 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Google Sign In Button */}
                 <div className="flex justify-center">
                   <GoogleSignInButton
                     variant="icon"
@@ -228,4 +222,3 @@ export default function LoginPage() {
     </div>
   );
 }
-
