@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ShieldCheck, User as UserIcon, LogOut, HeartPulse } from "lucide-react";
+import { ShieldCheck, User as UserIcon, LogOut, HeartPulse, Bell } from "lucide-react";
 import HeaderLogo from "@/components/HeaderLogo";
 import AuthFooter from "@/components/AuthFooter";
 import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
@@ -56,6 +56,14 @@ export default function PatientDashboardPage() {
   className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
 >
   Support
+</Link>
+
+<Link
+  href="/notifications/patient"
+  className="flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+>
+  <Bell className="h-5 w-5" />
+  
 </Link>
 
             <button
