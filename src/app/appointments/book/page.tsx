@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppointmentForm from "@/components/appointment/AppointmentForm";
 import AppointmentModuleShell from "@/components/appointment/AppointmentModuleShell";
@@ -12,7 +12,7 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error ? error.message : fallback;
 };
 
-export default function BookAppointmentPage() {
+function BookAppointmentContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const doctorId = searchParams.get("doctorId");
@@ -127,5 +127,13 @@ export default function BookAppointmentPage() {
         </>
       ) : null}
     </AppointmentModuleShell>
+  );
+}
+
+export default function BookAppointmentPage() {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Loading appointment form...</div>}>
+      <BookAppointmentContent />
+    </Suspense>
   );
 }

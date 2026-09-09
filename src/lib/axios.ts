@@ -3,6 +3,27 @@ import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 const TOKEN_KEY = "healthbridge_token";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8088/api';
 
+interface ApiErrorPayload {
+  message?: string;
+  errors?: Record<string, string> | Array<{ message?: string }>;
+}
+
+export function getApiErrorMessage(error: unknown, fallback = "Something went wrong"): string {
+  if (axios.isAxiosError<ApiErrorPayload>(error)) {
+    const payload = error.response?.data;
+    if (payload?.message) return payload.message;
+    if (payload?.errors && !Array.isArray(payload.errors)) {
+      const firstError = Object.values(payload.errors)[0];
+      if (firstError) return firstError;
+    }
+    if (Array.isArray(payload?.errors) && payload.errors[0]?.message) {
+      return payload.errors[0].message;
+    }
+  }
+
+  return error instanceof Error ? error.message : fallback;
+}
+
 console.log('🔧 API Base URL:', API_BASE_URL);
 
 class ApiClient {
@@ -42,6 +63,15 @@ class ApiClient {
     this.client.interceptors.response.use(
       (response) => {
         console.log(`✅ ${response.status} ${response.config.url}`);
+        const payload = response.data;
+        if (
+          payload &&
+          typeof payload === "object" &&
+          payload.success === true &&
+          Object.prototype.hasOwnProperty.call(payload, "data")
+        ) {
+          response.data = payload.data;
+        }
         return response;
       },
       (error) => {

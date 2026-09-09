@@ -1,9 +1,7 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import inventoryService, {
-  HospitalInventory,
-} from "@/services/inventoryService";
+import { inventoryService, type HospitalInventory } from "@/services/inventoryService";
 
 interface StockModalProps {
   item: HospitalInventory | null;

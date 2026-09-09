@@ -12,3 +12,5 @@ export * from "./ErrorState";
 export * from "./Navbar";
 export * from "./Sidebar";
 export * from "./WelcomePage";
+export * from "./Pagination";
+export * from "./Chart";
