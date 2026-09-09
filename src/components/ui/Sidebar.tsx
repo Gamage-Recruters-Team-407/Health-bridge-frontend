@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+
 export interface SidebarProps {
   collapsed?: boolean;
   onToggleCollapse?: () => void;
@@ -53,23 +54,11 @@ interface NavGroup {
 const getNavGroups = (role: string): NavGroup[] => {
   const roleUpper = role?.toUpperCase() || "PATIENT";
 
-  // Base groups for all users
-  const baseGroups: NavGroup[] = [
-    {
-      groupTitle: "Core Modules",
-      items: [
-        { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
-        { title: "Appointments", href: "/appointments", icon: Calendar },
-      ],
-    },
-  ];
-
-  // Helper function
   function roleLower(r: string): string {
     return r?.toLowerCase() || "patient";
   }
 
-  // Admin & Super Admin get full access
+  // Admin & Super Admin
   if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
     return [
       {
@@ -97,13 +86,13 @@ const getNavGroups = (role: string): NavGroup[] => {
     ];
   }
 
-  // Doctor gets clinical access
+  // Doctor
   if (roleUpper === "DOCTOR") {
     return [
       {
         groupTitle: "Clinical",
         items: [
-          { title: "Dashboard", href: `/doctor/dashboard`, icon: LayoutDashboard },
+          { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
           { title: "Patients", href: "/patients", icon: Users },
           { title: "Appointments", href: "/appointments", icon: Calendar },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
@@ -113,7 +102,7 @@ const getNavGroups = (role: string): NavGroup[] => {
     ];
   }
 
-  // Patient gets basic access
+  // Patient
   if (roleUpper === "PATIENT") {
     return [
       {
@@ -144,65 +133,28 @@ const getNavGroups = (role: string): NavGroup[] => {
     ];
   }
 
-  return baseGroups;
+  // Default
+  return [
+    {
+      groupTitle: "Core Modules",
+      items: [
+        { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+        { title: "Appointments", href: "/appointments", icon: Calendar },
+      ],
+    },
+  ];
 };
-
-function getInitials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .slice(0, 2)
-      .map((part) => part[0]?.toUpperCase())
-      .join("") || "?"
-  );
-}
 
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed = false,
   onToggleCollapse,
   mobileOpen = false,
   onCloseMobile,
+  userRole = "PATIENT",
+  userName = "User",
 }) => {
   const pathname = usePathname();
   const navGroups = getNavGroups(userRole);
-
-  const [profile, setProfile] = useState<{
-    fullName: string;
-    role: string;
-    picture: string | null;
-  } | null>(null);
-
-  useEffect(() => {
-    // If the parent explicitly passes both, skip the fetch entirely.
-    if (userNameProp && userRoleProp) return;
-
-    let cancelled = false;
-
-    api
-      .get("/users/profile")
-      .then((res) => {
-        if (cancelled) return;
-        setProfile({
-          fullName: res.data.fullName || "User",
-          role: res.data.role || "",
-          picture: res.data.picture || null,
-        });
-      })
-      .catch(() => {
-        // Silently fall back to defaults; sidebar shouldn't block the page.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const userName = userNameProp || profile?.fullName || "User";
-  const userRole = userRoleProp || profile?.role || "";
-  const picture = profile?.picture || null;
-  const initials = getInitials(userName);
 
   const sidebarContent = (
     <div
@@ -318,6 +270,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         >
           <div className="relative shrink-0">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow-md">
+              {userName.charAt(0).toUpperCase()}
             </div>
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
@@ -349,10 +303,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
+      {/* Desktop */}
       <aside className="hidden md:block h-screen sticky top-0 z-30 shrink-0">
         {sidebarContent}
       </aside>
 
+      {/* Mobile */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
           <div

@@ -19,6 +19,7 @@ class ApiClient {
       timeout: 30000,
     });
 
+    // Request interceptor - Add token
     this.client.interceptors.request.use(
       (config) => {
         const token = localStorage.getItem(TOKEN_KEY);
@@ -37,6 +38,7 @@ class ApiClient {
       }
     );
 
+    // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
         console.log(`✅ ${response.status} ${response.config.url}`);
@@ -44,16 +46,25 @@ class ApiClient {
       },
       (error) => {
         console.error('❌ Response Error:', error);
+        
         if (error.response?.status === 401) {
           console.error('🔐 401 Unauthorized - Token invalid or missing');
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem("healthbridge_user");
-          if (typeof window !== 'undefined') {
-            window.location.href = '/login';
+          
+          // ✅ Check if we're on login page - don't redirect
+          const isLoginPage = typeof window !== 'undefined' && 
+                             window.location.pathname === '/login';
+          
+          if (!isLoginPage) {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem("healthbridge_user");
+            if (typeof window !== 'undefined') {
+              window.location.href = '/login';
+            }
           }
         } else if (error.code === 'ERR_NETWORK') {
           console.error('🌐 Network error - Backend not reachable');
         }
+        
         return Promise.reject(error);
       }
     );

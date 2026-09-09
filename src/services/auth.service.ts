@@ -1,33 +1,12 @@
 import { apiClient } from "@/services/apiClient";
 import { AuthUser } from "@/lib/auth";
 
+const TOKEN_KEY = "healthbridge_token";
+const USER_KEY = "healthbridge_user";
+
 export interface LoginPayload {
   email: string;
   password: string;
-}
-
-export interface RegisterPayload {
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  password: string;
-  confirmPassword?: string;
-}
-
-export interface ForgotPasswordPayload {
-  email: string;
-}
-
-export interface VerifyOtpPayload {
-  email: string;
-  otp: string;
-}
-
-export interface ResetPasswordPayload {
-  email: string;
-  otp: string;
-  newPassword: string;
-  confirmPassword?: string;
 }
 
 export interface AuthResponseData {
@@ -39,79 +18,11 @@ export interface AuthResponseData {
   message: string;
 }
 
-const TOKEN_KEY = "healthbridge_token";
-const USER_KEY = "healthbridge_user";
-
 export const authService = {
-  async register(payload: RegisterPayload): Promise<AuthResponseData> {
-    const response = await apiClient.post<AuthResponseData>("/auth/register", payload);
-    
-    // Auto login after registration
-    if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
-        id: response.id,
-        fullName: response.fullName,
-        email: response.email,
-        role: response.role,
-      }));
-    }
-    
-    return response;
-  },
-
   async login(payload: LoginPayload): Promise<AuthResponseData> {
+    console.log('🔐 Logging in:', payload.email);
     const response = await apiClient.post<AuthResponseData>("/auth/login", payload);
-    
-    // Save token and user data
-    if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
-        id: response.id,
-        fullName: response.fullName,
-        email: response.email,
-        role: response.role,
-      }));
-      console.log('✅ Auth data saved successfully');
-    }
-    
-    return response;
-  },
-
-  async forgotPassword(email: string): Promise<{ message: string }> {
-    const response = await apiClient.post<{ message: string }>("/auth/forgot-password", { email });
-    return response;
-  },
-
-  async verifyOtp(payload: VerifyOtpPayload): Promise<{ valid: boolean; message: string }> {
-    const response = await apiClient.post<{ valid: boolean; message: string }>("/auth/verify-otp", payload);
-    return response;
-  },
-
-  async resetPassword(payload: ResetPasswordPayload): Promise<AuthResponseData> {
-    const response = await apiClient.post<AuthResponseData>("/auth/reset-password", payload);
-    
-    // Save new token after password reset
-    if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
-        id: response.id,
-        fullName: response.fullName,
-        email: response.email,
-        role: response.role,
-      }));
-      console.log('✅ Auth data saved after password reset');
-    }
-    
-    return response;
-  },
-
-  async googleAuth(token: string, email?: string, name?: string): Promise<AuthResponseData> {
-    const response = await apiClient.post<AuthResponseData>("/auth/google", {
-      token,
-      email,
-      name,
-    });
+    console.log('✅ Login response received');
     
     if (response.token) {
       localStorage.setItem(TOKEN_KEY, response.token);
@@ -121,42 +32,12 @@ export const authService = {
         email: response.email,
         role: response.role,
       }));
+      console.log('🔑 Token saved successfully');
+      console.log('👤 User:', response.fullName);
     }
     
     return response;
   },
 
-  // ✅ Helper methods
-  logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-    if (typeof window !== 'undefined') {
-      window.location.href = '/login';
-    }
-  },
-
-  getToken(): string | null {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem(TOKEN_KEY);
-    }
-    return null;
-  },
-
-  getUser(): AuthUser | null {
-    if (typeof window !== 'undefined') {
-      const data = localStorage.getItem(USER_KEY);
-      if (data) {
-        try {
-          return JSON.parse(data);
-        } catch {
-          return null;
-        }
-      }
-    }
-    return null;
-  },
-
-  isAuthenticated(): boolean {
-    return !!this.getToken();
-  },
+  // ... other methods
 };

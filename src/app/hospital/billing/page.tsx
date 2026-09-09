@@ -2,12 +2,14 @@
 
 import React from "react";
 import Link from "next/link";
-import DashboardLayout from "@/app/dashboard/layout";
+import { HospitalProvider } from "@/context/HospitalContext";
 import { useHospital } from "@/context/HospitalContext";
 import { InvoiceCard } from "@/components/hospital/billing/InvoiceCard";
 import { Plus, FileText } from "lucide-react";
+import DashboardLayout from "@/app/dashboard/layout";
 
-export default function BillingPage() {
+// ✅ Separate component that uses useHospital
+function BillingContent() {
   const {
     invoices,
     invoicesLoading,
@@ -17,30 +19,26 @@ export default function BillingPage() {
 
   if (invoicesLoading) {
     return (
-      <DashboardLayout pageTitle="Billing Management">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="mt-4 text-slate-500">Loading invoices...</p>
-          </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-500">Loading invoices...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (invoicesError) {
     return (
-      <DashboardLayout pageTitle="Billing Management">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-          <p className="font-medium">❌ Error loading invoices</p>
-          <p className="text-sm mt-1">{invoicesError}</p>
-        </div>
-      </DashboardLayout>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+        <p className="font-medium">❌ Error loading invoices</p>
+        <p className="text-sm mt-1">{invoicesError}</p>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout pageTitle="Billing Management">
+    <>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -109,6 +107,17 @@ export default function BillingPage() {
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+// ✅ Main page component - Wrapped with HospitalProvider
+export default function BillingPage() {
+  return (
+    <DashboardLayout pageTitle="Billing Management">
+      <HospitalProvider>
+        <BillingContent />
+      </HospitalProvider>
     </DashboardLayout>
   );
 }
