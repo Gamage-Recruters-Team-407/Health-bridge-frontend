@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import {
   Menu,
   Search,
@@ -18,6 +19,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
+import { getNotifications } from "@/services/notificationService";
 
 export interface NavbarProps {
   onToggleMobileSidebar?: () => void;
@@ -38,11 +40,11 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
-  const mockNotifications = [
-    { id: 1, title: "Emergency Dispatch", desc: "Ambulance requested for Patient #P-8842", time: "2 mins ago", type: "urgent" },
-    { id: 2, title: "Lab Results Ready", desc: "CBC report for Nimali Silva is ready", time: "15 mins ago", type: "normal" },
-    { id: 3, title: "Appointment Alert", desc: "Dr. Wickramasinghe scheduled at 3:00 PM", time: "1 hour ago", type: "normal" },
-  ];
+  useEffect(() => {
+    getNotifications()
+      .then((items) => setUnreadNotifications(items.filter((item) => !item.read).length))
+      .catch(() => undefined);
+  }, []);
 
   return (
     <header className="h-16 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md sticky top-0 z-20 px-4 md:px-6 flex items-center justify-between gap-4 transition-colors">
@@ -134,25 +136,15 @@ export const Navbar: React.FC<NavbarProps> = ({
               </div>
 
               <div className="max-h-72 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800">
-                {mockNotifications.map((n) => (
-                  <div key={n.id} className="p-3.5 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors flex gap-3">
-                    <div className={cn(
-                      "w-2 h-2 rounded-full mt-1.5 shrink-0",
-                      n.type === "urgent" ? "bg-red-500" : "bg-blue-500"
-                    )} />
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-slate-900 dark:text-slate-100">{n.title}</p>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{n.desc}</p>
-                      <span className="text-[10px] text-slate-400 block mt-1">{n.time}</span>
-                    </div>
-                  </div>
-                ))}
+                <Link href="/notifications" className="block p-4 text-center text-xs font-medium text-blue-600 hover:bg-slate-50 dark:text-blue-400 dark:hover:bg-slate-800/50">
+                  Open notification center
+                </Link>
               </div>
 
               <div className="p-2 border-t border-slate-100 dark:border-slate-800 text-center bg-slate-50/50 dark:bg-slate-800/50">
-                <a href="/notifications" className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
+                <Link href="/notifications" className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline">
                   View all notifications →
-                </a>
+                </Link>
               </div>
             </div>
           )}

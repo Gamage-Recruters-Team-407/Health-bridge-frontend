@@ -3,6 +3,13 @@
 import React from "react";
 import DashboardLayout from "@/app/dashboard/layout";
 import { Calendar, FileText, Pill, Heart, Clock, User, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ShieldCheck, User as UserIcon, LogOut, HeartPulse, Bell } from "lucide-react";
+import HeaderLogo from "@/components/HeaderLogo";
+import AuthFooter from "@/components/AuthFooter";
+import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
+import Link from "next/link";
 
 export default function PatientDashboardPage() {
   const stats = [
@@ -32,11 +39,56 @@ export default function PatientDashboardPage() {
         <p className="mt-1 text-blue-100">Your health is our priority. Here&apos;s your health summary.</p>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((stat, index) => (
-          <div key={index} className="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs text-blue-700 font-medium">
+              <UserIcon className="w-3.5 h-3.5" />
+              <span>{user?.fullName || "User"}</span>
+              <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
+                {user?.role || "PATIENT"}
+              </span>
+            </div>
+            <Link
+  href="/support/patient"
+  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+>
+  Support
+</Link>
+
+<Link
+  href="/notifications/patient"
+  className="flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+>
+  <Bell className="h-5 w-5" />
+  
+</Link>
+
+            <button
+              onClick={handleLogout}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              Logout
+            </button>
+          </div>
+        </div>
+
+
+
+
+
+
+        
+      </header>
+
+      {/* Main Container */}
+      <main className="flex-1 max-w-5xl mx-auto w-full p-6 sm:p-10 flex flex-col justify-center">
+        <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-8 sm:p-12">
+          {/* Welcome Status */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-100">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
+                <HeartPulse className="w-8 h-8" />
+              </div>
               <div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
                   {stat.label}

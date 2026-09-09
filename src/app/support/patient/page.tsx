@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getMyTickets,
   getMyTicketById,
@@ -21,6 +22,7 @@ function formatListDate(iso: string) {
 }
 
 export default function MyTicketsPage() {
+   const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -38,9 +40,19 @@ export default function MyTicketsPage() {
     setLoadingList(true);
     setListError(null);
     try {
-      const data = await getMyTickets();
-      setTickets(data);
-      setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
+     const data = await getMyTickets();
+
+const sortedData = [...data].sort(
+  (a, b) =>
+    new Date(b.updatedAt).getTime() -
+    new Date(a.updatedAt).getTime()
+);
+
+setTickets(sortedData);
+
+setSelectedId((current) =>
+  current ?? (sortedData.length > 0 ? sortedData[0].id : null)
+);
     } catch (e) {
       setListError(e instanceof Error ? e.message : "Failed to load tickets.");
     } finally {
@@ -68,6 +80,14 @@ export default function MyTicketsPage() {
   useEffect(() => {
     if (selectedId) loadTicket(selectedId);
   }, [selectedId]);
+
+  useEffect(() => {
+  const ticketId = searchParams.get("ticketId");
+
+  if (ticketId) {
+    setSelectedId(ticketId);
+  }
+}, [searchParams]);
 
   const handleCreate = async (
     subject: string,
