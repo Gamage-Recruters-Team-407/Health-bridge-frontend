@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getAllTickets,
   getTicketByIdForAdmin,
   updateTicketStatus,
   replyAsAdmin,
+  editReplyAsAdmin,
+  deleteReplyAsAdmin,
 } from "@/services/supportService";
 import { Ticket, TicketSummary, TicketStatus } from "@/types/support";
 import StatusBadge from "@/components/support/StatusBadge";
@@ -18,8 +21,16 @@ const STATUS_OPTIONS: TicketStatus[] = ["OPEN", "PROCESSING", "SOLVED"];
 function formatListDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
+function sortTicketsByUpdatedAt(tickets: TicketSummary[]) {
+  return [...tickets].sort(
+    (a, b) =>
+      new Date(b.updatedAt).getTime() -
+      new Date(a.updatedAt).getTime()
+  );
+}
 
 export default function AdminTicketsPage() {
+  const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -33,19 +44,31 @@ export default function AdminTicketsPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const loadList = async () => {
-    setLoadingList(true);
-    setListError(null);
-    try {
-      const data = await getAllTickets();
-      setTickets(data);
-      setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
-    } catch (e) {
-      setListError(e instanceof Error ? e.message : "Failed to load tickets.");
-    } finally {
-      setLoadingList(false);
-    }
-  };
+  setLoadingList(true);
+  setListError(null);
 
+  try {
+    const data = await getAllTickets();
+
+    const sortedData = [...data].sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() -
+        new Date(a.updatedAt).getTime()
+    );
+
+    setTickets(sortedData);
+
+    setSelectedId((current) =>
+      current ?? (sortedData.length > 0 ? sortedData[0].id : null)
+    );
+  } catch (e) {
+    setListError(
+      e instanceof Error ? e.message : "Failed to load tickets."
+    );
+  } finally {
+    setLoadingList(false);
+  }
+};
   const loadTicket = async (id: string) => {
     setLoadingTicket(true);
     setTicketError(null);
@@ -59,13 +82,22 @@ export default function AdminTicketsPage() {
     }
   };
 
-  useEffect(() => {
-    loadList();
-  }, []);
+useEffect(() => {
+  loadList();
+}, []);
 
   useEffect(() => {
     if (selectedId) loadTicket(selectedId);
   }, [selectedId]);
+
+  useEffect(() => {
+  const ticketId = searchParams.get("ticketId");
+
+  if (ticketId) {
+    setSelectedId(ticketId);
+  }
+}, [searchParams]);
+
 
   const handleSend = async (message: string, image: File | null) => {
     if (!selectedId) return;
@@ -89,6 +121,20 @@ export default function AdminTicketsPage() {
     } finally {
       setUpdatingStatus(false);
     }
+  };
+
+  const handleEdit = async (replyId: string, message: string) => {
+    if (!selectedId) return;
+    const updated = await editReplyAsAdmin(selectedId, replyId, message);
+    setTicket(updated);
+    await loadList();
+  };
+
+  const handleDelete = async (replyId: string) => {
+    if (!selectedId) return;
+    const updated = await deleteReplyAsAdmin(selectedId, replyId);
+    setTicket(updated);
+    await loadList();
   };
 
   const filtered = filter === "ALL" ? tickets : tickets.filter((t) => t.status === filter);
@@ -190,7 +236,11 @@ export default function AdminTicketsPage() {
         {selectedId && !loadingTicket && !ticketError && ticket && (
           <>
             <div className="flex items-center justify-between border-b border-[#E1DFDD] px-6 py-3">
-              <h2 className="truncate text-base font-semibold text-[#242424]">{ticket.subject}</h2>
+             <h2 className="truncate text-base font-semibold text-[#242424]">
+  <span className="text-blue-600">{ticket.category}</span>
+  {" : "}
+  {ticket.subject}
+</h2>
               <StatusBadge status={ticket.status} />
             </div>
             <div className="border-b border-[#E1DFDD] bg-[#FAF9F8] px-6 py-2 text-xs text-[#616161]">
@@ -214,7 +264,12 @@ export default function AdminTicketsPage() {
               </div>
               {ticket.replies.map((r) => (
                 <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
-                  <ChatBubble reply={r} isOwn={r.senderRole === "ADMIN"} />
+                  <ChatBubble
+                    reply={r}
+                    isOwn={r.senderRole === "ADMIN"}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 </div>
               ))}
             </div>
@@ -230,10 +285,11 @@ export default function AdminTicketsPage() {
       {selectedId && ticket && !loadingTicket && !ticketError && (
         <aside className="w-72 shrink-0 space-y-4 overflow-y-auto border-l border-[#E1DFDD] bg-[#FAF9F8] p-5">
           <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#616161]">Patient</h3>
+            
             <p className="text-sm font-medium text-[#242424]">{ticket.userName}</p>
             <p className="mt-0.5 text-xs text-[#616161]">{ticket.userEmail}</p>
             <p className="mt-0.5 text-xs text-[#9A9A9A]">ID: {ticket.userId}</p>
+            <p className="mt-0.5 text-xs text-[#616161]">{ticket.contactNumber}</p>
           </div>
 
           <div>
