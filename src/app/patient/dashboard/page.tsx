@@ -1,17 +1,21 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout";
-import { Calendar, FileText, Pill, Heart, Clock, User, Phone } from "lucide-react";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { ShieldCheck, User as UserIcon, LogOut, HeartPulse, Bell } from "lucide-react";
-import HeaderLogo from "@/components/HeaderLogo";
-import AuthFooter from "@/components/AuthFooter";
-import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
+import { Calendar, FileText, Pill, Heart, Clock, Bell, HeadphonesIcon } from "lucide-react";
 import Link from "next/link";
+import { getStoredUser, AuthUser } from "@/lib/auth";
 
 export default function PatientDashboardPage() {
+  const [user, setUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const stored = getStoredUser();
+    if (stored) {
+      setUser(stored);
+    }
+  }, []);
+
   const stats = [
     { label: "Upcoming Appointments", value: "3", icon: Calendar, color: "bg-blue-500" },
     { label: "Medical Records", value: "12", icon: FileText, color: "bg-green-500" },
@@ -33,62 +37,37 @@ export default function PatientDashboardPage() {
 
   return (
     <DashboardLayout pageTitle="Patient Dashboard">
-      {/* Welcome */}
-      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome back, Patient! 🏥</h1>
-        <p className="mt-1 text-blue-100">Your health is our priority. Here&apos;s your health summary.</p>
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold">
+            Welcome back, {user?.fullName || "Patient"}! 🏥
+          </h1>
+          <p className="mt-1 text-blue-100">Your health is our priority. Here&apos;s your health summary.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/notifications/patient"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm transition"
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notifications</span>
+          </Link>
+          <Link
+            href="/support/patient"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold shadow-sm transition"
+          >
+            <HeadphonesIcon className="w-4 h-4" />
+            <span>Support</span>
+          </Link>
+        </div>
       </div>
 
-          <div className="flex items-center gap-4">
-            <div className="hidden sm:flex items-center gap-2.5 px-3 py-1.5 rounded-full bg-blue-50 border border-blue-100 text-xs text-blue-700 font-medium">
-              <UserIcon className="w-3.5 h-3.5" />
-              <span>{user?.fullName || "User"}</span>
-              <span className="px-2 py-0.5 rounded-full bg-blue-600 text-white text-[10px] font-bold">
-                {user?.role || "PATIENT"}
-              </span>
-            </div>
-            <Link
-  href="/support/patient"
-  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
->
-  Support
-</Link>
-
-<Link
-  href="/notifications/patient"
-  className="flex items-center gap-3 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
->
-  <Bell className="h-5 w-5" />
-  
-</Link>
-
-            <button
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-semibold text-red-600 bg-red-50 hover:bg-red-100 transition cursor-pointer"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              Logout
-            </button>
-          </div>
-        </div>
-
-
-
-
-
-
-        
-      </header>
-
-      {/* Main Container */}
-      <main className="flex-1 max-w-5xl mx-auto w-full p-6 sm:p-10 flex flex-col justify-center">
-        <div className="bg-white rounded-3xl border border-slate-100 shadow-xl p-8 sm:p-12">
-          {/* Welcome Status */}
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 pb-8 border-b border-slate-100">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-2xl bg-blue-600 text-white flex items-center justify-center shadow-lg shadow-blue-500/25">
-                <HeartPulse className="w-8 h-8" />
-              </div>
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
+        {stats.map((stat, index) => (
+          <div key={index} className="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+            <div className="flex items-center justify-between">
               <div>
                 <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">
                   {stat.label}
@@ -103,7 +82,7 @@ export default function PatientDashboardPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
         {/* Appointments */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Upcoming Appointments</h2>
