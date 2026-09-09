@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Mail, KeyRound, Eye, EyeOff, Loader2 } from "lucide-react";
@@ -8,7 +8,17 @@ import HeaderLogo from "@/components/HeaderLogo";
 import HealthcareIllustration from "@/components/HealthcareIllustration";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { authService } from "@/services/auth.service";
-import { saveAuthData, getRoleRedirectPath } from "@/lib/auth";
+import { saveAuthData, getRoleRedirectPath, getToken } from "@/lib/auth";
+
+// ✅ Define error type properly
+interface ApiError {
+  response?: {
+    data?: {
+      message?: string;
+    };
+  };
+  message?: string;
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -18,6 +28,14 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Check if already logged in
+  useEffect(() => {
+    const token = getToken();
+    if (token) {
+      router.replace("/admin/dashboard");
+    }
+  }, [router]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,21 +64,11 @@ export default function LoginPage() {
       const targetPath = getRoleRedirectPath(data.role);
       router.push(targetPath);
     } catch (err: unknown) {
-      const response =
-        typeof err === "object" && err !== null && "response" in err
-          ? err.response
-          : undefined;
-      const data =
-        typeof response === "object" && response !== null && "data" in response
-          ? response.data
-          : undefined;
+      // ✅ Proper error handling without 'any'
+      const apiError = err as ApiError;
       const message =
-        typeof data === "object" &&
-        data !== null &&
-        "message" in data &&
-        typeof data.message === "string"
-          ? data.message
-          : "Invalid email or password. Please try again.";
+        apiError.response?.data?.message ||
+        "Invalid email or password. Please try again.";
       setError(message);
     } finally {
       setLoading(false);
@@ -132,6 +140,7 @@ export default function LoginPage() {
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                         placeholder="Email Address"
+                        autoComplete="email"
                         className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 text-sm text-slate-800 placeholder-slate-400 transition"
                       />
                     </div>
@@ -148,6 +157,7 @@ export default function LoginPage() {
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Password"
+                        autoComplete="current-password"
                         className="w-full pl-10 pr-10 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 text-sm text-slate-800 placeholder-slate-400 transition"
                       />
                       <button
@@ -213,6 +223,13 @@ export default function LoginPage() {
                     variant="icon"
                     onError={(msg) => setError(msg)}
                   />
+                </div>
+
+                <div className="mt-4 text-center text-xs text-slate-400 bg-slate-50 p-3 rounded-xl">
+                  <p className="font-medium text-slate-500">Demo Credentials:</p>
+                  <p className="font-mono text-slate-600">
+                    admin@healthbridge.com / admin123
+                  </p>
                 </div>
               </div>
             </div>

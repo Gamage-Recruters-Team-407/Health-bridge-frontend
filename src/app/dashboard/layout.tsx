@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { Navbar } from "@/components/ui/Navbar";
@@ -20,16 +20,49 @@ export default function DashboardLayout({
   const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [user] = useState<AuthUser | null>(() => {
-    const token = getToken();
-    return token ? getStoredUser() : null;
-  });
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const isMounted = useRef(true);
+  const hasChecked = useRef(false);
 
   useEffect(() => {
-    if (!user) {
-      router.push("/login");
+    if (hasChecked.current) return;
+    hasChecked.current = true;
+
+    console.log('📋 DashboardLayout - Checking auth...');
+
+    const token = getToken();
+    const userData = getStoredUser();
+
+    if (!token || !userData) {
+      console.log('🔀 No auth - Redirecting to login...');
+      router.replace("/login");
+      return;
     }
-  }, [router, user]);
+
+    console.log('✅ Auth OK - User:', userData.fullName);
+
+    if (isMounted.current) {
+      setUser(userData);
+      setLoading(false);
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [router]);
+
+  // ✅ Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!user) {
     return null;
