@@ -1,56 +1,32 @@
-import api from "@/lib/axios";
-import { HospitalInventory, InventoryRequest } from "@/types/inventory";
+import { apiClient } from './apiClient';
+import { HospitalInventory, HospitalInventoryRequest } from '@/types/hospital';
 
 export const inventoryService = {
-  async getAll(): Promise<HospitalInventory[]> {
-    try {
-      const response = await api.get("/hospital-billing/inventory");
-      return response.data;
-    } catch (error: any) {
-      console.error("Error fetching inventory:", error);
-      throw error;
-    }
+  createInventory: async (data: HospitalInventoryRequest): Promise<HospitalInventory> => {
+    return apiClient.post<HospitalInventory>('/hospital-billing/inventory', data);
   },
 
-  async getById(id: string): Promise<HospitalInventory> {
-    const response = await api.get(`/hospital-billing/inventory/${id}`);
-    return response.data;
+  getAllInventory: async (): Promise<HospitalInventory[]> => {
+    return apiClient.get<HospitalInventory[]>('/hospital-billing/inventory');
   },
 
-  async create(data: InventoryRequest): Promise<HospitalInventory> {
-    const response = await api.post("/hospital-billing/inventory", data);
-    return response.data;
+  getInventoryById: async (id: string): Promise<HospitalInventory> => {
+    return apiClient.get<HospitalInventory>(`/hospital-billing/inventory/${id}`);
   },
 
-  async update(id: string, data: InventoryRequest): Promise<HospitalInventory> {
-    const response = await api.put(`/hospital-billing/inventory/${id}`, data);
-    return response.data;
+  getHospitalInventory: async (hospitalId: string): Promise<HospitalInventory[]> => {
+    return apiClient.get<HospitalInventory[]>(`/hospital-billing/inventory/hospital/${hospitalId}`);
   },
 
-  async delete(id: string): Promise<void> {
-    await api.delete(`/hospital-billing/inventory/${id}`);
+  getLowStockItems: async (): Promise<HospitalInventory[]> => {
+    return apiClient.get<HospitalInventory[]>('/hospital-billing/inventory/low-stock');
   },
 
-  async addStock(id: string, quantity: number): Promise<HospitalInventory> {
-    const response = await api.patch(`/hospital-billing/inventory/${id}/stock-in`, {
-      quantity,
-    });
-    return response.data;
+  updateInventory: async (id: string, data: HospitalInventoryRequest): Promise<HospitalInventory> => {
+    return apiClient.put<HospitalInventory>(`/hospital-billing/inventory/${id}`, data);
   },
 
-  async removeStock(id: string, quantity: number): Promise<HospitalInventory> {
-    const response = await api.patch(`/hospital-billing/inventory/${id}/stock-out`, {
-      quantity,
-    });
-    return response.data;
-  },
-
-  async getLowStock(): Promise<HospitalInventory[]> {
-    const response = await api.get("/hospital-billing/inventory/low-stock");
-    return response.data;
+  deleteInventory: async (id: string): Promise<void> => {
+    return apiClient.delete<void>(`/hospital-billing/inventory/${id}`);
   },
 };
-
-// Export types for backward compatibility
-export type { HospitalInventory };
-export type InventoryRequest;
