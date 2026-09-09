@@ -18,14 +18,18 @@ export const metadata: Metadata = {
   description: "Smart Healthcare. Stronger Connections.",
 };
 
+import ToastProvider from "@/components/ui/Toast";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
+      <body className="min-h-full flex flex-col bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100">
+        <ToastProvider>
+          {children}
+        </ToastProvider>
         <Script src="https://accounts.google.com/gsi/client" strategy="afterInteractive" />
       </body>
     </html>

@@ -52,5 +52,4 @@ export const inventoryService = {
 };
 
 // Export types for backward compatibility
-export type { HospitalInventory };
-export type InventoryRequest;
+export type { InventoryRequest };

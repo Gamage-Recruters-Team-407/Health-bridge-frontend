@@ -6,6 +6,7 @@ import { ShieldCheck, User as UserIcon, LogOut, HeartPulse } from "lucide-react"
 import HeaderLogo from "@/components/HeaderLogo";
 import AuthFooter from "@/components/AuthFooter";
 import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
+import Link from "next/link";
 
 export default function PatientDashboardPage() {
   const router = useRouter();
@@ -50,6 +51,12 @@ export default function PatientDashboardPage() {
                 {user?.role || "PATIENT"}
               </span>
             </div>
+            <Link
+  href="/support/patient"
+  className="px-4 py-2 rounded-xl bg-blue-600 text-white text-sm font-semibold hover:bg-blue-700 transition"
+>
+  Support
+</Link>
 
             <button
               onClick={handleLogout}
@@ -60,6 +67,13 @@ export default function PatientDashboardPage() {
             </button>
           </div>
         </div>
+
+
+
+
+
+
+        
       </header>
 
       {/* Main Container */}
