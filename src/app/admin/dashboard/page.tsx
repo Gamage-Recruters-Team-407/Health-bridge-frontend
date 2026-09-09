@@ -1,13 +1,13 @@
 "use client";
 
-import React from "react";
-import Link from "next/link";
+import React, { useEffect, useState, useRef } from "react";
+import { useRouter } from "next/navigation";
+import { getToken, getStoredUser } from "@/lib/auth";
 import DashboardLayout from "@/app/dashboard/layout";
 import {
   Users,
   Hospital,
   Calendar,
-  FileText,
   DollarSign,
   Pill,
   Activity,
@@ -20,6 +20,62 @@ import {
 } from "lucide-react";
 
 export default function AdminDashboardPage() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [userName, setUserName] = useState("");
+  const isMounted = useRef(true);
+  const hasChecked = useRef(false);
+
+  useEffect(() => {
+    if (hasChecked.current) return;
+    hasChecked.current = true;
+
+    console.log('🔍 Admin Dashboard - Checking auth...');
+
+    const token = getToken();
+    const user = getStoredUser();
+
+    console.log('📋 Token:', token ? '✅ Found' : '❌ Not found');
+    console.log('📋 User:', user ? '✅ Found' : '❌ Not found');
+
+    if (!token || !user) {
+      console.log('🔀 Redirecting to login...');
+      router.replace("/login");
+      return;
+    }
+
+    console.log('✅ User authenticated:', user.fullName);
+
+    if (isMounted.current) {
+      setIsAuthenticated(true);
+      setUserName(user.fullName);
+      setLoading(false);
+    }
+
+    return () => {
+      isMounted.current = false;
+    };
+  }, [router]);
+
+  // ✅ Show loading state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-6 text-lg font-medium text-slate-700">Loading Dashboard...</p>
+          <p className="mt-2 text-sm text-slate-400">Please wait while we prepare your workspace</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  // ✅ Dashboard Content
   const stats = [
     { label: "Total Users", value: "1,284", icon: Users, color: "bg-blue-500" },
     { label: "Total Hospitals", value: "48", icon: Hospital, color: "bg-green-500" },
@@ -48,9 +104,9 @@ export default function AdminDashboardPage() {
 
   return (
     <DashboardLayout pageTitle="Dashboard">
-      {/* Welcome Section - Gradient */}
+      {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-6 text-white shadow-lg">
-        <h1 className="text-2xl font-bold">Welcome back, Admin! 👋</h1>
+        <h1 className="text-2xl font-bold">Welcome back, {userName}! 👋</h1>
         <p className="mt-1 text-blue-100">Here&apos;s what&apos;s happening with your healthcare platform today.</p>
       </div>
 
@@ -83,7 +139,7 @@ export default function AdminDashboardPage() {
         <h2 className="text-lg font-semibold text-slate-900 mb-4">Quick Actions</h2>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           {quickActions.map((action, index) => (
-            <Link
+            <a
               key={index}
               href={action.href}
               className="bg-white rounded-xl shadow-sm p-4 border border-slate-200 hover:shadow-md hover:border-blue-300 transition text-center group"
@@ -92,7 +148,7 @@ export default function AdminDashboardPage() {
                 <action.icon className="w-6 h-6" />
               </div>
               <p className="mt-2 text-sm font-medium text-slate-700">{action.label}</p>
-            </Link>
+            </a>
           ))}
         </div>
       </div>

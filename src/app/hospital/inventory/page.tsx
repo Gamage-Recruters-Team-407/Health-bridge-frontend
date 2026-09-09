@@ -2,12 +2,13 @@
 
 import React from "react";
 import Link from "next/link";
-import DashboardLayout from "@/app/dashboard/layout";
+import { HospitalProvider } from "@/context/HospitalContext";
 import { useHospital } from "@/context/HospitalContext";
 import { LowStockAlert } from "@/components/hospital/inventory/LowStockAlert";
 import { Plus, Package, Search, Edit, Trash2, Eye } from "lucide-react";
+import DashboardLayout from "@/app/dashboard/layout";
 
-export default function InventoryPage() {
+function InventoryContent() {
   const {
     inventory,
     lowStockItems,
@@ -18,31 +19,26 @@ export default function InventoryPage() {
 
   if (inventoryLoading) {
     return (
-      <DashboardLayout pageTitle="Inventory Management">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="mt-4 text-slate-500">Loading inventory...</p>
-          </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-500">Loading inventory...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (inventoryError) {
     return (
-      <DashboardLayout pageTitle="Inventory Management">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-          <p className="font-medium">❌ Error loading inventory</p>
-          <p className="text-sm mt-1">{inventoryError}</p>
-        </div>
-      </DashboardLayout>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+        <p className="font-medium">❌ Error loading inventory</p>
+        <p className="text-sm mt-1">{inventoryError}</p>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout pageTitle="Inventory Management">
-      {/* Header */}
+    <>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Hospital Inventory</h1>
@@ -81,10 +77,8 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Low Stock Alert */}
       <LowStockAlert items={lowStockItems} />
 
-      {/* Inventory Table */}
       {inventory.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -166,6 +160,16 @@ export default function InventoryPage() {
           </div>
         </div>
       )}
+    </>
+  );
+}
+
+export default function InventoryPage() {
+  return (
+    <DashboardLayout pageTitle="Inventory Management">
+      <HospitalProvider>
+        <InventoryContent />
+      </HospitalProvider>
     </DashboardLayout>
   );
 }

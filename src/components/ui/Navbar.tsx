@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useState } from "react";
 import {
   Menu,
   Search,
@@ -13,8 +13,6 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
-import { useToast } from "@/components/ui/Toast";
-import api from "@/lib/axios";
 
 export interface NavbarProps {
   onToggleMobileSidebar?: () => void;
@@ -23,64 +21,16 @@ export interface NavbarProps {
   userRole?: string;
 }
 
-function getInitials(name: string): string {
-  return name
-    .split(" ")
-    .filter(Boolean)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase())
-    .join("") || "?";
-}
-
 export const Navbar: React.FC<NavbarProps> = ({
   onToggleMobileSidebar,
   title = "Dashboard",
-
+  userName = "User",
+  userRole = "Patient",
 }) => {
-  const { info, warning } = useToast();
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-
-  // Real profile data, fetched once and reused across the app shell.
-  const [profile, setProfile] = useState<{
-    fullName: string;
-    role: string;
-    picture: string | null;
-  } | null>(null);
-
-  useEffect(() => {
-    // If the parent explicitly passes both props, skip the fetch entirely.
-    if (userNameProp && userRoleProp) return;
-
-    let cancelled = false;
-
-    api
-      .get("/users/profile")
-      .then((res) => {
-        if (cancelled) return;
-        setProfile({
-          fullName: res.data.fullName || "User",
-          role: res.data.role || "",
-          picture: res.data.picture || null,
-        });
-      })
-      .catch(() => {
-        // Silently fall back to defaults below; navbar should never block
-        // the rest of the dashboard from rendering.
-      });
-
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const userName = userNameProp || profile?.fullName || "User";
-  const userRole = userRoleProp || profile?.role || "";
-  const picture = profile?.picture || null;
-  const initials = getInitials(userName);
 
   const mockNotifications = [
     { id: 1, title: "Emergency Dispatch", desc: "Ambulance requested for Patient #P-8842", time: "2 mins ago", type: "urgent" },
@@ -142,7 +92,6 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="flex items-center gap-2 sm:gap-3">
         {/* Emergency Button */}
         <button
-          onClick={() => warning("Emergency Alert", "Emergency Protocol Triggered. Alerting On-Call Staff.")}
           className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-semibold transition-all shadow-sm"
         >
           <AlertTriangle className="w-3.5 h-3.5 animate-bounce" />
@@ -216,6 +165,8 @@ export const Navbar: React.FC<NavbarProps> = ({
             }}
             className="flex items-center gap-2.5 p-1.5 rounded-xl hover:bg-blue-50 transition-colors"
           >
+            <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shadow-md">
+              {userName.charAt(0).toUpperCase()}
             </div>
             <div className="hidden lg:flex flex-col text-left">
               <span className="text-xs font-bold text-[#0A2540] leading-tight">

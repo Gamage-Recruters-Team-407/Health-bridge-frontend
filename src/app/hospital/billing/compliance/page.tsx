@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import DashboardLayout from "@/app/dashboard/layout";
+import { HospitalProvider } from "@/context/HospitalContext";
 import { useHospital } from "@/context/HospitalContext";
 import { 
   Plus, 
@@ -15,8 +15,9 @@ import {
   Shield,
   AlertCircle
 } from "lucide-react";
+import DashboardLayout from "@/app/dashboard/layout";
 
-export default function CompliancePage() {
+function ComplianceContent() {
   const {
     complianceReports,
     complianceLoading,
@@ -26,25 +27,21 @@ export default function CompliancePage() {
 
   if (complianceLoading) {
     return (
-      <DashboardLayout pageTitle="Compliance Reports">
-        <div className="flex justify-center items-center h-64">
-          <div className="text-center">
-            <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-            <p className="mt-4 text-slate-500">Loading compliance reports...</p>
-          </div>
+      <div className="flex justify-center items-center h-64">
+        <div className="text-center">
+          <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-500">Loading compliance reports...</p>
         </div>
-      </DashboardLayout>
+      </div>
     );
   }
 
   if (complianceError) {
     return (
-      <DashboardLayout pageTitle="Compliance Reports">
-        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-          <p className="font-medium">❌ Error loading compliance reports</p>
-          <p className="text-sm mt-1">{complianceError}</p>
-        </div>
-      </DashboardLayout>
+      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+        <p className="font-medium">❌ Error loading compliance reports</p>
+        <p className="text-sm mt-1">{complianceError}</p>
+      </div>
     );
   }
 
@@ -58,8 +55,6 @@ export default function CompliancePage() {
         return 'bg-blue-100 text-blue-700 border-blue-200';
       case 'REJECTED':
         return 'bg-red-100 text-red-700 border-red-200';
-      case 'DRAFT':
-        return 'bg-slate-100 text-slate-700 border-slate-200';
       default:
         return 'bg-slate-100 text-slate-700 border-slate-200';
     }
@@ -81,8 +76,7 @@ export default function CompliancePage() {
   };
 
   return (
-    <DashboardLayout pageTitle="Compliance Reports">
-      {/* Header */}
+    <>
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Compliance Reports</h1>
@@ -99,7 +93,6 @@ export default function CompliancePage() {
         </Link>
       </div>
 
-      {/* Stats Summary */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Reports</p>
@@ -125,7 +118,6 @@ export default function CompliancePage() {
         </div>
       </div>
 
-      {/* Reports Grid */}
       {complianceReports.length === 0 ? (
         <div className="bg-white rounded-xl border border-slate-200 p-12 text-center">
           <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -148,7 +140,6 @@ export default function CompliancePage() {
               key={report.id}
               className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition p-5"
             >
-              {/* Header */}
               <div className="flex items-start justify-between">
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-purple-50 flex items-center justify-center">
@@ -169,7 +160,6 @@ export default function CompliancePage() {
                 </span>
               </div>
 
-              {/* Details */}
               <div className="mt-3">
                 <p className="text-sm text-slate-600 line-clamp-2">
                   {report.summary || "No summary provided"}
@@ -181,7 +171,6 @@ export default function CompliancePage() {
                 </div>
               </div>
 
-              {/* Actions */}
               <div className="mt-4 flex items-center gap-2 border-t border-slate-100 pt-3">
                 <Link
                   href={`/hospital/billing/compliance/${report.id}`}
@@ -208,6 +197,16 @@ export default function CompliancePage() {
           ))}
         </div>
       )}
+    </>
+  );
+}
+
+export default function CompliancePage() {
+  return (
+    <DashboardLayout pageTitle="Compliance Reports">
+      <HospitalProvider>
+        <ComplianceContent />
+      </HospitalProvider>
     </DashboardLayout>
   );
 }
