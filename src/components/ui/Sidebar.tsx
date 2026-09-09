@@ -74,6 +74,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Billing", href: "/hospital/billing", icon: DollarSign },
           { title: "Inventory", href: "/hospital/inventory", icon: Pill },
           { title: "Compliance", href: "/hospital/billing/compliance", icon: ClipboardCheck },
+          { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
         ],
       },
       {
@@ -128,6 +129,23 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
           { title: "Sales", href: "/pharmacy/sales", icon: TrendingUp },
+        ],
+      },
+    ];
+  }
+
+  // Lab Officer
+  if (roleUpper === "LAB_OFFICER") {
+    return [
+      {
+        groupTitle: "Laboratory",
+        items: [
+          { title: "Dashboard", href: "/laboratory/dashboard", icon: LayoutDashboard },
+          { title: "Test Orders", href: "/laboratory/test-orders", icon: ClipboardCheck },
+          { title: "Samples", href: "/laboratory/samples", icon: TestTube2 },
+          { title: "Processing", href: "/laboratory/processing", icon: FlaskConical },
+          { title: "Results", href: "/laboratory/results", icon: FileText },
+          { title: "Reports", href: "/laboratory/reports", icon: FileSpreadsheet },
         ],
       },
     ];

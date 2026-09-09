@@ -1,59 +1,8 @@
-// import { getPatientHistory } from "../../api/labApi";
-// import { LabResult } from "../../types";
-//
-// export default async function PatientHistoryPage({
-//                                                      params,
-//                                                  }: {
-//     params: { patientId: string };
-// }) {
-//     const { patientId } = params;
-//     let history: LabResult[] = [];
-//     let error: string | null = null;
-//
-//     try {
-//         history = await getPatientHistory(patientId);
-//     } catch (e) {
-//         error = e instanceof Error ? e.message : "Failed to load history";
-//     }
-//
-//     return (
-//         <div className="p-6">
-//             <h2 className="text-2xl font-bold mb-4">Result History — {patientId}</h2>
-//             {error && <p className="text-red-600">{error}</p>}
-//
-//             {history.map((r) => (
-//                 <div
-//                     key={r.id}
-//                     className={`bg-white border p-4 mb-3 rounded-lg ${r.critical ? "border-red-500 bg-red-50" : ""}`}
-//                 >
-//                     <div className="flex justify-between mb-2">
-//                         <p className="font-semibold text-sm">{new Date(r.resultedAt).toLocaleString()}</p>
-//                         <div className="flex gap-2">
-//                             {r.critical && <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">CRITICAL</span>}
-//                             <span className="text-xs bg-gray-100 px-2 py-1 rounded">{r.status}</span>
-//                         </div>
-//                     </div>
-//                     {r.parameters.map((p, i) => (
-//                         <p key={i} className="text-sm">
-//                             {p.parameterName}: <span className="font-medium">{p.value} {p.unit}</span>{" "}
-//                             <span className="text-gray-400">({p.referenceRange})</span>{" "}
-//                             {p.outOfRange && <span className="text-red-600 font-medium">Out of range</span>}
-//                         </p>
-//                     ))}
-//                 </div>
-//             ))}
-//
-//             {history.length === 0 && !error && (
-//                 <p className="text-gray-500">No results found for this patient.</p>
-//             )}
-//         </div>
-//     );
-// }
-
 "use client";
 
 import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
+import DashboardLayout from "@/app/dashboard/layout";
 import { getPatientHistory } from "../../api/labApi";
 import { LabResult } from "../../types";
 
@@ -73,38 +22,35 @@ export default function PatientHistoryPage() {
             .finally(() => setLoading(false));
     }, [patientId]);
 
-    if (loading) return <p className="p-6">Loading...</p>;
-
     return (
-        <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Result History — {patientId}</h2>
-            {error && <p className="text-red-600 mb-4">{error}</p>}
+        <DashboardLayout pageTitle={`Result History — ${patientId}`}>
+            <h2 className="text-lg font-semibold text-slate-900">Result History — {patientId}</h2>
+            {error && <p className="text-red-600 text-sm">{error}</p>}
 
-            {history.map((r) => (
-                <div
-                    key={r.id}
-                    className={`bg-white border p-4 mb-3 rounded-lg ${r.critical ? "border-red-500 bg-red-50" : ""}`}
-                >
-                    <div className="flex justify-between mb-2">
-                        <p className="font-semibold text-sm text-gray-900">{new Date(r.resultedAt).toLocaleString()}</p>
-                        <div className="flex gap-2">
-                            {r.critical && <span className="text-xs bg-red-600 text-white px-2 py-1 rounded">CRITICAL</span>}
-                            <span className="text-xs bg-gray-100 px-2 py-1 rounded">{r.status}</span>
+            <div className="space-y-3">
+                {history.map((r) => (
+                    <div key={r.id} className={`bg-white border rounded-xl p-4 shadow-sm ${r.critical ? "border-red-300" : "border-slate-200"}`}>
+                        <div className="flex justify-between mb-2">
+                            <p className="font-medium text-sm text-slate-800">{new Date(r.resultedAt).toLocaleString()}</p>
+                            <div className="flex gap-2">
+                                {r.critical && <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">CRITICAL</span>}
+                                <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full font-medium">{r.status}</span>
+                            </div>
                         </div>
+                        {r.parameters.map((p, i) => (
+                            <p key={i} className="text-sm text-slate-600">
+                                {p.parameterName}: <span className="font-medium text-slate-900">{p.value} {p.unit}</span>{" "}
+                                <span className="text-slate-400">({p.referenceRange})</span>{" "}
+                                {p.outOfRange && <span className="text-red-600 font-medium">Out of range</span>}
+                            </p>
+                        ))}
                     </div>
-                    {r.parameters.map((p, i) => (
-                        <p key={i} className="text-sm text-gray-800">
-                            {p.parameterName}: <span className="font-medium">{p.value} {p.unit}</span>{" "}
-                            <span className="text-gray-400">({p.referenceRange})</span>{" "}
-                            {p.outOfRange && <span className="text-red-600 font-medium">Out of range</span>}
-                        </p>
-                    ))}
-                </div>
-            ))}
+                ))}
+            </div>
 
-            {history.length === 0 && !error && (
-                <p className="text-gray-500">No results found for this patient.</p>
+            {!loading && history.length === 0 && !error && (
+                <p className="text-slate-400 text-sm">No results found for this patient.</p>
             )}
-        </div>
+        </DashboardLayout>
     );
 }

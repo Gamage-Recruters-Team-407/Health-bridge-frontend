@@ -1,40 +1,7 @@
-// import { getTestOrdersByStatus } from "../api/labApi";
-// import { LabTest } from "../types";
-//
-// export default async function ProcessingPage() {
-//     let orders: LabTest[] = [];
-//     let error: string | null = null;
-//
-//     try {
-//         orders = await getTestOrdersByStatus("SAMPLE_COLLECTED");
-//     } catch (e) {
-//         error = e instanceof Error ? e.message : "Failed to load processing queue";
-//     }
-//
-//     return (
-//         <div className="p-6">
-//             <h2 className="text-2xl font-bold mb-4">Processing Queue</h2>
-//             {error && <p className="text-red-600">{error}</p>}
-//             <div className="bg-white rounded-lg border divide-y">
-//                 {orders.map((o) => (
-//                     <div key={o.id} className="p-3 flex justify-between text-sm">
-//                         <span>{o.patientId} — {o.requestedTests.join(", ")}</span>
-//                         <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
-//               Awaiting processing
-//             </span>
-//                     </div>
-//                 ))}
-//                 {orders.length === 0 && !error && (
-//                     <p className="p-3 text-gray-500 text-sm">No samples waiting for processing.</p>
-//                 )}
-//             </div>
-//         </div>
-//     );
-// }
-
 "use client";
 
 import { useEffect, useState } from "react";
+import DashboardLayout from "@/app/dashboard/layout";
 import { getTestOrdersByStatus } from "../api/labApi";
 import { LabTest } from "../types";
 
@@ -50,25 +17,26 @@ export default function ProcessingPage() {
             .finally(() => setLoading(false));
     }, []);
 
-    if (loading) return <p className="p-6">Loading...</p>;
-
     return (
-        <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900">Processing Queue</h2>
-            {error && <p className="text-red-600 mb-4">{error}</p>}
-            <div className="bg-white rounded-lg border divide-y">
+        <DashboardLayout pageTitle="Processing Queue">
+            <h2 className="text-lg font-semibold text-slate-900">Processing Queue</h2>
+            {error && <p className="text-red-600 text-sm">{error}</p>}
+            <div className="bg-white border border-slate-200 rounded-xl divide-y divide-slate-100 shadow-sm">
                 {orders.map((o) => (
-                    <div key={o.id} className="p-3 flex justify-between text-sm text-gray-800">
-                        <span>{o.patientId} — {o.requestedTests.join(", ")}</span>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                    <div key={o.id} className="px-6 py-3 flex justify-between items-center text-sm">
+                        <div>
+                            <p className="font-medium text-slate-800">{o.patientId}</p>
+                            <p className="text-slate-500 text-xs">{o.requestedTests.join(", ")}</p>
+                        </div>
+                        <span className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
               Awaiting processing
             </span>
                     </div>
                 ))}
-                {orders.length === 0 && !error && (
-                    <p className="p-3 text-gray-500 text-sm">No samples waiting for processing.</p>
+                {!loading && orders.length === 0 && !error && (
+                    <p className="p-6 text-center text-slate-400 text-sm">No samples waiting for processing.</p>
                 )}
             </div>
-        </div>
+        </DashboardLayout>
     );
 }
