@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ReactNode } from "react";
-import { Sidebar } from "@/components/layout/Sidebar";
+import { ReactNode, useState } from "react";
+import { Sidebar } from "@/components/ui/Sidebar";
+import { getStoredUser } from "@/lib/auth";
 
 interface AppointmentModuleShellProps {
   title: string;
@@ -25,10 +26,20 @@ export default function AppointmentModuleShell({
   action,
 }: AppointmentModuleShellProps) {
   const pathname = usePathname();
+  const user = getStoredUser();
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   return (
     <div className="min-h-screen bg-slate-50 md:flex">
-      <Sidebar />
+      <Sidebar
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed((value) => !value)}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+        userRole={user?.role ?? "PATIENT"}
+        userName={user?.fullName ?? "User"}
+      />
       <main className="min-w-0 flex-1">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
