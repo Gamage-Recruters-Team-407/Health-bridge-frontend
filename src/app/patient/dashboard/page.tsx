@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, LogOut } from "lucide-react";
-import { Navbar } from "@/components/ui/Navbar";
+import { User as UserIcon, LogOut, Bell, HeadphonesIcon } from "lucide-react";
+import DashboardLayout from "@/app/dashboard/layout";
 import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
@@ -89,16 +89,35 @@ export default function PatientDashboardPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
-      <Navbar
-        title="Patient Dashboard"
-        userName={user?.fullName || "User"}
-        userRole={user?.role || "PATIENT"}
-      />
+    <DashboardLayout pageTitle="Patient Dashboard">
+      {/* Welcome Header */}
+      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+        <div>
+          <h1 className="text-2xl font-bold">
+            Welcome back, {user?.fullName || "Patient"}! 👋
+          </h1>
+          <p className="mt-1 text-blue-100">Your health is our priority. Here&apos;s your health summary.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/notifications/patient"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm transition"
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notifications</span>
+          </Link>
+          <Link
+            href="/support/patient"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold shadow-sm transition"
+          >
+            <HeadphonesIcon className="w-4 h-4" />
+            <span>Support</span>
+          </Link>
+        </div>
+      </div>
 
       {/* Main Dashboard Content */}
-      <main className="flex-1 p-6 sm:p-10 w-full">
-        <div className="max-w-[1162px] mx-auto w-full flex flex-col gap-6">
+      <div className="flex flex-col gap-6">
           {/* Top Stat Cards Container */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
             {/* Card 1: Appointments */}
@@ -264,7 +283,6 @@ export default function PatientDashboardPage() {
             </div>
           </div>
         </div>
-      </main>
-    </div>
+    </DashboardLayout>
   );
 }

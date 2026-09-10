@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getAllTickets,
   getTicketByIdForAdmin,
@@ -20,8 +21,16 @@ const STATUS_OPTIONS: TicketStatus[] = ["OPEN", "PROCESSING", "SOLVED"];
 function formatListDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
+function sortTicketsByUpdatedAt(tickets: TicketSummary[]) {
+  return [...tickets].sort(
+    (a, b) =>
+      new Date(b.updatedAt).getTime() -
+      new Date(a.updatedAt).getTime()
+  );
+}
 
 export default function AdminTicketsPage() {
+  const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -35,19 +44,31 @@ export default function AdminTicketsPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const loadList = async () => {
-    setLoadingList(true);
-    setListError(null);
-    try {
-      const data = await getAllTickets();
-      setTickets(data);
-      setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
-    } catch (e) {
-      setListError(e instanceof Error ? e.message : "Failed to load tickets.");
-    } finally {
-      setLoadingList(false);
-    }
-  };
+  setLoadingList(true);
+  setListError(null);
 
+  try {
+    const data = await getAllTickets();
+
+    const sortedData = [...data].sort(
+      (a, b) =>
+        new Date(b.updatedAt).getTime() -
+        new Date(a.updatedAt).getTime()
+    );
+
+    setTickets(sortedData);
+
+    setSelectedId((current) =>
+      current ?? (sortedData.length > 0 ? sortedData[0].id : null)
+    );
+  } catch (e) {
+    setListError(
+      e instanceof Error ? e.message : "Failed to load tickets."
+    );
+  } finally {
+    setLoadingList(false);
+  }
+};
   const loadTicket = async (id: string) => {
     setLoadingTicket(true);
     setTicketError(null);
@@ -61,13 +82,22 @@ export default function AdminTicketsPage() {
     }
   };
 
-  useEffect(() => {
-    loadList();
-  }, []);
+useEffect(() => {
+  loadList();
+}, []);
 
   useEffect(() => {
     if (selectedId) loadTicket(selectedId);
   }, [selectedId]);
+
+  useEffect(() => {
+  const ticketId = searchParams.get("ticketId");
+
+  if (ticketId) {
+    setSelectedId(ticketId);
+  }
+}, [searchParams]);
+
 
   const handleSend = async (message: string, image: File | null) => {
     if (!selectedId) return;
