@@ -110,9 +110,12 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "My Health",
         items: [
           { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
+          { title: "Family Members", href: "/patient/family", icon: Users },
+          { title: "Health Metrics", href: "/patient/health-metrics", icon: TrendingUp },
+          { title: "Medications", href: "/patient/medications", icon: Pill },
           { title: "Appointments", href: "/appointments", icon: Calendar },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
         ],
       },
