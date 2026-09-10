@@ -29,25 +29,25 @@ export default function PatientDashboardPage() {
     const fetchData = () => {
       // Fetch Live Vitals
       api.get(`/health-metrics/patient/${storedUser.id}`)
-        .then(res => setMetrics(res.data))
+        .then((data: any) => setMetrics(data))
         .catch(err => console.error(err));
 
       // Fetch Live Appointments
       api.get(`/appointments?patientId=${storedUser.id}`)
-        .then(res => setAppointments(res.data))
+        .then((data: any) => setAppointments(data))
         .catch(err => console.error(err));
 
       // Fetch Live Lab Reports
       api.get(`/lab/results/patient/${storedUser.id}/history`)
-        .then(res => {
-          const valid = res.data.filter((r: any) => r.status !== 'DRAFT');
+        .then((data: any) => {
+          const valid = data.filter((r: any) => r.status !== 'DRAFT');
           setLabReports(valid);
         })
         .catch(err => console.error(err));
 
       // Fetch Active Prescriptions Count
       api.get(`/prescriptions/patient/${storedUser.id}/active`)
-        .then(res => setActivePrescriptions(res.data.length))
+        .then((data: any) => setActivePrescriptions(data.length))
         .catch(err => console.error(err))
         .finally(() => setLoading(false));
     };

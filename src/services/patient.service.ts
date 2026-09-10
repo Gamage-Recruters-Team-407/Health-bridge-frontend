@@ -32,12 +32,10 @@ export interface UpdatePatientProfilePayload {
 
 export const patientService = {
   async getProfile(): Promise<PatientProfile> {
-    const response = await api.get<PatientProfile>("/users/profile");
-    return response.data;
+    return await api.get<PatientProfile>("/users/profile");
   },
 
   async updateProfile(payload: UpdatePatientProfilePayload): Promise<PatientProfile> {
-    const response = await api.put<PatientProfile>("/users/profile", payload);
-    return response.data;
+    return await api.put<PatientProfile>("/users/profile", payload);
   },
 };

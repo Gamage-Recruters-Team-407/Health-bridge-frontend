@@ -41,8 +41,8 @@ export default function FamilyPage() {
 
   const fetchFamilyMembers = async (patientId: string) => {
     try {
-      const res = await api.get(`/family-members/patient/${patientId}`);
-      setFamilyMembers(res.data);
+      const data = await api.get<any[]>(`/family-members/patient/${patientId}`);
+      setFamilyMembers(data);
     } catch (err) {
       console.error("Failed to load family members", err);
     } finally {

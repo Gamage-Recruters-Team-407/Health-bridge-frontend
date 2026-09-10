@@ -11,26 +11,22 @@ export default function AccountSettingsPage() {
 
   useEffect(() => {
     api
-      .get("/users/profile")
-      .then((res) => setAccountStatus(res.data.accountStatus || "Active"))
+      .get<any>("/users/profile")
+      .then((data) => setAccountStatus(data.accountStatus || "Active"))
       .catch(() => setError("Could not load account status."))
       .finally(() => setLoading(false));
   }, []);
 
   const handleDeactivate = async () => {
-    const confirmed = window.confirm(
-      "Are you sure you want to deactivate your account?"
-    );
-    if (!confirmed) return;
-
+    if (!confirm("Are you sure you want to deactivate your account?")) return;
     setUpdating(true);
     setError("");
     try {
-      const res = await api.put("/users/profile/deactivate");
-      setAccountStatus(res.data.accountStatus);
+      const data = await api.put<any>("/users/profile/deactivate");
+      setAccountStatus(data.accountStatus);
     } catch (err) {
       console.error(err);
-      setError("Could not deactivate account.");
+      setError("Failed to deactivate account.");
     } finally {
       setUpdating(false);
     }
@@ -40,8 +36,8 @@ export default function AccountSettingsPage() {
     setUpdating(true);
     setError("");
     try {
-      const res = await api.put("/users/profile/reactivate");
-      setAccountStatus(res.data.accountStatus);
+      const data = await api.put<any>("/users/profile/reactivate");
+      setAccountStatus(data.accountStatus);
     } catch (err) {
       console.error(err);
       setError("Could not reactivate account.");

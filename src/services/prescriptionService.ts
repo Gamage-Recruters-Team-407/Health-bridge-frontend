@@ -3,30 +3,25 @@ import { Prescription, CreatePrescriptionDTO } from "@/types/prescription";
 
 export const prescriptionService = {
   getAllPrescriptions: async (): Promise<Prescription[]> => {
-    const response = await api.get("/prescriptions");
-    return response.data;
+    return await api.get<Prescription[]>("/prescriptions");
   },
 
   getPrescriptionById: async (id: string): Promise<Prescription> => {
-    const response = await api.get(`/prescriptions/${id}`);
-    return response.data;
+    return await api.get<Prescription>(`/prescriptions/${id}`);
   },
 
   createPrescription: async (data: CreatePrescriptionDTO): Promise<Prescription> => {
-    const response = await api.post("/prescriptions", data);
-    return response.data;
+    return await api.post<Prescription>("/prescriptions", data);
   },
 
   updatePrescription: async (id: string, data: Partial<CreatePrescriptionDTO>): Promise<Prescription> => {
-    const response = await api.put(`/prescriptions/${id}`, data);
-    return response.data;
+    return await api.put<Prescription>(`/prescriptions/${id}`, data);
   },
 
   downloadPrescription: async (id: string): Promise<Blob> => {
-    const response = await api.get(`/prescriptions/${id}/download`, {
+    return await api.get<Blob>(`/prescriptions/${id}/download`, {
       responseType: "blob",
     });
-    return response.data;
   },
 
   // =========================================================================
@@ -34,7 +29,6 @@ export const prescriptionService = {
   // This endpoint is required for the Patient Portal (My Prescriptions page).
   // =========================================================================
   getPatientPrescriptions: async (patientId: string): Promise<Prescription[]> => {
-    const response = await api.get(`/prescriptions/patient/${patientId}`);
-    return response.data;
+    return await api.get<Prescription[]>(`/prescriptions/patient/${patientId}`);
   },
 };

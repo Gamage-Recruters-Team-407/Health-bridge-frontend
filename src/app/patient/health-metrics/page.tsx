@@ -33,8 +33,8 @@ export default function HealthMetricsPage() {
 
   const fetchMetrics = async (patientId: string) => {
     try {
-      const res = await api.get(`/health-metrics/patient/${patientId}`);
-      setMetrics(res.data);
+      const data = await api.get<any[]>(`/health-metrics/patient/${patientId}`);
+      setMetrics(data);
     } catch (error) {
       console.error("Failed to load metrics", error);
     } finally {

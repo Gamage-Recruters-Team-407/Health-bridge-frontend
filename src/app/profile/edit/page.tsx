@@ -23,13 +23,13 @@ export default function EditProfilePage() {
 
   useEffect(() => {
     api
-      .get("/users/profile")
-      .then((res) => {
+      .get<any>("/users/profile")
+      .then((data) => {
         setFormData({
-          fullName: res.data.fullName || "",
-          phoneNumber: res.data.phoneNumber || "",
+          fullName: data.fullName || "",
+          phoneNumber: data.phoneNumber || "",
         });
-        setPicture(res.data.picture || "");
+        setPicture(data.picture || "");
       })
       .catch(() => setError("Could not load profile."))
       .finally(() => setLoading(false));
@@ -70,11 +70,11 @@ export default function EditProfilePage() {
       const uploadData = new FormData();
       uploadData.append("file", file);
 
-      const res = await api.post("/users/profile/picture", uploadData, {
+      const data = await api.post<any>("/users/profile/picture", uploadData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
-      setPicture(res.data.picture || "");
+      setPicture(data.picture || "");
     } catch (err) {
       console.error(err);
       setPictureError("Could not upload picture. Please try again.");
@@ -90,8 +90,8 @@ export default function EditProfilePage() {
     setPictureError("");
     setUploadingPicture(true);
     try {
-      const res = await api.delete("/users/profile/picture");
-      setPicture(res.data.picture || "");
+      const data = await api.delete<any>("/users/profile/picture");
+      setPicture(data.picture || "");
     } catch (err) {
       console.error(err);
       setPictureError("Could not remove picture. Please try again.");

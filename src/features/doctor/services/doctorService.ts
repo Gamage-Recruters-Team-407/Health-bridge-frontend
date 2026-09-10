@@ -10,42 +10,42 @@ let leaves = [...mockLeaves];
 
 export async function getDoctorProfile(): Promise<Doctor> {
   if (USE_MOCKS) { await delay(); return { ...profile }; }
-  return (await api.get<Doctor>("/doctors/me")).data;
+  return await api.get<Doctor>("/doctors/me");
 }
 
 export async function updateDoctorProfile(data: DoctorProfileUpdate): Promise<Doctor> {
   if (USE_MOCKS) { await delay(); profile = { ...profile, ...data }; return { ...profile }; }
-  return (await api.put<Doctor>("/doctors/me", data)).data;
+  return await api.put<Doctor>("/doctors/me", data);
 }
 
 export async function getDoctors(): Promise<Doctor[]> {
   if (USE_MOCKS) { await delay(); return mockDoctors.map((doctor) => ({ ...doctor })); }
-  return (await api.get<Doctor[]>("/doctors")).data;
+  return await api.get<Doctor[]>("/doctors");
 }
 
 export async function getAvailability(): Promise<Availability[]> {
   if (USE_MOCKS) { await delay(); return availability.map((slot) => ({ ...slot })); }
-  return (await api.get<Availability[]>("/doctors/me/availability")).data;
+  return await api.get<Availability[]>("/doctors/me/availability");
 }
 
 export async function updateAvailability(slots: AvailabilityInput[]): Promise<Availability[]> {
   if (USE_MOCKS) { await delay(); availability = slots.map((slot, index) => ({ ...slot, id: `slot-${Date.now()}-${index}` })); return availability; }
-  return (await api.put<Availability[]>("/doctors/me/availability", slots)).data;
+  return await api.put<Availability[]>("/doctors/me/availability", slots);
 }
 
 export async function createLeave(data: LeaveInput): Promise<DoctorLeave> {
   if (USE_MOCKS) { await delay(); const leave: DoctorLeave = { ...data, id: `leave-${Date.now()}`, status: "Pending", appliedAt: new Date().toISOString().slice(0, 10) }; leaves = [leave, ...leaves]; return leave; }
-  return (await api.post<DoctorLeave>("/doctors/me/leaves", data)).data;
+  return await api.post<DoctorLeave>("/doctors/me/leaves", data);
 }
 
 export async function getLeaves(): Promise<DoctorLeave[]> {
   if (USE_MOCKS) { await delay(); return leaves.map((leave) => ({ ...leave })); }
-  return (await api.get<DoctorLeave[]>("/doctors/me/leaves")).data;
+  return await api.get<DoctorLeave[]>("/doctors/me/leaves");
 }
 
 export async function getEarnings(): Promise<Earnings> {
   if (USE_MOCKS) { await delay(); return structuredClone(mockEarnings); }
-  return (await api.get<Earnings>("/doctors/me/earnings")).data;
+  return await api.get<Earnings>("/doctors/me/earnings");
 }
 
 export const doctorService = { getDoctorProfile, updateDoctorProfile, getDoctors, getAvailability, updateAvailability, createLeave, getLeaves, getEarnings };
