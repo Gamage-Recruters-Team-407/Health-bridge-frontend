@@ -76,6 +76,12 @@ const navGroups: NavGroup[] = [
       { title: "Dev20 Test Bench", href: "/dev20-test", icon: TestTube2, badge: "Dev UI", badgeVariant: "purple" },
     ],
   },
+  {
+    groupTitle: "Patient Services",
+    items: [
+      { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
+    ],
+  },
 ];
 
 export const Sidebar: React.FC<SidebarProps> = ({

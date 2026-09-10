@@ -7,9 +7,10 @@ import {
   Doctor,
   DoctorAvailabilitySlot,
 } from "@/types/appointment";
+import { getStoredUser, getToken } from "@/lib/auth";
 
-const PATIENT_ID = "patient-demo-001";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080/api";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8088/api";
+const getPatientId = () => getStoredUser()?.id || "patient-demo-001";
 
 const apiRequest = async <T,>(path: string, options?: RequestInit): Promise<T> => {
   const controller = new AbortController();
@@ -18,7 +19,11 @@ const apiRequest = async <T,>(path: string, options?: RequestInit): Promise<T> =
     const response = await fetch(`${API_BASE_URL}${path}`, {
       ...options,
       signal: controller.signal,
-      headers: { "Content-Type": "application/json", ...(options?.headers || {}) },
+      headers: {
+        "Content-Type": "application/json",
+        ...(getToken() ? { Authorization: `Bearer ${getToken()}` } : {}),
+        ...(options?.headers || {}),
+      },
     });
     if (!response.ok) {
       const message = await response.text();
@@ -262,7 +267,7 @@ const delay = async () => {
 
 export const appointmentService = {
   async getAppointments(filters?: AppointmentFilters): Promise<Appointment[]> {
-    const query = new URLSearchParams({ patientId: PATIENT_ID });
+    const query = new URLSearchParams({ patientId: getPatientId() });
     if (filters?.status && filters.status !== "ALL") query.set("status", filters.status);
     const appointments = await apiRequest<Appointment[]>(`/appointments?${query}`);
     return applyFilters(appointments, filters);
@@ -344,7 +349,7 @@ export const appointmentService = {
     return apiRequest<Appointment>("/appointments", {
       method: "POST",
       body: JSON.stringify({
-        patientId: PATIENT_ID,
+        patientId: getPatientId(),
         doctorId: doctor.id,
         doctorName: doctor.name,
         doctorSpecialization: doctor.specialization,
@@ -365,7 +370,7 @@ export const appointmentService = {
     validateBooking(appointments, values, appointmentId);
     return apiRequest<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}`, {
       method: "PUT",
-      body: JSON.stringify({ patientId: PATIENT_ID, doctorId: values.doctorId, appointmentDate: values.appointmentDate, appointmentTime: values.appointmentTime, reason: values.reason.trim() }),
+      body: JSON.stringify({ patientId: getPatientId(), doctorId: values.doctorId, appointmentDate: values.appointmentDate, appointmentTime: values.appointmentTime, reason: values.reason.trim() }),
     });
   },
 

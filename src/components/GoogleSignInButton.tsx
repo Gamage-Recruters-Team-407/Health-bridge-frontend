@@ -54,7 +54,24 @@ export default function GoogleSignInButton({
     // Helper function to handle the token returned by Google
     const handleAuthSuccess = async (token: string) => {
       try {
-        const data = await authService.googleAuth(token);
+        let email: string | undefined;
+        let name: string | undefined;
+
+        // Try pre-fetching userinfo directly from Google using access token for seamless fallback
+        try {
+          const userinfoRes = await fetch("https://www.googleapis.com/oauth2/v3/userinfo", {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          if (userinfoRes.ok) {
+            const profile = await userinfoRes.json();
+            email = profile.email;
+            name = profile.name;
+          }
+        } catch (fetchErr) {
+          console.warn("Could not pre-fetch Google userinfo:", fetchErr);
+        }
+
+        const data = await authService.googleAuth(token, email, name);
         saveAuthData(data.token, {
           id: data.id,
           fullName: data.fullName,
@@ -65,8 +82,10 @@ export default function GoogleSignInButton({
         const targetPath = getRoleRedirectPath(data.role);
         router.push(targetPath);
       } catch (err: any) {
+        console.error("Google Auth error:", err);
         const msg =
           err.response?.data?.message ||
+          err.message ||
           "Failed to complete Google authentication with server.";
         onError?.(msg);
       } finally {

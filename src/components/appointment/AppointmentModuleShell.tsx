@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ReactNode } from "react";
+import { Sidebar } from "@/components/layout/Sidebar";
 
 interface AppointmentModuleShellProps {
   title: string;
@@ -26,7 +27,9 @@ export default function AppointmentModuleShell({
   const pathname = usePathname();
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-slate-50 md:flex">
+      <Sidebar />
+      <main className="min-w-0 flex-1">
       <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6 lg:px-8">
         <div className="rounded-3xl border border-slate-200 bg-white shadow-sm">
           <div className="border-b border-slate-200 px-5 py-4 sm:px-6">
@@ -71,6 +74,7 @@ export default function AppointmentModuleShell({
 
         {children}
       </div>
+      </main>
     </div>
   );
 }
