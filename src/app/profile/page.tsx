@@ -19,8 +19,8 @@ export default function ProfilePage() {
 
   useEffect(() => {
     api
-      .get("/users/profile")
-      .then((res) => setUser(res.data))
+      .get<any>("/users/profile")
+      .then((data) => setUser(data))
       .catch((err) => {
         console.error(err);
         setError("Could not load profile. Please log in again.");
