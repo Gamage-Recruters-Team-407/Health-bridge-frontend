@@ -28,4 +28,13 @@ export const prescriptionService = {
     });
     return response.data;
   },
+
+  // =========================================================================
+  // DEVELOPER 03 (PATIENT MANAGEMENT) - DO NOT MODIFY OR DELETE
+  // This endpoint is required for the Patient Portal (My Prescriptions page).
+  // =========================================================================
+  getPatientPrescriptions: async (patientId: string): Promise<Prescription[]> => {
+    const response = await api.get(`/prescriptions/patient/${patientId}`);
+    return response.data;
+  },
 };
