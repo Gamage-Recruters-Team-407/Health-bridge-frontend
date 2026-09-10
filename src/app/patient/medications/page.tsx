@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getStoredUser, AuthUser } from "@/lib/auth";
-import { Navbar } from "@/components/ui/Navbar";
+import DashboardLayout from "@/app/dashboard/layout";
 import { Pill, FileText, Download, Calendar } from "lucide-react";
 
 export default function MedicationsPage() {
@@ -55,14 +55,8 @@ export default function MedicationsPage() {
 
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar 
-        title="Prescriptions & Medications" 
-        userName={user?.fullName || "User"} 
-        userRole={user?.role || "PATIENT"} 
-      />
-
-      <main className="flex-1 p-6 sm:p-10 w-full">
+    <DashboardLayout pageTitle="Prescriptions & Medications">
+      <main className="flex-1 p-6 sm:p-10 w-full relative">
         <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full pb-10">
           <div className="flex justify-between items-center mb-2">
             <div>
@@ -136,6 +130,6 @@ export default function MedicationsPage() {
           </div>
         </div>
       </main>
-    </div>
+    </DashboardLayout>
   );
 }

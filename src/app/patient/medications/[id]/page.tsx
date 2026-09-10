@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { prescriptionService } from "@/services/prescriptionService";
 import QRCodeDisplay from "@/components/prescription/QRCodeDisplay";
-import { Navbar } from "@/components/ui/Navbar";
+import DashboardLayout from "@/app/dashboard/layout";
 
 export default function PatientPrescriptionDetails() {
   const params = useParams();
@@ -19,8 +19,7 @@ export default function PatientPrescriptionDetails() {
   if (!data) return <div className="p-10 text-center">Loading...</div>;
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex flex-col text-slate-900 dark:text-slate-100">
-      <Navbar title="Prescription Details" userName={data.patientName} userRole="PATIENT" />
+    <DashboardLayout pageTitle="Prescription Details">
       
       <div className="max-w-3xl mx-auto w-full p-10 mt-6 bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-slate-200 dark:border-slate-800">
         <div className="flex justify-between items-center mb-4">
@@ -55,6 +54,6 @@ export default function PatientPrescriptionDetails() {
           ))}
         </ul>
       </div>
-    </div>
+    </DashboardLayout>
   );
 }

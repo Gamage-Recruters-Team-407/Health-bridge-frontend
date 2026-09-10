@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
-import { Navbar } from "@/components/ui/Navbar";
+import DashboardLayout from "@/app/dashboard/layout";
 import { Bell, Clock, CheckCircle2 } from "lucide-react";
 import { reminderService } from "@/services/reminderService";
 import { Reminder } from "@/types/reminder";
@@ -59,9 +59,7 @@ export default function MedicationRemindersPage() {
   const remainingCount = reminders.filter(r => r.status === "PENDING").length;
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar title="Medication Reminders" userName={user?.fullName || "User"} userRole={user?.role || "PATIENT"} />
-
+    <DashboardLayout pageTitle="Medication Reminders">
       <main className="flex-1 p-6 sm:p-10 w-full">
         <div className="flex flex-col gap-6 max-w-4xl mx-auto w-full pb-10">
           <div className="flex justify-between items-center mb-2">
@@ -135,6 +133,6 @@ export default function MedicationRemindersPage() {
           </div>
         </div>
       </main>
-    </div>
+    </DashboardLayout>
   );
 }

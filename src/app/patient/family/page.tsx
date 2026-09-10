@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
-import { Navbar } from "@/components/ui/Navbar";
+import DashboardLayout from "@/app/dashboard/layout";
 import { Users, UserPlus, X, Trash2, Mail, Edit2 } from "lucide-react";
 import api from "@/lib/axios";
 
@@ -154,9 +154,7 @@ export default function FamilyPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col">
-      <Navbar title="Family Members" userName={user?.fullName || "User"} userRole={user?.role || "PATIENT"} />
-
+    <DashboardLayout pageTitle="Family Members">
       <main className="flex-1 p-6 sm:p-10 w-full relative">
         <div className="max-w-6xl mx-auto w-full pb-10">
           {/* Beautiful Header Banner */}
@@ -351,6 +349,6 @@ export default function FamilyPage() {
           </div>
         )}
       </main>
-    </div>
+    </DashboardLayout>
   );
 }
