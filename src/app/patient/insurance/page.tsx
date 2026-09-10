@@ -35,7 +35,7 @@ export default function PatientInsurancePage() {
         setPolicies(p);
         setClaims(c);
       })
-      .catch(() => toast.error("Failed to load insurance data"))
+      .catch(() => toast.error("Error", "Failed to load insurance data"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -79,11 +79,12 @@ export default function PatientInsurancePage() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Submitted</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {claims.length === 0 ? (
-                <TableEmpty colSpan={4} message="No claims submitted yet" />
+                <TableEmpty colSpan={5} message="No claims submitted yet" />
               ) : (
                 claims.map(c => (
                   <TableRow key={c.id}>
@@ -93,6 +94,15 @@ export default function PatientInsurancePage() {
                       <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
                     </TableCell>
                     <TableCell>{new Date(c.submittedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
+                      >
+                        Track
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}

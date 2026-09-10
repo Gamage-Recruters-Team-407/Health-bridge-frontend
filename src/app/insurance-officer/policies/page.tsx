@@ -33,7 +33,7 @@ export default function PolicyLookupPage() {
       const result = await insuranceService.verifyPolicy(policyNumber.trim());
       setPolicy(result);
     } catch {
-      toast.error("Policy not found");
+      toast.error("Error", "Policy not found");
     } finally {
       setSearching(false);
     }
