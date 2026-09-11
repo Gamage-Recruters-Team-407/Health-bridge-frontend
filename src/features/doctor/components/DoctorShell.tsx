@@ -4,12 +4,13 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { CalendarDays, Check, CircleDollarSign, Clock3, LayoutDashboard, Menu, Stethoscope, UserRound, X, PlaneTakeoff, Bell, Search } from "lucide-react";
+import { CalendarDays, Check, CircleDollarSign, Clock3, LayoutDashboard, Menu, Stethoscope, UserRound, X, PlaneTakeoff, Bell, Search, FileSpreadsheet } from "lucide-react";
 
 const navigation = [
   { href: "/doctor/dashboard", label: "Dashboard", description: "Overview and quick actions", keywords: "home appointments availability stats", icon: LayoutDashboard },
   { href: "/doctor/profile", label: "My profile", description: "Personal and professional details", keywords: "edit doctor information fee qualifications", icon: UserRound },
   { href: "/doctor/doctors", label: "Doctor directory", description: "Find doctors and specialists", keywords: "search specialist directory cards", icon: Stethoscope },
+  { href: "/medical-records",label: "Medical Records",description: "View patient EHR and clinical history",keywords: "ehr medical records patient diagnosis treatment consultation documents", icon: FileSpreadsheet},
   { href: "/doctor/schedule", label: "Schedule", description: "Manage weekly availability", keywords: "calendar time slots hours available", icon: CalendarDays },
   { href: "/doctor/appointments",label: "Appointments",description: "View and manage booked appointments",keywords: "appointments accept reject complete patients",icon: CalendarDays,},
   { href: "/doctor/leave", label: "Leave", description: "Apply and track leave", keywords: "time off annual sick emergency history", icon: PlaneTakeoff },
