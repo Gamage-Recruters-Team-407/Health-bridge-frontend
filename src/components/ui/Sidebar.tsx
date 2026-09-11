@@ -73,7 +73,7 @@ const getNavGroups = (role: string): NavGroup[] => {
         items: [
           { title: "Billing", href: "/hospital/billing", icon: DollarSign },
           { title: "Inventory", href: "/hospital/inventory", icon: Pill },
-          { title: "Compliance", href: "/hospital/billing/compliance", icon: ClipboardCheck },
+          { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
         ],
       },
