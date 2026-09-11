@@ -7,7 +7,6 @@ import {
   LayoutDashboard,
   Users,
   Calendar,
-  UserCheck,
   FileText,
   FileSpreadsheet,
   FlaskConical,
@@ -53,9 +52,7 @@ const navGroups: NavGroup[] = [
     groupTitle: "Core Modules",
     items: [
       { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Patients", href: "/patients", icon: Users },
       { title: "Appointments", href: "/appointments", icon: Calendar, badge: "3 New", badgeVariant: "primary" },
-      { title: "Doctors", href: "/doctors", icon: UserCheck },
     ],
   },
   {

@@ -1,4 +1,5 @@
 export type AppointmentStatus = "UPCOMING" | "COMPLETED" | "CANCELLED";
+export type DoctorDecision = "PENDING" | "ACCEPTED" | "REJECTED";
 
 export type AppointmentMode = "IN_PERSON" | "VIDEO";
 
@@ -34,6 +35,7 @@ export interface Appointment {
   appointmentType: AppointmentMode;
   reason: string;
   status: AppointmentStatus;
+  doctorDecision?: DoctorDecision;
   notes?: string;
   createdAt: string;
   updatedAt: string;

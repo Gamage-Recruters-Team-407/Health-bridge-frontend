@@ -11,6 +11,7 @@ const navigation = [
   { href: "/doctor/profile", label: "My profile", description: "Personal and professional details", keywords: "edit doctor information fee qualifications", icon: UserRound },
   { href: "/doctor/doctors", label: "Doctor directory", description: "Find doctors and specialists", keywords: "search specialist directory cards", icon: Stethoscope },
   { href: "/doctor/schedule", label: "Schedule", description: "Manage weekly availability", keywords: "calendar time slots hours available", icon: CalendarDays },
+  { href: "/doctor/appointments",label: "Appointments",description: "View and manage booked appointments",keywords: "appointments accept reject complete patients",icon: CalendarDays,},
   { href: "/doctor/leave", label: "Leave", description: "Apply and track leave", keywords: "time off annual sick emergency history", icon: PlaneTakeoff },
   { href: "/doctor/earnings", label: "Earnings", description: "Revenue and payment history", keywords: "income money payments chart consultation", icon: CircleDollarSign },
 ];
