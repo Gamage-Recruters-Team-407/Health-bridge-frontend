@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { getToken, getStoredUser, AuthUser } from "@/lib/auth";
 
-// ✅ Define proper types (no 'any')
+// ✅ Define proper type instead of 'any'
 interface StoredUser {
   id: string;
   fullName: string;
@@ -16,22 +16,22 @@ export default function DebugPage() {
   const [token, setToken] = useState<string | null>(null);
   const [user, setUser] = useState<StoredUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [apiData, setApiData] = useState<string | null>(null); // ✅ Changed to string
+  const [apiError, setApiError] = useState<string | null>(null);
   const isMounted = useRef(true);
   const hasChecked = useRef(false);
 
-  // ✅ Fix: Use setTimeout to break synchronous setState
+  // ✅ Fixed: Use setTimeout to avoid setState in effect
   useEffect(() => {
     if (hasChecked.current) return;
     hasChecked.current = true;
 
-    // Use setTimeout to defer state updates
     const timer = setTimeout(() => {
       if (!isMounted.current) return;
-
+      
       const t = getToken();
       const u = getStoredUser();
       
-      // ✅ Set state after checking mount
       setToken(t);
       
       if (u) {
@@ -54,9 +54,43 @@ export default function DebugPage() {
     };
   }, []);
 
+  const testAPI = async () => {
+    const token = getToken();
+    if (!token) {
+      alert('No token found!');
+      return;
+    }
+
+    setApiError(null);
+    setApiData(null);
+
+    try {
+      const response = await fetch('http://localhost:8088/api/hospital-billing/invoices', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        // ✅ Convert to formatted JSON string
+        setApiData(JSON.stringify(data, null, 2));
+        console.log('✅ API Response:', data);
+      } else {
+        setApiError(`Status ${response.status}: ${JSON.stringify(data)}`);
+      }
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      setApiError(`❌ Error: ${errorMessage}`);
+      console.error('API Error:', error);
+    }
+  };
+
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50">
+      <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading debug info...</p>
@@ -88,7 +122,7 @@ export default function DebugPage() {
           </div>
         </div>
 
-        {/* User Info */}
+        {/* User Information */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">User Information</h2>
           {user ? (
@@ -111,7 +145,7 @@ export default function DebugPage() {
           )}
         </div>
 
-        {/* Storage Status */}
+        {/* Local Storage Status */}
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
           <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Local Storage</h2>
           <div className="bg-slate-50 rounded-lg p-3">
@@ -128,17 +162,43 @@ export default function DebugPage() {
           </div>
         </div>
 
+        {/* API Test */}
+        <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-4">
+          <h2 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">API Test</h2>
+          <button 
+            onClick={testAPI}
+            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition"
+          >
+            🚀 Test API
+          </button>
+
+          {apiError && (
+            <div className="mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
+              <p className="text-red-700 font-medium">{apiError}</p>
+            </div>
+          )}
+
+          {apiData && (
+            <div className="mt-4">
+              <p className="text-sm text-green-600 font-medium mb-2">✅ API Response:</p>
+              <pre className="bg-gray-900 text-white p-4 rounded-lg overflow-auto max-h-96 text-sm">
+                {apiData}
+              </pre>
+            </div>
+          )}
+        </div>
+
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
           <Link 
             href="/login" 
-            className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-blue-500/20"
+            className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-green-500/20"
           >
             🔑 Go to Login
           </Link>
           <Link 
             href="/admin/dashboard" 
-            className="px-4 py-2.5 bg-green-600 hover:bg-green-700 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-green-500/20"
+            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-purple-500/20"
           >
             📊 Go to Dashboard
           </Link>
@@ -157,7 +217,7 @@ export default function DebugPage() {
               const user = getStoredUser();
               alert(`Token: ${token ? '✅ Found' : '❌ Not found'}\nUser: ${user ? `✅ ${user.fullName}` : '❌ Not found'}`);
             }}
-            className="px-4 py-2.5 bg-purple-600 hover:bg-purple-700 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-purple-500/20"
+            className="px-4 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-xl transition shadow-sm shadow-amber-500/20"
           >
             🔍 Check Auth
           </button>
@@ -170,6 +230,7 @@ export default function DebugPage() {
             <li>If token is missing, <Link href="/login" className="font-bold underline">login</Link> again</li>
             <li>If token is present but dashboard not loading, clear storage and login again</li>
             <li>Check if backend is running on <strong>http://localhost:8088</strong></li>
+            <li>API test will show you the response from the backend</li>
           </ul>
         </div>
       </div>
