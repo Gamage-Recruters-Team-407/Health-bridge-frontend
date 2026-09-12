@@ -1,9 +1,23 @@
 import api from "@/lib/axios";
+import { getStoredUser } from "@/lib/auth";
 import { mockAvailability, mockDoctors, mockEarnings, mockLeaves } from "../constants";
 import type { Availability, AvailabilityInput, Doctor, DoctorLeave, DoctorProfileUpdate, Earnings, LeaveInput } from "../types";
 
 const USE_MOCKS = process.env.NEXT_PUBLIC_USE_DOCTOR_MOCKS !== "false";
 const delay = (ms = 250) => new Promise((resolve) => setTimeout(resolve, ms));
+const getDoctorId = () => {
+  const user = getStoredUser();
+  if (!user) return "doc-002";
+  if (user.id.startsWith("doc-")) return user.id;
+
+  const email = user.email.trim().toLowerCase();
+  if (email === "doctor@healthbridge.lk") return "doc-002";
+
+  const name = user.fullName.trim().toLowerCase();
+  if (name.includes("maya perera")) return "doc-002";
+  if (name.includes("robert chen")) return "doc-001";
+  return user.id;
+};
 let profile = { ...mockDoctors[0] };
 let availability = [...mockAvailability];
 let leaves = [...mockLeaves];
@@ -25,12 +39,12 @@ export async function getDoctors(): Promise<Doctor[]> {
 
 export async function getAvailability(): Promise<Availability[]> {
   if (USE_MOCKS) { await delay(); return availability.map((slot) => ({ ...slot })); }
-  return await api.get<Availability[]>("/doctors/me/availability");
+  return await api.get<Availability[]>(`/doctors/me/availability?doctorId=${encodeURIComponent(getDoctorId())}`);
 }
 
 export async function updateAvailability(slots: AvailabilityInput[]): Promise<Availability[]> {
   if (USE_MOCKS) { await delay(); availability = slots.map((slot, index) => ({ ...slot, id: `slot-${Date.now()}-${index}` })); return availability; }
-  return await api.put<Availability[]>("/doctors/me/availability", slots);
+  return await api.put<Availability[]>(`/doctors/me/availability?doctorId=${encodeURIComponent(getDoctorId())}`, slots);
 }
 
 export async function createLeave(data: LeaveInput): Promise<DoctorLeave> {

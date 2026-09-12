@@ -73,7 +73,7 @@ const getNavGroups = (role: string): NavGroup[] => {
         items: [
           { title: "Billing", href: "/hospital/billing", icon: DollarSign },
           { title: "Inventory", href: "/hospital/inventory", icon: Pill },
-          { title: "Compliance", href: "/hospital/billing/compliance", icon: ClipboardCheck },
+          { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
         ],
       },
@@ -94,7 +94,6 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "Patients", href: "/patients", icon: Users },
           { title: "Appointments", href: "/appointments", icon: Calendar },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
