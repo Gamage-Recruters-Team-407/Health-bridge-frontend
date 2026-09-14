@@ -386,12 +386,17 @@ class MedicalRecordService {
      *
      * Browser automatically adds multipart boundary.
      */
-    return await api.post<
-      MedicalDocument
-    >(
-      "/medical-documents/upload",
-      formData
-    );
+   return await api.post<
+  MedicalDocument
+>(
+  "/medical-documents/upload",
+  formData,
+  {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
   }
 
 
@@ -422,13 +427,20 @@ class MedicalRecordService {
 
 
     return await api.put<
-      MedicalDocument
-    >(
-      `/medical-documents/${
-        encodeId(id)
-      }/replace`,
-      formData
-    );
+  MedicalDocument
+>(
+  `/medical-documents/${
+    encodeId(
+      id
+    )
+  }/replace`,
+  formData,
+  {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  }
+);
   }
 
 
@@ -442,6 +454,45 @@ class MedicalRecordService {
       `/medical-documents/${
         encodeId(id)
       }/archive`
+    );
+  }
+
+
+  /*
+   * =========================================================
+   * ARCHIVED DOCUMENTS
+   *
+   * ADMIN / SUPER_ADMIN
+   * =========================================================
+   */
+  async getArchivedDocuments():
+    Promise<MedicalDocument[]> {
+
+    return await api.get<
+      MedicalDocument[]
+    >(
+      "/medical-documents/archived"
+    );
+  }
+
+
+  /*
+   * =========================================================
+   * PERMANENT DELETE ARCHIVED DOCUMENT
+   *
+   * SUPER_ADMIN ONLY
+   * Backend also verifies that the document
+   * status is ARCHIVED.
+   * =========================================================
+   */
+  async permanentlyDeleteDocument(
+    id: string
+  ): Promise<void> {
+
+    await api.delete<void>(
+      `/medical-documents/${
+        encodeId(id)
+      }/permanent`
     );
   }
 

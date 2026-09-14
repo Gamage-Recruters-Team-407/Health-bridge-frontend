@@ -435,15 +435,7 @@ export default function CreateMedicalRecordPage() {
       }
 
 
-      if (
-        query.length < 2
-      ) {
-        setPatientResults(
-          []
-        );
-
-        return;
-      }
+     
 
 
       let cancelled =
