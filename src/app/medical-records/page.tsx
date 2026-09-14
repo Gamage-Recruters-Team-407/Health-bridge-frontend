@@ -537,16 +537,7 @@ export default function MedicalRecordsPage() {
       }
 
 
-      if (
-        query.length < 2
-      ) {
-        setPatientResults(
-          []
-        );
-
-        return;
-      }
-
+      
 
       let cancelled =
         false;

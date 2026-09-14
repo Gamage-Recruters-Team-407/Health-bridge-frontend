@@ -77,13 +77,33 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
         ],
       },
-      {
-        groupTitle: "System Admin",
-        items: [
-          { title: "Users", href: "/admin/users", icon: Users },
-          { title: "Settings", href: "/admin/settings", icon: Settings },
-        ],
-      },
+      
+       {
+      groupTitle: "Clinical Records",
+      items: [
+        {
+          title: "Medical Records",
+          href: "/medical-records",
+          icon: FileSpreadsheet,
+        },
+      ],
+    },
+
+    {
+      groupTitle: "System Admin",
+      items: [
+        {
+          title: "Users",
+          href: "/admin/users",
+          icon: Users,
+        },
+        {
+          title: "Settings",
+          href: "/admin/settings",
+          icon: Settings,
+        },
+      ],
+    },
     ];
   }
 

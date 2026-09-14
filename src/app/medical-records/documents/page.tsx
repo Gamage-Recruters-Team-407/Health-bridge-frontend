@@ -21,6 +21,7 @@ import {
   RefreshCw,
   Replace,
   Search,
+  Trash2,
   Upload,
 } from "lucide-react";
 
@@ -180,6 +181,15 @@ export default function MedicalDocumentsPage() {
 
 
   const [
+    archivedDocuments,
+    setArchivedDocuments,
+  ] =
+    useState<MedicalDocument[]>(
+      []
+    );
+
+
+  const [
     activePatientId,
     setActivePatientId,
   ] =
@@ -279,6 +289,15 @@ export default function MedicalDocumentsPage() {
     user?.role === "DOCTOR"
     || user?.role === "ADMIN"
     || user?.role === "SUPER_ADMIN";
+
+
+  const canViewArchived =
+    user?.role === "ADMIN"
+    || user?.role === "SUPER_ADMIN";
+
+
+  const canPermanentDelete =
+    user?.role === "SUPER_ADMIN";
 
 
   /*
@@ -381,6 +400,15 @@ export default function MedicalDocumentsPage() {
 
       try {
 
+        /*
+         * =========================================
+         * 1. LOAD ACTIVE PATIENT EHR DATA
+         * =========================================
+         *
+         * This is the main request.
+         * If this fails, the page cannot show
+         * the selected patient's EHR/documents.
+         */
         const response =
           await medicalRecordService
             .getPatientEhrHistory(
@@ -403,12 +431,120 @@ export default function MedicalDocumentsPage() {
         );
 
 
+        /*
+         * =========================================
+         * 2. LOAD ARCHIVED DOCUMENTS SEPARATELY
+         * =========================================
+         *
+         * ADMIN / SUPER_ADMIN only.
+         *
+         * IMPORTANT:
+         * If the archived-documents request fails,
+         * we keep the already-loaded active EHR data.
+         * The whole page must NOT fail just because
+         * the archived endpoint is unavailable.
+         */
+        const currentUser =
+          user
+          ?? getStoredUser();
+
+
+        if (
+          currentUser?.role === "ADMIN"
+          || currentUser?.role === "SUPER_ADMIN"
+        ) {
+
+          try {
+
+            const allArchived =
+              await medicalRecordService
+                .getArchivedDocuments();
+
+
+            const patientArchived =
+              allArchived
+                .filter(
+                  (
+                    document:
+                    MedicalDocument
+                  ) =>
+                    document.patientId
+                    === normalized
+                )
+                .sort(
+                  (
+                    first,
+                    second
+                  ) =>
+                    new Date(
+                      second.archivedAt
+                      ?? second.updatedAt
+                      ?? second.uploadedAt
+                    ).getTime()
+                    -
+                    new Date(
+                      first.archivedAt
+                      ?? first.updatedAt
+                      ?? first.uploadedAt
+                    ).getTime()
+                );
+
+
+            setArchivedDocuments(
+              patientArchived
+            );
+
+
+          } catch (
+            archivedError
+          ) {
+
+            /*
+             * Do not break active documents.
+             *
+             * Keep this visible in DevTools so we
+             * can inspect the real archived API
+             * status separately if needed.
+             */
+            console.error(
+              "Unable to load archived medical documents:",
+              archivedError
+            );
+
+
+            setArchivedDocuments(
+              []
+            );
+          }
+
+        } else {
+
+          setArchivedDocuments(
+            []
+          );
+        }
+
+
       } catch (
         requestError
       ) {
 
+        /*
+         * Only the MAIN patient EHR request
+         * should clear the whole page.
+         */
         setHistory(
           null
+        );
+
+
+        setArchivedDocuments(
+          []
+        );
+
+
+        setActivePatientId(
+          ""
         );
 
 
@@ -421,7 +557,9 @@ export default function MedicalDocumentsPage() {
 
       } finally {
 
-        setLoading(false);
+        setLoading(
+          false
+        );
       }
     };
 
@@ -839,6 +977,78 @@ export default function MedicalDocumentsPage() {
 
         setSuccess(
           "Medical document archived successfully."
+        );
+
+
+      } catch (
+        requestError
+      ) {
+
+        setError(
+          getErrorMessage(
+            requestError
+          )
+        );
+
+
+      } finally {
+
+        setActionLoading(
+          null
+        );
+      }
+    };
+
+
+  /*
+   * ---------------------------------------------------------
+   * PERMANENT DELETE ARCHIVED DOCUMENT
+   *
+   * SUPER_ADMIN ONLY.
+   * Backend also enforces status = ARCHIVED.
+   * ---------------------------------------------------------
+   */
+  const handlePermanentDelete =
+    async (
+      document:
+      MedicalDocument
+    ) => {
+
+      const confirmed =
+        window.confirm(
+          `Permanently delete "${document.fileName}"?\n\n`
+          + "This action cannot be undone."
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      setActionLoading(
+        `delete-${document.id}`
+      );
+
+      setError("");
+      setSuccess("");
+
+
+      try {
+
+        await medicalRecordService
+          .permanentlyDeleteDocument(
+            document.id
+          );
+
+
+        await loadDocuments(
+          activePatientId
+        );
+
+
+        setSuccess(
+          "Archived medical document permanently deleted."
         );
 
 
@@ -2293,6 +2503,456 @@ export default function MedicalDocumentsPage() {
               }
 
             </section>
+
+
+            {/* ==========================================
+                ARCHIVED DOCUMENTS
+                ADMIN / SUPER_ADMIN ONLY
+                ========================================== */}
+            {canViewArchived
+              && activePatientId
+              && (
+
+                <section
+                  className="
+                    rounded-2xl
+                    border
+                    border-slate-200
+                    bg-white
+                    p-5
+                    shadow-sm
+                  "
+                >
+
+                  <div
+                    className="
+                      flex
+                      flex-col
+                      gap-3
+                      sm:flex-row
+                      sm:items-center
+                      sm:justify-between
+                    "
+                  >
+
+                    <div>
+
+                      <h2
+                        className="
+                          text-lg
+                          font-bold
+                          text-slate-900
+                        "
+                      >
+                        Archived Documents
+                      </h2>
+
+                      <p
+                        className="
+                          mt-1
+                          text-sm
+                          text-slate-500
+                        "
+                      >
+                        Archived clinical documents
+                        for this patient.
+                      </p>
+
+                    </div>
+
+
+                    <div
+                      className="
+                        rounded-xl
+                        bg-amber-50
+                        px-4
+                        py-3
+                        text-center
+                      "
+                    >
+
+                      <p
+                        className="
+                          text-xl
+                          font-bold
+                          text-amber-700
+                        "
+                      >
+                        {
+                          archivedDocuments.length
+                        }
+                      </p>
+
+                      <p
+                        className="
+                          text-xs
+                          text-amber-600
+                        "
+                      >
+                        Archived Documents
+                      </p>
+
+                    </div>
+
+                  </div>
+
+
+                  {archivedDocuments.length === 0
+                    ? (
+
+                      <div
+                        className="
+                          mt-6
+                          rounded-xl
+                          border
+                          border-dashed
+                          border-slate-200
+                          px-5
+                          py-12
+                          text-center
+                        "
+                      >
+
+                        <Archive
+                          className="
+                            mx-auto
+                            h-9
+                            w-9
+                            text-slate-300
+                          "
+                        />
+
+                        <p
+                          className="
+                            mt-3
+                            text-sm
+                            font-semibold
+                            text-slate-700
+                          "
+                        >
+                          No archived documents
+                        </p>
+
+                        <p
+                          className="
+                            mt-1
+                            text-xs
+                            text-slate-500
+                          "
+                        >
+                          Archived patient documents
+                          will appear here.
+                        </p>
+
+                      </div>
+
+                    )
+                    : (
+
+                      <div
+                        className="
+                          mt-5
+                          grid
+                          gap-4
+                          md:grid-cols-2
+                          xl:grid-cols-3
+                        "
+                      >
+
+                        {archivedDocuments.map(
+                          (
+                            document
+                          ) => (
+
+                            <article
+                              key={
+                                document.id
+                              }
+                              className="
+                                flex
+                                min-h-64
+                                flex-col
+                                rounded-2xl
+                                border
+                                border-amber-200
+                                bg-amber-50/40
+                                p-4
+                              "
+                            >
+
+                              <div
+                                className="
+                                  flex
+                                  items-start
+                                  justify-between
+                                  gap-3
+                                "
+                              >
+
+                                <div
+                                  className="
+                                    flex
+                                    h-11
+                                    w-11
+                                    items-center
+                                    justify-center
+                                    rounded-xl
+                                    bg-amber-100
+                                    text-amber-700
+                                  "
+                                >
+                                  <Archive
+                                    className="
+                                      h-5
+                                      w-5
+                                    "
+                                  />
+                                </div>
+
+
+                                <span
+                                  className="
+                                    rounded-full
+                                    bg-amber-100
+                                    px-2.5
+                                    py-1
+                                    text-[11px]
+                                    font-semibold
+                                    text-amber-700
+                                  "
+                                >
+                                  ARCHIVED
+                                </span>
+
+                              </div>
+
+
+                              <div
+                                className="
+                                  mt-4
+                                  flex-1
+                                "
+                              >
+
+                                <h3
+                                  title={
+                                    document.fileName
+                                  }
+                                  className="
+                                    truncate
+                                    text-sm
+                                    font-bold
+                                    text-slate-900
+                                  "
+                                >
+                                  {
+                                    document.fileName
+                                  }
+                                </h3>
+
+
+                                <p
+                                  className="
+                                    mt-1
+                                    text-xs
+                                    font-semibold
+                                    text-blue-600
+                                  "
+                                >
+                                  {
+                                    document.documentType
+                                  }
+                                </p>
+
+
+                                {document
+                                  .description
+                                  && (
+                                    <p
+                                      className="
+                                        mt-2
+                                        line-clamp-2
+                                        text-xs
+                                        leading-5
+                                        text-slate-500
+                                      "
+                                    >
+                                      {
+                                        document.description
+                                      }
+                                    </p>
+                                  )
+                                }
+
+                              </div>
+
+
+                              <div
+                                className="
+                                  mt-4
+                                  border-t
+                                  border-amber-200
+                                  pt-3
+                                "
+                              >
+
+                                <div
+                                  className="
+                                    flex
+                                    items-center
+                                    justify-between
+                                    gap-3
+                                    text-[11px]
+                                    text-slate-400
+                                  "
+                                >
+                                  <span>
+                                    Version{" "}
+                                    {
+                                      document.version
+                                    }
+                                  </span>
+
+                                  <span>
+                                    {formatFileSize(
+                                      document.fileSize
+                                    )}
+                                  </span>
+                                </div>
+
+
+                                <p
+                                  className="
+                                    mt-1
+                                    text-[11px]
+                                    text-slate-400
+                                  "
+                                >
+                                  Archived{" "}
+                                  {formatDate(
+                                    document.archivedAt
+                                  )}
+                                </p>
+
+
+                                <div
+                                  className="
+                                    mt-4
+                                    flex
+                                    flex-wrap
+                                    gap-2
+                                  "
+                                >
+
+                                  <a
+                                    href={
+                                      document.fileUrl
+                                    }
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="
+                                      inline-flex
+                                      items-center
+                                      gap-1.5
+                                      rounded-lg
+                                      border
+                                      border-slate-200
+                                      bg-white
+                                      px-3
+                                      py-2
+                                      text-xs
+                                      font-semibold
+                                      text-slate-700
+                                      transition
+                                      hover:border-blue-300
+                                      hover:text-blue-600
+                                    "
+                                  >
+                                    <FileText
+                                      className="
+                                        h-3.5
+                                        w-3.5
+                                      "
+                                    />
+
+                                    Open
+                                  </a>
+
+
+                                  {canPermanentDelete
+                                    && (
+                                      <button
+                                        type="button"
+                                        onClick={
+                                          () =>
+                                            void handlePermanentDelete(
+                                              document
+                                            )
+                                        }
+                                        disabled={
+                                          actionLoading
+                                          === `delete-${document.id}`
+                                        }
+                                        className="
+                                          inline-flex
+                                          items-center
+                                          gap-1.5
+                                          rounded-lg
+                                          border
+                                          border-red-200
+                                          bg-red-50
+                                          px-3
+                                          py-2
+                                          text-xs
+                                          font-semibold
+                                          text-red-700
+                                          transition
+                                          hover:bg-red-100
+                                          disabled:opacity-50
+                                        "
+                                      >
+
+                                        {actionLoading
+                                          === `delete-${document.id}`
+                                          ? (
+                                            <Loader2
+                                              className="
+                                                h-3.5
+                                                w-3.5
+                                                animate-spin
+                                              "
+                                            />
+                                          )
+                                          : (
+                                            <Trash2
+                                              className="
+                                                h-3.5
+                                                w-3.5
+                                              "
+                                            />
+                                          )
+                                        }
+
+                                        Permanent Delete
+                                      </button>
+                                    )
+                                  }
+
+                                </div>
+
+                              </div>
+
+                            </article>
+                          )
+                        )}
+
+                      </div>
+                    )
+                  }
+
+                </section>
+            )}
+
           </>
         )}
 
