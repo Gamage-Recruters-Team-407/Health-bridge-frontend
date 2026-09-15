@@ -4,16 +4,36 @@ import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  validateFullName,
+  validatePhoneNumber,
+  validateDateOfBirth,
+  validateGender,
+  validateBloodGroup,
+  validateAddress,
+  ADDRESS_MAX_LENGTH,
+} from "@/utils/validators";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB, matches backend limit
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
+type FormData = {
+  fullName: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  gender: string;
+  bloodGroup: string;
+  address: string;
+};
+
+type FormErrors = Partial<Record<keyof FormData, string>>;
+
 export default function EditProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     fullName: "",
     phoneNumber: "",
     dateOfBirth: "",
@@ -21,6 +41,8 @@ export default function EditProfilePage() {
     bloodGroup: "",
     address: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
   const [picture, setPicture] = useState<string>("");
   const [role, setRole] = useState<string>("");
   const [loading, setLoading] = useState(true);
@@ -48,10 +70,65 @@ export default function EditProfilePage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Runs the correct validator for a single field, returns "" if valid
+  const validateField = (name: keyof FormData, value: string): string => {
+    switch (name) {
+      case "fullName":
+        return validateFullName(value);
+      case "phoneNumber":
+        return validatePhoneNumber(value);
+      case "dateOfBirth":
+        return validateDateOfBirth(value);
+      case "gender":
+        return validateGender(value);
+      case "bloodGroup":
+        return validateBloodGroup(value, role === "PATIENT");
+      case "address":
+        return validateAddress(value);
+      default:
+        return "";
+    }
+  };
+
+  const validateAll = (data: FormData): FormErrors => {
+    const nextErrors: FormErrors = {
+      fullName: validateField("fullName", data.fullName),
+      phoneNumber: validateField("phoneNumber", data.phoneNumber),
+      dateOfBirth: validateField("dateOfBirth", data.dateOfBirth),
+      gender: validateField("gender", data.gender),
+      address: validateField("address", data.address),
+    };
+    if (role === "PATIENT") {
+      nextErrors.bloodGroup = validateField("bloodGroup", data.bloodGroup);
+    }
+    // Drop empty-string entries so only real errors remain
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key as keyof FormData]) delete nextErrors[key as keyof FormData];
+    });
+    return nextErrors;
+  };
+
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
   ) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const fieldName = name as keyof FormData;
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
+
+    if (touched[fieldName]) {
+      const msg = validateField(fieldName, value);
+      setErrors((prev) => ({ ...prev, [fieldName]: msg || undefined }));
+    }
+  };
+
+  const handleBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    const fieldName = name as keyof FormData;
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    const msg = validateField(fieldName, value);
+    setErrors((prev) => ({ ...prev, [fieldName]: msg || undefined }));
   };
 
   const handlePictureClick = () => {
@@ -116,15 +193,32 @@ export default function EditProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError("");
+
+    const nextErrors = validateAll(formData);
+    setErrors(nextErrors);
+    setTouched({
+      fullName: true,
+      phoneNumber: true,
+      dateOfBirth: true,
+      gender: true,
+      bloodGroup: true,
+      address: true,
+    });
+
+    if (Object.keys(nextErrors).length > 0) {
+      setError("Please fix the highlighted fields before saving.");
+      return;
+    }
+
+    setSaving(true);
     try {
       await api.put("/users/profile", {
-        fullName: formData.fullName,
-        phoneNumber: formData.phoneNumber,
+        fullName: formData.fullName.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
-        address: formData.address,
+        address: formData.address.trim(),
         ...(role === "PATIENT" ? { bloodGroup: formData.bloodGroup } : {}),
       });
       router.push("/profile");
@@ -142,6 +236,13 @@ export default function EditProfilePage() {
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join("");
+
+  const inputClass = (fieldName: keyof FormData) =>
+    `w-full border rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 ${
+      errors[fieldName]
+        ? "border-red-400 focus:ring-red-400"
+        : "border-gray-300 focus:ring-blue-500"
+    }`;
 
   return (
     <DashboardLayout pageTitle="Edit Profile">
@@ -222,7 +323,7 @@ export default function EditProfilePage() {
             )}
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
             <div>
               <label className="block text-sm text-gray-500 mb-1">
                 Full Name
@@ -232,8 +333,12 @@ export default function EditProfilePage() {
                 name="fullName"
                 value={formData.fullName}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={handleBlur}
+                className={inputClass("fullName")}
               />
+              {errors.fullName && (
+                <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+              )}
             </div>
 
             <div>
@@ -243,10 +348,15 @@ export default function EditProfilePage() {
               <input
                 type="text"
                 name="phoneNumber"
+                placeholder="07XXXXXXXX"
                 value={formData.phoneNumber}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                onBlur={handleBlur}
+                className={inputClass("phoneNumber")}
               />
+              {errors.phoneNumber && (
+                <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
+              )}
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
@@ -259,9 +369,13 @@ export default function EditProfilePage() {
                   name="dateOfBirth"
                   value={formData.dateOfBirth}
                   onChange={handleChange}
+                  onBlur={handleBlur}
                   max={new Date().toISOString().split("T")[0]}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={inputClass("dateOfBirth")}
                 />
+                {errors.dateOfBirth && (
+                  <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>
+                )}
               </div>
 
               <div>
@@ -272,7 +386,8 @@ export default function EditProfilePage() {
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  onBlur={handleBlur}
+                  className={`${inputClass("gender")} bg-white`}
                 >
                   <option value="">Select gender</option>
                   <option value="Male">Male</option>
@@ -280,6 +395,9 @@ export default function EditProfilePage() {
                   <option value="Other">Other</option>
                   <option value="Prefer not to say">Prefer not to say</option>
                 </select>
+                {errors.gender && (
+                  <p className="text-red-500 text-xs mt-1">{errors.gender}</p>
+                )}
               </div>
             </div>
 
@@ -292,7 +410,8 @@ export default function EditProfilePage() {
                   name="bloodGroup"
                   value={formData.bloodGroup}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                  onBlur={handleBlur}
+                  className={`${inputClass("bloodGroup")} bg-white`}
                 >
                   <option value="">Select blood group</option>
                   {BLOOD_GROUPS.map((bg) => (
@@ -301,6 +420,9 @@ export default function EditProfilePage() {
                     </option>
                   ))}
                 </select>
+                {errors.bloodGroup && (
+                  <p className="text-red-500 text-xs mt-1">{errors.bloodGroup}</p>
+                )}
               </div>
             )}
 
@@ -312,10 +434,22 @@ export default function EditProfilePage() {
                 name="address"
                 value={formData.address}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 rows={3}
+                maxLength={ADDRESS_MAX_LENGTH}
                 placeholder="Street, city, postal code"
-                className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                className={`${inputClass("address")} resize-none`}
               />
+              <div className="flex justify-between mt-1">
+                {errors.address ? (
+                  <p className="text-red-500 text-xs">{errors.address}</p>
+                ) : (
+                  <span />
+                )}
+                <span className="text-xs text-gray-400">
+                  {formData.address.length}/{ADDRESS_MAX_LENGTH}
+                </span>
+              </div>
             </div>
 
             <div className="flex gap-4 pt-4">
