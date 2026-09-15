@@ -38,6 +38,7 @@ interface NavItem {
   title: string;
   href: string;
   icon: React.ElementType;
+  allowedRoles?: string[];
   badge?: string;
   badgeVariant?: "primary" | "outline" | "success" | "danger" | "warning" | "info" | "purple" | "neutral";
 }
@@ -72,7 +73,12 @@ const navGroups: NavGroup[] = [
       { title: "Payments", href: "/payments", icon: CreditCard },
       { title: "Emergency Response", href: "/emergency", icon: AlertTriangle, badge: "Live", badgeVariant: "danger" },
       { title: "Notifications", href: "/notifications", icon: Bell },
-      { title: "Analytics & Reporting", href: "/analytics/dashboard", icon: ChartNoAxesCombined },
+      { title: "Analytics Dashboard", href: "/analytics/dashboard", icon: ChartNoAxesCombined, allowedRoles: ["ADMIN", "DOCTOR"] },
+      { title: "Healthcare Analytics", href: "/analytics/healthcare", icon: ChartNoAxesCombined, allowedRoles: ["ADMIN", "DOCTOR"] },
+      { title: "Financial Analytics", href: "/analytics/financial", icon: ChartNoAxesCombined, allowedRoles: ["ADMIN", "DOCTOR"] },
+      { title: "Operational Analytics", href: "/analytics/operational", icon: ChartNoAxesCombined, allowedRoles: ["ADMIN", "DOCTOR"] },
+      { title: "Population Health", href: "/analytics/population-health", icon: ChartNoAxesCombined, allowedRoles: ["ADMIN", "DOCTOR"] },
+      { title: "Reports Analytics", href: "/analytics/reports", icon: ChartNoAxesCombined, allowedRoles: ["ADMIN", "DOCTOR"] },
       { title: "Dev20 Test Bench", href: "/dev20-test", icon: TestTube2, badge: "Dev UI", badgeVariant: "purple" },
     ],
   },
@@ -87,6 +93,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userName = "Dr. Anura Jayasinghe",
 }) => {
   const pathname = usePathname();
+  const normalizedRole = userRole.replaceAll("_", " ").toUpperCase();
 
   const sidebarContent = (
     <div
@@ -147,7 +154,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </h3>
             )}
 
-            {group.items.map((item) => {
+            {group.items.filter((item) => !item.allowedRoles || item.allowedRoles.includes(normalizedRole)).map((item) => {
               const Icon = item.icon;
               const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href)) || (item.href === "/analytics/dashboard" && pathname?.startsWith("/analytics"));
 
