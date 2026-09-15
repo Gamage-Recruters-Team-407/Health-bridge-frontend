@@ -27,6 +27,9 @@ vi.mock("axios", () => ({
 
 import api, { getApiErrorMessage } from "@/lib/axios";
 import { ROLE_ROUTE_MAP } from "@/constants/routes";
+import { useDoctors } from "@/hooks/useDoctors";
+import { usePatients } from "@/hooks/usePatients";
+import { useNotifications } from "@/hooks/useNotifications";
 
 beforeEach(() => {
   mocks.client.get.mockClear();
@@ -94,5 +97,13 @@ describe("protected route contracts", () => {
     for (const route of Object.values(ROLE_ROUTE_MAP)) {
       expect(route).toMatch(/^\/[^/]+\/dashboard$/);
     }
+  });
+});
+
+describe("shared hook layer", () => {
+  it("exposes the shared doctor, patient, and notification hooks", () => {
+    expect(typeof useDoctors).toBe("function");
+    expect(typeof usePatients).toBe("function");
+    expect(typeof useNotifications).toBe("function");
   });
 });
