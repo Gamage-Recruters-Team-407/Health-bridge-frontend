@@ -1,3 +1,5 @@
+// src/services/pharmacyService.ts
+
 import type { Medicine, InventoryItem, Delivery } from "@/types/pharmacy";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:8088/api/v1/pharmacy";
@@ -34,6 +36,9 @@ export const getMedicineById = (id: string) => apiFetch<Medicine>(`/medicines/${
 
 export const createMedicine = (data: Omit<Medicine, "id">) =>
     apiFetch<Medicine>("/medicines", { method: "POST", body: JSON.stringify(data) });
+
+export const updateMedicine = (id: string, data: Partial<Omit<Medicine, "id">>) =>
+    apiFetch<Medicine>(`/medicines/${id}`, { method: "PUT", body: JSON.stringify(data) });
 
 // ---------- Inventory ----------
 export const getInventoryByPharmacy = (pharmacyId: string) =>

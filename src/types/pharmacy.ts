@@ -4,9 +4,11 @@ export interface Medicine {
     name: string;
     genericName?: string;
     brand?: string;
+    manufacturer?: string;
     category?: string;
     dosageForm?: string;
     strength?: string;
+    controlledDrug: boolean;
     prescriptionRequired: boolean;
     unitPrice: number;
 }
