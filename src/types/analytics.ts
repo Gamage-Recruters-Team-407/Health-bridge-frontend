@@ -111,6 +111,72 @@ export type FinancialAnalyticsData = {
 
 export type FinancialAnalyticsByPeriod = Record<AnalyticsPeriod, FinancialAnalyticsData>;
 
+export type FinancialKpiResponseDto = {
+  name: string;
+  value: number | null;
+  status: AnalyticsDataAvailability;
+  definition: string | null;
+  reason: string | null;
+};
+
+export type FinancialRevenueTrendPointDto = {
+  periodLabel: string;
+  billedRevenue: number;
+  invoiceCount: number;
+};
+
+export type FinancialRevenueSourceDto = {
+  category: string;
+  billedAmount: number;
+  billingItemCount: number;
+};
+
+export type FinancialRevenueBySourceDto = {
+  status: AnalyticsDataAvailability;
+  sources: FinancialRevenueSourceDto[];
+  totalBillingItems: number;
+  categorizedBillingItems: number;
+  uncategorizedBillingItems: number;
+  note: string;
+};
+
+export type FinancialStatusResponseDto = {
+  status: "DRAFT" | "ISSUED" | "CANCELLED" | "UNPAID" | "PARTIALLY_PAID" | "PAID";
+  count: number;
+  dataAvailability: AnalyticsDataAvailability;
+};
+
+export type FinancialSummaryDto = {
+  status: AnalyticsDataAvailability;
+  invoiceCount: number;
+  billedRevenue: number;
+  paidInvoiceCount: number;
+  unpaidInvoiceCount: number;
+  partiallyPaidInvoiceCount: number;
+  knownUnpaidInvoiceAmount: number;
+  limitation: string;
+};
+
+export type FinancialMetricAvailabilityDto = {
+  metric: string;
+  status: AnalyticsDataAvailability;
+  reason: string | null;
+  definition: string | null;
+};
+
+export type FinancialAnalyticsResponseDto = {
+  generatedAt: string;
+  period: AnalyticsPeriod;
+  dataAvailability: AnalyticsDataAvailability;
+  kpis: FinancialKpiResponseDto[];
+  revenueTrend: FinancialRevenueTrendPointDto[];
+  revenueBySource: FinancialRevenueBySourceDto;
+  invoiceStatus: FinancialStatusResponseDto[];
+  paymentStatus: FinancialStatusResponseDto[];
+  financialSummary: FinancialSummaryDto;
+  availability: FinancialMetricAvailabilityDto[];
+};
+
 export type OperationalResourceTrendPoint = {
   month: string;
   beds: number;
