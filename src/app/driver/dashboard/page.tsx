@@ -23,6 +23,7 @@ export default function DriverDashboard() {
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [pendingAlert, setPendingAlert] = useState<any>(null);
+  const [cancelledMessage, setCancelledMessage] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
   const addLog = (msg: string) => {
@@ -31,9 +32,8 @@ export default function DriverDashboard() {
   };
 
   useEffect(() => {
-    const socket = new SockJS('http://localhost:8088/ws/alerts');
     const stompClient = new Client({
-      webSocketFactory: () => socket,
+      webSocketFactory: () => new SockJS('http://localhost:8088/ws/alerts'),
       debug: function (str) {
         // console.log(str);
       },
@@ -44,6 +44,7 @@ export default function DriverDashboard() {
           if (msg.body) {
             const alert = JSON.parse(msg.body);
             setPendingAlert(alert);
+            setCancelledMessage(null);
             addLog(`New SOS Alert received: ${alert.id}`);
             
             // Audio alert
@@ -59,13 +60,24 @@ export default function DriverDashboard() {
             const alert = JSON.parse(msg.body);
             setPendingAlert((currentAlert: any) => {
               if (currentAlert && currentAlert.id === alert.id) {
-                addLog(`Alert ${alert.id} was cancelled.`);
+                const cancelText = `Alert #${alert.id.slice(-4).toUpperCase()} was cancelled by patient.`;
+                addLog(cancelText);
+                setCancelledMessage(cancelText);
                 
                 // Audio alert
                 if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
-                  const utterance = new SpeechSynthesisUtterance("Emergency dispatch cancelled.");
+                  const utterance = new SpeechSynthesisUtterance("Emergency dispatch cancelled by patient.");
                   window.speechSynthesis.speak(utterance);
                 }
+                
+                // Stop tracking if active
+                if (watchIdRef.current !== null) {
+                  navigator.geolocation.clearWatch(watchIdRef.current);
+                  watchIdRef.current = null;
+                }
+                setIsDispatchActive(false);
+                setCurrentLocation(null);
+                
                 return null;
               }
               return currentAlert;
@@ -79,6 +91,19 @@ export default function DriverDashboard() {
     });
 
     stompClient.activate();
+
+    // Fetch any currently active alerts in case we connected late
+    fetch('http://localhost:8088/api/sos/active')
+      .then(res => res.json())
+      .then(data => {
+        if (data && data.length > 0) {
+          const latestAlert = data[data.length - 1];
+          setPendingAlert(latestAlert);
+          setCancelledMessage(null);
+          addLog(`Loaded active alert from history: ${latestAlert.id}`);
+        }
+      })
+      .catch(err => console.error('Failed to fetch active alerts', err));
 
     return () => {
       stompClient.deactivate();
@@ -94,22 +119,21 @@ export default function DriverDashboard() {
     setIsDispatchActive(true);
     addLog("Dispatch accepted. Starting GPS tracker...");
 
+    if (pendingAlert?.id) {
+      fetch(`http://localhost:8088/api/sos/${pendingAlert.id}/dispatch`, { method: 'PUT' })
+        .catch(err => addLog(`Failed to notify dispatch: ${err}`));
+    }
+
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude, accuracy, speed } = position.coords;
         setCurrentLocation({ lat: latitude, lng: longitude, accuracy, speed });
-        
-        // TODO: In production, broadcast this to Spring Boot WebSocket!
-        addLog(`Transmitting: ${latitude.toFixed(5)}, ${longitude.toFixed(5)}`);
+        // TODO: Broadcast to WebSocket
       },
       (error) => {
         addLog(`GPS Error: ${error.message}`);
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: 10000,
-      }
+      { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
     );
   };
 
@@ -118,6 +142,12 @@ export default function DriverDashboard() {
       navigator.geolocation.clearWatch(watchIdRef.current);
       watchIdRef.current = null;
     }
+    
+    if (pendingAlert?.id) {
+      fetch(`http://localhost:8088/api/sos/${pendingAlert.id}/arrive`, { method: 'PUT' })
+        .catch(err => addLog(`Failed to notify arrival: ${err}`));
+    }
+
     setIsDispatchActive(false);
     setCurrentLocation(null);
     setPendingAlert(null); // Clear the alert once resolved
@@ -146,13 +176,19 @@ export default function DriverDashboard() {
             <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>Pending Dispatch #{pendingAlert.id?.slice(-4).toUpperCase() || 'NEW'}</h2>
             <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Priority 1</span>
           </div>
-          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Patient:</strong> {pendingAlert.patientInfo?.name || 'Unknown'}</p>
-          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Condition:</strong> {pendingAlert.emergencyType || 'Critical'}</p>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Patient:</strong> {pendingAlert.patientInfo?.name && pendingAlert.patientInfo.name !== 'null null' ? pendingAlert.patientInfo.name : 'Unknown'}</p>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Emergency Type:</strong> {pendingAlert.emergencyType || 'Critical'}</p>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Medical History:</strong> {pendingAlert.patientInfo?.conditions?.length > 0 ? pendingAlert.patientInfo.conditions.join(', ') : 'None reported'}</p>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Allergies:</strong> {pendingAlert.patientInfo?.allergies?.length > 0 ? pendingAlert.patientInfo.allergies.join(', ') : 'None reported'}</p>
           <p style={{ fontSize: '14px', color: '#475569' }}><strong>Address:</strong> {pendingAlert.location?.address || 'GPS Location'}</p>
         </div>
       ) : (
         <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
-          <p style={{ color: '#64748B' }}>No pending dispatch. Waiting for alerts...</p>
+          {cancelledMessage ? (
+            <p style={{ color: '#DC2626', fontWeight: 'bold' }}>{cancelledMessage}</p>
+          ) : (
+            <p style={{ color: '#64748B' }}>No pending dispatch. Waiting for alerts...</p>
+          )}
         </div>
       )}
 
@@ -161,7 +197,8 @@ export default function DriverDashboard() {
         {!isDispatchActive ? (
           <button 
             onClick={startTracking}
-            style={{ backgroundColor: '#2563EB', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.4)' }}
+            disabled={!pendingAlert}
+            style={{ backgroundColor: pendingAlert ? '#2563EB' : '#94A3B8', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: pendingAlert ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: pendingAlert ? '0 4px 6px -1px rgba(37, 99, 235, 0.4)' : 'none' }}
           >
             <Navigation size={24} />
             Accept Dispatch & Start Tracking

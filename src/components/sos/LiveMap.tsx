@@ -45,6 +45,7 @@ interface LiveMapProps {
   patientLat: number;
   patientLng: number;
   isActive?: boolean;
+  alertStatus?: string;
   onLocationChange?: (lat: number, lng: number) => void;
   onArrival?: () => void;
   onProgress?: (distanceKm: number, timeMins: number) => void;
@@ -70,17 +71,17 @@ function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon
   return R * c; // Distance in km
 }
 
-export default function LiveMap({ patientLat, patientLng, isActive = false, onLocationChange, onArrival, onProgress }: LiveMapProps) {
+export default function LiveMap({ patientLat, patientLng, isActive = false, alertStatus = 'ACTIVE', onLocationChange, onArrival, onProgress }: LiveMapProps) {
   // Mock ambulance location (offset from patient)
   const [ambulanceLat, setAmbulanceLat] = useState(patientLat + 0.005);
   const [ambulanceLng, setAmbulanceLng] = useState(patientLng + 0.005);
   const [ambulanceAngle, setAmbulanceAngle] = useState(0);
   const [hasArrived, setHasArrived] = useState(false);
 
-  // Simulate ambulance moving towards patient only if active
+  // Simulate ambulance moving towards patient only if active and dispatched
   useEffect(() => {
-    if (!isActive) {
-      setHasArrived(false);
+    if (!isActive || alertStatus !== 'DISPATCHED') {
+      if (!isActive) setHasArrived(false);
       return;
     }
     

@@ -21,18 +21,17 @@ const MOCK_LOGS: LogItem[] = [
 interface ResponseLogProps {
   isActive?: boolean;
   hasArrived?: boolean;
+  alertStatus?: string;
 }
 
 const INITIAL_LOGS: LogItem[] = [
-  { id: '1', title: 'SOS Request Received', status: 'PENDING' },
-  { id: '2', title: 'Location Broadcasted', status: 'PENDING' },
-  { id: '3', title: 'Hospital Notified', status: 'PENDING' },
-  { id: '4', title: 'Unit Dispatched', status: 'PENDING' },
-  { id: '5', title: 'Unit Approaching', status: 'PENDING' },
-  { id: '6', title: 'On Scene Arrival', status: 'PENDING' },
+  { id: '1', title: 'Alert Sent to Driver', status: 'PENDING' },
+  { id: '2', title: 'Driver Accepted', status: 'PENDING' },
+  { id: '3', title: 'Ambulance Approaching', status: 'PENDING' },
+  { id: '4', title: 'Ambulance Arrived', status: 'PENDING' },
 ];
 
-export const ResponseLog: React.FC<ResponseLogProps> = ({ isActive = false, hasArrived = false }) => {
+export const ResponseLog: React.FC<ResponseLogProps> = ({ isActive = false, hasArrived = false, alertStatus = 'ACTIVE' }) => {
   const [logs, setLogs] = React.useState<LogItem[]>(INITIAL_LOGS);
 
   React.useEffect(() => {
@@ -46,51 +45,46 @@ export const ResponseLog: React.FC<ResponseLogProps> = ({ isActive = false, hasA
       return now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
     };
 
-    // Sequence Simulation
-    let step = 0;
-    
-    // Step 1 immediately
-    setLogs(prev => prev.map((l, i) => i === 0 ? { ...l, status: 'COMPLETED', time: formatTime() } : i === 1 ? { ...l, status: 'IN_PROGRESS' } : l));
-    
-    const timers: NodeJS.Timeout[] = [];
-    
-    // Step 2
-    timers.push(setTimeout(() => {
-      setLogs(prev => prev.map((l, i) => i === 1 ? { ...l, status: 'COMPLETED', time: formatTime() } : i === 2 ? { ...l, status: 'IN_PROGRESS' } : l));
-    }, 2000));
+    setLogs(prev => {
+      const newLogs = [...prev];
+      
+      const isDispatched = alertStatus === 'DISPATCHED' || alertStatus === 'ARRIVED' || hasArrived;
+      const isArrived = alertStatus === 'ARRIVED' || hasArrived;
 
-    // Step 3
-    timers.push(setTimeout(() => {
-      setLogs(prev => prev.map((l, i) => i === 2 ? { ...l, status: 'COMPLETED', time: formatTime() } : i === 3 ? { ...l, status: 'IN_PROGRESS' } : l));
-    }, 4500));
+      // Step 1 (Index 0): Alert Sent to Driver. Completes immediately.
+      if (newLogs[0].status !== 'COMPLETED') {
+        newLogs[0] = { ...newLogs[0], status: 'COMPLETED', time: formatTime() };
+      }
 
-    // Step 4 & 5
-    timers.push(setTimeout(() => {
-      setLogs(prev => prev.map((l, i) => i === 3 ? { ...l, status: 'COMPLETED', time: formatTime() } : i === 4 ? { ...l, status: 'IN_PROGRESS' } : l));
-    }, 7000));
+      // Step 2 (Index 1): Driver Accepted.
+      if (isDispatched) {
+        if (newLogs[1].status !== 'COMPLETED') newLogs[1] = { ...newLogs[1], status: 'COMPLETED', time: formatTime() };
+        
+        // Step 3 (Index 2): Ambulance Approaching.
+        if (!isArrived) {
+          newLogs[2] = { ...newLogs[2], status: 'IN_PROGRESS' };
+        } else {
+          if (newLogs[2].status !== 'COMPLETED') newLogs[2] = { ...newLogs[2], status: 'COMPLETED', time: formatTime() };
+        }
+      } else {
+        // If not dispatched yet, Step 2 is IN PROGRESS
+        newLogs[1] = { ...newLogs[1], status: 'IN_PROGRESS' };
+      }
 
-    return () => {
-      timers.forEach(t => clearTimeout(t));
-    };
-  }, [isActive]);
+      // Step 4 (Index 3): Ambulance Arrived.
+      if (isArrived) {
+        if (newLogs[3].status !== 'COMPLETED') newLogs[3] = { ...newLogs[3], status: 'COMPLETED', time: formatTime() };
+      }
 
-  React.useEffect(() => {
-    if (hasArrived) {
-      const formatTime = () => {
-        const now = new Date();
-        return now.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
-      };
-      setLogs(prev => prev.map((l, i) => 
-        i === 4 ? { ...l, status: 'COMPLETED', time: formatTime() } : 
-        i === 5 ? { ...l, status: 'COMPLETED', time: formatTime() } : l
-      ));
-    }
-  }, [hasArrived]);
+      return newLogs;
+    });
+
+  }, [isActive, alertStatus, hasArrived]);
 
   const activeIndex = logs.findIndex(l => l.status === 'IN_PROGRESS');
   const completedCount = logs.filter(l => l.status === 'COMPLETED').length;
   // Calculate line height percentage
-  const lineProgress = logs[5].status === 'COMPLETED' ? 100 : (completedCount * 17);
+  const lineProgress = logs[3].status === 'COMPLETED' ? 100 : (completedCount * 30);
 
   return (
     <div className="bg-white rounded-xl shadow-sm p-4 mb-4">
