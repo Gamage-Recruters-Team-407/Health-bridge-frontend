@@ -16,11 +16,9 @@ import {
   CheckCircle2,
   FileText,
   Loader2,
-  Plus,
   Save,
   Stethoscope,
   UserRound,
-  X,
 } from "lucide-react";
 
 import DashboardLayout from "@/components/medical-records/MedicalRecordsShell";
@@ -190,30 +188,6 @@ export default function EditMedicalRecordPage({
   ] = useState("");
 
   const [
-    symptoms,
-    setSymptoms,
-  ] = useState<string[]>(
-    []
-  );
-
-  const [
-    symptomInput,
-    setSymptomInput,
-  ] = useState("");
-
-  const [
-    treatmentPlan,
-    setTreatmentPlan,
-  ] = useState<string[]>(
-    []
-  );
-
-  const [
-    treatmentInput,
-    setTreatmentInput,
-  ] = useState("");
-
-  const [
     loading,
     setLoading,
   ] = useState(true);
@@ -374,15 +348,6 @@ export default function EditMedicalRecordPage({
               ?? ""
             );
 
-            setSymptoms(
-              record.symptoms
-              ?? []
-            );
-
-            setTreatmentPlan(
-              record.treatmentPlan
-              ?? []
-            );
           } catch (
             requestError
           ) {
@@ -433,101 +398,6 @@ export default function EditMedicalRecordPage({
         clinicalSummary,
       ]
     );
-
-
-  /*
-   * =========================================================
-   * SYMPTOMS
-   * =========================================================
-   */
-  const addSymptom =
-    () => {
-      const value =
-        symptomInput.trim();
-
-      if (!value) {
-        return;
-      }
-
-      const alreadyExists =
-        symptoms.some(
-          (item) =>
-            item.toLowerCase()
-            === value.toLowerCase()
-        );
-
-      if (!alreadyExists) {
-        setSymptoms(
-          (previous) => [
-            ...previous,
-            value,
-          ]
-        );
-      }
-
-      setSymptomInput("");
-    };
-
-
-  const removeSymptom =
-    (
-      index: number
-    ) => {
-      setSymptoms(
-        (previous) =>
-          previous.filter(
-            (
-              _,
-              currentIndex
-            ) =>
-              currentIndex
-              !== index
-          )
-      );
-    };
-
-
-  /*
-   * =========================================================
-   * TREATMENT PLAN
-   * =========================================================
-   */
-  const addTreatmentPlanItem =
-    () => {
-      const value =
-        treatmentInput.trim();
-
-      if (!value) {
-        return;
-      }
-
-      setTreatmentPlan(
-        (previous) => [
-          ...previous,
-          value,
-        ]
-      );
-
-      setTreatmentInput("");
-    };
-
-
-  const removeTreatmentPlanItem =
-    (
-      index: number
-    ) => {
-      setTreatmentPlan(
-        (previous) =>
-          previous.filter(
-            (
-              _,
-              currentIndex
-            ) =>
-              currentIndex
-              !== index
-          )
-      );
-    };
 
 
   /*
@@ -610,9 +480,17 @@ export default function EditMedicalRecordPage({
           clinicalSummary:
             clinicalSummary.trim(),
 
-          symptoms,
+          /*
+           * Legacy fields are no longer editable in the UI.
+           * Preserve any historical values already stored.
+           */
+          symptoms:
+            originalRecord.symptoms
+            ?? [],
 
-          treatmentPlan,
+          treatmentPlan:
+            originalRecord.treatmentPlan
+            ?? [],
 
           consultationNotes:
             consultationNotes
@@ -1363,343 +1241,37 @@ export default function EditMedicalRecordPage({
               </section>
 
 
-              {/* SYMPTOMS */}
+              {/* CLINICAL CHILD RECORDS NOTE */}
               <section
                 className="
                   rounded-2xl
                   border
-                  border-slate-200
-                  bg-white
-                  p-5
-                  shadow-sm
+                  border-indigo-100
+                  bg-indigo-50/60
+                  p-4
                 "
               >
-                <h2
+                <p
                   className="
-                    text-lg
-                    font-bold
-                    text-slate-900
+                    text-sm
+                    font-semibold
+                    text-indigo-900
                   "
                 >
-                  Symptoms
-                </h2>
+                  Diagnoses and treatment records are managed separately.
+                </p>
 
-                <div
+                <p
                   className="
-                    mt-4
-                    flex
-                    flex-col
-                    gap-2
-                    sm:flex-row
+                    mt-1
+                    text-xs
+                    leading-5
+                    text-indigo-700
                   "
                 >
-                  <input
-                    value={
-                      symptomInput
-                    }
-                    onChange={
-                      (
-                        event
-                      ) =>
-                        setSymptomInput(
-                          event.target.value
-                        )
-                    }
-                    onKeyDown={
-                      (
-                        event
-                      ) => {
-                        if (
-                          event.key
-                          === "Enter"
-                        ) {
-                          event.preventDefault();
-                          addSymptom();
-                        }
-                      }
-                    }
-                    placeholder="Add symptom"
-                    className="
-                      flex-1
-                      rounded-xl
-                      border
-                      border-slate-200
-                      px-3
-                      py-2.5
-                      text-sm
-                      outline-none
-                      focus:border-blue-500
-                      focus:ring-2
-                      focus:ring-blue-100
-                    "
-                  />
-
-                  <button
-                    type="button"
-                    onClick={
-                      addSymptom
-                    }
-                    className="
-                      inline-flex
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      bg-blue-50
-                      px-4
-                      py-2.5
-                      text-sm
-                      font-semibold
-                      text-blue-700
-                    "
-                  >
-                    <Plus
-                      className="
-                        h-4
-                        w-4
-                      "
-                    />
-
-                    Add
-                  </button>
-                </div>
-
-
-                {symptoms.length > 0 && (
-                  <div
-                    className="
-                      mt-4
-                      flex
-                      flex-wrap
-                      gap-2
-                    "
-                  >
-                    {symptoms.map(
-                      (
-                        symptom,
-                        index
-                      ) => (
-                        <span
-                          key={
-                            `${symptom}-${index}`
-                          }
-                          className="
-                            inline-flex
-                            items-center
-                            gap-2
-                            rounded-xl
-                            bg-rose-50
-                            px-3
-                            py-2
-                            text-sm
-                            text-rose-700
-                          "
-                        >
-                          {symptom}
-
-                          <button
-                            type="button"
-                            onClick={
-                              () =>
-                                removeSymptom(
-                                  index
-                                )
-                            }
-                          >
-                            <X
-                              className="
-                                h-3.5
-                                w-3.5
-                              "
-                            />
-                          </button>
-                        </span>
-                      )
-                    )}
-                  </div>
-                )}
-              </section>
-
-
-              {/* TREATMENT PLAN */}
-              <section
-                className="
-                  rounded-2xl
-                  border
-                  border-slate-200
-                  bg-white
-                  p-5
-                  shadow-sm
-                "
-              >
-                <h2
-                  className="
-                    text-lg
-                    font-bold
-                    text-slate-900
-                  "
-                >
-                  Treatment Plan
-                </h2>
-
-                <div
-                  className="
-                    mt-4
-                    flex
-                    flex-col
-                    gap-2
-                    sm:flex-row
-                  "
-                >
-                  <input
-                    value={
-                      treatmentInput
-                    }
-                    onChange={
-                      (
-                        event
-                      ) =>
-                        setTreatmentInput(
-                          event.target.value
-                        )
-                    }
-                    onKeyDown={
-                      (
-                        event
-                      ) => {
-                        if (
-                          event.key
-                          === "Enter"
-                        ) {
-                          event.preventDefault();
-
-                          addTreatmentPlanItem();
-                        }
-                      }
-                    }
-                    placeholder="Add treatment plan item"
-                    className="
-                      flex-1
-                      rounded-xl
-                      border
-                      border-slate-200
-                      px-3
-                      py-2.5
-                      text-sm
-                      outline-none
-                      focus:border-blue-500
-                      focus:ring-2
-                      focus:ring-blue-100
-                    "
-                  />
-
-                  <button
-                    type="button"
-                    onClick={
-                      addTreatmentPlanItem
-                    }
-                    className="
-                      inline-flex
-                      items-center
-                      justify-center
-                      gap-2
-                      rounded-xl
-                      bg-emerald-50
-                      px-4
-                      py-2.5
-                      text-sm
-                      font-semibold
-                      text-emerald-700
-                    "
-                  >
-                    <Plus
-                      className="
-                        h-4
-                        w-4
-                      "
-                    />
-
-                    Add
-                  </button>
-                </div>
-
-
-                {treatmentPlan.length > 0 && (
-                  <div
-                    className="
-                      mt-4
-                      space-y-2
-                    "
-                  >
-                    {treatmentPlan.map(
-                      (
-                        item,
-                        index
-                      ) => (
-                        <div
-                          key={
-                            `${item}-${index}`
-                          }
-                          className="
-                            flex
-                            items-start
-                            gap-3
-                            rounded-xl
-                            border
-                            border-emerald-100
-                            bg-emerald-50/60
-                            p-3
-                          "
-                        >
-                          <span
-                            className="
-                              flex
-                              h-6
-                              w-6
-                              shrink-0
-                              items-center
-                              justify-center
-                              rounded-full
-                              bg-emerald-600
-                              text-xs
-                              font-bold
-                              text-white
-                            "
-                          >
-                            {index + 1}
-                          </span>
-
-                          <p
-                            className="
-                              flex-1
-                              text-sm
-                              text-emerald-800
-                            "
-                          >
-                            {item}
-                          </p>
-
-                          <button
-                            type="button"
-                            onClick={
-                              () =>
-                                removeTreatmentPlanItem(
-                                  index
-                                )
-                            }
-                          >
-                            <X
-                              className="
-                                h-4
-                                w-4
-                              "
-                            />
-                          </button>
-                        </div>
-                      )
-                    )}
-                  </div>
-                )}
+                  Return to the Medical Record Details page and use
+                  Manage Diagnoses or Manage Treatments.
+                </p>
               </section>
 
 

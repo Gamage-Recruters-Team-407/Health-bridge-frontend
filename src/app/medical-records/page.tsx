@@ -11,6 +11,7 @@ import {
 import {
   Activity,
   AlertCircle,
+  Archive,
   CalendarDays,
   FileText,
   FolderOpen,
@@ -282,6 +283,22 @@ export default function MedicalRecordsPage() {
 
 
   /*
+   * ADMIN / SUPER_ADMIN can manage archived EHR records.
+   *
+   * We derive this from the already-working EHR search permission
+   * and exclude DOCTOR. This is more robust for the shared auth shell:
+   *
+   * DOCTOR       -> canSearchPatients = true,  isDoctor = true  -> false
+   * ADMIN        -> canSearchPatients = true,  isDoctor = false -> true
+   * SUPER_ADMIN  -> canSearchPatients = true,  isDoctor = false -> true
+   * PATIENT      -> canSearchPatients = false                    -> false
+   */
+  const canManageArchivedRecords =
+    canSearchPatients
+    && !isDoctor;
+
+
+  /*
    * =========================================================
    * LOAD EHR
    * =========================================================
@@ -533,11 +550,21 @@ export default function MedicalRecordsPage() {
       if (
         query.length === 0
       ) {
+        setPatientResults(
+          []
+        );
+
+        setPatientSearchError(
+          ""
+        );
+
+        setSearchingPatients(
+          false
+        );
+
         return;
       }
 
-
-      
 
       let cancelled =
         false;
@@ -844,7 +871,19 @@ export default function MedicalRecordsPage() {
       : "/medical-records/documents";
 
 
+  /*
+   * Generic create action:
+   * doctor intentionally chooses a patient.
+   */
   const createHref =
+    "/medical-records/create";
+
+
+  /*
+   * Context-aware create action:
+   * used from the currently selected patient card.
+   */
+  const selectedPatientCreateHref =
     activePatientId
       ? (
         `/medical-records/create?patientId=${
@@ -853,7 +892,7 @@ export default function MedicalRecordsPage() {
           )
         }`
       )
-      : "/medical-records/create";
+      : createHref;
 
 
   return (
@@ -943,6 +982,39 @@ export default function MedicalRecordsPage() {
                 <Plus className="h-4 w-4" />
 
                 New Medical Record
+              </Link>
+            )}
+
+
+            {canManageArchivedRecords && (
+              <Link
+                href="/medical-records/archived"
+                className="
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  border
+                  border-amber-200
+                  bg-amber-50
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-amber-700
+                  shadow-sm
+                  transition
+                  hover:bg-amber-100
+                "
+              >
+                <Archive
+                  className="
+                    h-4
+                    w-4
+                  "
+                />
+
+                Archived Medical Records
               </Link>
             )}
 
@@ -1827,6 +1899,37 @@ export default function MedicalRecordsPage() {
                         Patient ID:{" "}
                         {history.patientId}
                       </p>
+
+
+                      {isDoctor && (
+                        <Link
+                          href={
+                            selectedPatientCreateHref
+                          }
+                          className="
+                            mt-3
+                            inline-flex
+                            items-center
+                            gap-2
+                            rounded-xl
+                            border
+                            border-blue-200
+                            bg-blue-50
+                            px-3
+                            py-2
+                            text-xs
+                            font-semibold
+                            text-blue-700
+                            transition
+                            hover:border-blue-300
+                            hover:bg-blue-100
+                          "
+                        >
+                          <Plus className="h-3.5 w-3.5" />
+
+                          Add Record for This Patient
+                        </Link>
+                      )}
                     </div>
                   </div>
 
