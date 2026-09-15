@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import api, { getApiErrorMessage } from "@/lib/axios";
 
 export interface AppNotificationItem {
   id: string;
@@ -21,15 +22,10 @@ export function useNotifications() {
     setError(null);
 
     try {
-      const response = await fetch("/api/notifications");
-      if (!response.ok) {
-        throw new Error("Failed to load notifications");
-      }
-
-      const data = (await response.json()) as AppNotificationItem[];
+      const data = await api.get<AppNotificationItem[]>("/notifications");
       setNotifications(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load notifications");
+      setError(getApiErrorMessage(err, "Failed to load notifications"));
     } finally {
       setLoading(false);
     }
@@ -42,11 +38,16 @@ export function useNotifications() {
       ),
     );
 
-    await fetch(`/api/notifications/${id}/read`, { method: "PATCH" });
+    try {
+      await api.patch(`/notifications/${id}/read`);
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to mark notification as read"));
+    }
   }, []);
 
   useEffect(() => {
-    void reload();
+    const task = window.setTimeout(() => void reload(), 0);
+    return () => window.clearTimeout(task);
   }, [reload]);
 
   return {

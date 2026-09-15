@@ -1,3 +1,5 @@
+import { ROUTES } from "@/constants/routes";
+
 export interface AuthUser {
   id: string;
   fullName: string;
@@ -83,19 +85,19 @@ export const isAuthenticated = (): boolean => {
 export const getRoleRedirectPath = (role: string): string => {
   switch (role) {
     case "SUPER_ADMIN":
-      return "/super-admin/dashboard";
+      return ROUTES.dashboard.superAdmin;
     case "ADMIN":
-      return "/admin/dashboard";
+      return ROUTES.dashboard.admin;
     case "DOCTOR":
-      return "/doctor/dashboard";
+      return ROUTES.dashboard.doctor;
     case "PHARMACIST":
-      return "/pharmacist/dashboard";
+      return ROUTES.dashboard.pharmacist;
     case "INSURANCE_OFFICER":
-      return "/insurance-officer/dashboard";
+      return ROUTES.dashboard.insuranceOfficer;
     case "LAB_OFFICER":
-      return "/laboratory/dashboard";
+      return ROUTES.dashboard.labOfficer;
     case "PATIENT":
     default:
-      return "/patient/dashboard";
+      return ROUTES.dashboard.patient;
   }
 };

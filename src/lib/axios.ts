@@ -33,7 +33,7 @@ class ApiClient {
 
   constructor() {
     console.log('📡 Initializing API Client with baseURL:', API_BASE_URL);
-    
+
     this.client = axios.create({
       baseURL: API_BASE_URL,
       headers: {
@@ -42,14 +42,13 @@ class ApiClient {
       timeout: 30000,
     });
 
-    // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
         const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
           console.log('🔑 Token added to request');
-        } else {
+        } else if (typeof window !== 'undefined') {
           console.warn('⚠️ No token found');
         }
         console.log(`🚀 ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
@@ -61,7 +60,6 @@ class ApiClient {
       }
     );
 
-    // Response interceptor
     this.client.interceptors.response.use(
       (response) => {
         console.log(`✅ ${response.status} ${response.config.url}`);
@@ -78,6 +76,7 @@ class ApiClient {
       },
       (error) => {
         console.error('❌ Response Error:', error);
+
         if (error.response?.status === 401) {
           console.error('🔐 401 Unauthorized - Token invalid or missing');
           if (typeof window !== 'undefined') {
@@ -88,6 +87,7 @@ class ApiClient {
         } else if (error.code === 'ERR_NETWORK') {
           console.error('🌐 Network error - Backend not reachable');
         }
+
         return Promise.reject(error);
       }
     );

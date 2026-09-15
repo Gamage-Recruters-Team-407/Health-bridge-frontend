@@ -3,6 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigation, MapPin, StopCircle } from 'lucide-react';
 import dynamic from 'next/dynamic';
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
 
 const DriverMap = dynamic(() => import('./DriverMap'), { 
   ssr: false, 
@@ -20,12 +22,68 @@ export default function DriverDashboard() {
   const [isDispatchActive, setIsDispatchActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
+  const [pendingAlert, setPendingAlert] = useState<any>(null);
   const watchIdRef = useRef<number | null>(null);
 
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 10));
   };
+
+  useEffect(() => {
+    const socket = new SockJS('http://localhost:8088/ws/alerts');
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      debug: function (str) {
+        // console.log(str);
+      },
+      onConnect: () => {
+        addLog("Connected to emergency dispatch network.");
+        
+        stompClient.subscribe('/topic/alerts', (msg) => {
+          if (msg.body) {
+            const alert = JSON.parse(msg.body);
+            setPendingAlert(alert);
+            addLog(`New SOS Alert received: ${alert.id}`);
+            
+            // Audio alert
+            if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+              const utterance = new SpeechSynthesisUtterance("Emergency dispatch received.");
+              window.speechSynthesis.speak(utterance);
+            }
+          }
+        });
+
+        stompClient.subscribe('/topic/alerts/cancel', (msg) => {
+          if (msg.body) {
+            const alert = JSON.parse(msg.body);
+            setPendingAlert((currentAlert: any) => {
+              if (currentAlert && currentAlert.id === alert.id) {
+                addLog(`Alert ${alert.id} was cancelled.`);
+                
+                // Audio alert
+                if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+                  const utterance = new SpeechSynthesisUtterance("Emergency dispatch cancelled.");
+                  window.speechSynthesis.speak(utterance);
+                }
+                return null;
+              }
+              return currentAlert;
+            });
+          }
+        });
+      },
+      onStompError: (frame) => {
+        addLog('Broker reported error: ' + frame.headers['message']);
+      }
+    });
+
+    stompClient.activate();
+
+    return () => {
+      stompClient.deactivate();
+    };
+  }, []);
 
   const startTracking = () => {
     if (typeof navigator === 'undefined' || !navigator.geolocation) {
@@ -62,6 +120,7 @@ export default function DriverDashboard() {
     }
     setIsDispatchActive(false);
     setCurrentLocation(null);
+    setPendingAlert(null); // Clear the alert once resolved
     addLog("Dispatch ended. Tracking stopped.");
   };
 
@@ -81,15 +140,21 @@ export default function DriverDashboard() {
       </header>
 
       {/* Active Emergency Info Card */}
-      <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-          <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>Pending Dispatch #HB-9912</h2>
-          <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Priority 1</span>
+      {pendingAlert ? (
+        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>Pending Dispatch #{pendingAlert.id?.slice(-4).toUpperCase() || 'NEW'}</h2>
+            <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Priority 1</span>
+          </div>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Patient:</strong> {pendingAlert.patientInfo?.name || 'Unknown'}</p>
+          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Condition:</strong> {pendingAlert.emergencyType || 'Critical'}</p>
+          <p style={{ fontSize: '14px', color: '#475569' }}><strong>Address:</strong> {pendingAlert.location?.address || 'GPS Location'}</p>
         </div>
-        <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Patient:</strong> John Doe</p>
-        <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Condition:</strong> Critical</p>
-        <p style={{ fontSize: '14px', color: '#475569' }}><strong>Address:</strong> 123 Main St, Colombo</p>
-      </div>
+      ) : (
+        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
+          <p style={{ color: '#64748B' }}>No pending dispatch. Waiting for alerts...</p>
+        </div>
+      )}
 
       {/* Main Action Area */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
@@ -148,8 +213,8 @@ export default function DriverDashboard() {
           <DriverMap 
             driverLat={currentLocation.lat} 
             driverLng={currentLocation.lng} 
-            patientLat={6.9271} // Mock Patient Colombo Lat
-            patientLng={79.8612} // Mock Patient Colombo Lng
+            patientLat={pendingAlert?.location?.latitude || 6.9271} 
+            patientLng={pendingAlert?.location?.longitude || 79.8612} 
           />
         </div>
       )}

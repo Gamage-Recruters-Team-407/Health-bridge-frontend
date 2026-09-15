@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import api, { getApiErrorMessage } from "@/lib/axios";
 
 export interface DoctorSummary {
   id: string;
@@ -20,22 +21,18 @@ export function useDoctors() {
     setError(null);
 
     try {
-      const response = await fetch("/api/doctors");
-      if (!response.ok) {
-        throw new Error("Failed to load doctors");
-      }
-
-      const data = (await response.json()) as DoctorSummary[];
+      const data = await api.get<DoctorSummary[]>("/doctors");
       setDoctors(data);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load doctors");
+      setError(getApiErrorMessage(err, "Failed to load doctors"));
     } finally {
       setLoading(false);
     }
   }, []);
 
   useEffect(() => {
-    void reload();
+    const task = window.setTimeout(() => void reload(), 0);
+    return () => window.clearTimeout(task);
   }, [reload]);
 
   return {

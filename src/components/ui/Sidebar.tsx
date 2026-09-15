@@ -73,17 +73,37 @@ const getNavGroups = (role: string): NavGroup[] => {
         items: [
           { title: "Billing", href: "/hospital/billing", icon: DollarSign },
           { title: "Inventory", href: "/hospital/inventory", icon: Pill },
-          { title: "Compliance", href: "/hospital/billing/compliance", icon: ClipboardCheck },
+          { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
         ],
       },
-      {
-        groupTitle: "System Admin",
-        items: [
-          { title: "Users", href: "/admin/users", icon: Users },
-          { title: "Settings", href: "/admin/settings", icon: Settings },
-        ],
-      },
+      
+       {
+      groupTitle: "Clinical Records",
+      items: [
+        {
+          title: "Medical Records",
+          href: "/medical-records",
+          icon: FileSpreadsheet,
+        },
+      ],
+    },
+
+    {
+      groupTitle: "System Admin",
+      items: [
+        {
+          title: "Users",
+          href: "/admin/users",
+          icon: Users,
+        },
+        {
+          title: "Settings",
+          href: "/admin/settings",
+          icon: Settings,
+        },
+      ],
+    },
     ];
   }
 
@@ -94,7 +114,6 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "Patients", href: "/patients", icon: Users },
           { title: "Appointments", href: "/appointments", icon: Calendar },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
@@ -110,9 +129,12 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "My Health",
         items: [
           { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
+          { title: "Family Members", href: "/patient/family", icon: Users },
+          { title: "Health Metrics", href: "/patient/health-metrics", icon: TrendingUp },
+          { title: "Medications", href: "/patient/medications", icon: Pill },
           { title: "Appointments", href: "/appointments", icon: Calendar },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
         ],
       },
