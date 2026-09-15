@@ -515,6 +515,58 @@ export type PopulationHealthAnalyticsResponseDto = {
   availability: PopulationMetricAvailabilityDto[];
 };
 
+export type ReportsAnalyticsKpiDTO = {
+  label: string;
+  value: number | null;
+  reason?: string | null;
+};
+
+export type ReportSummaryDTO = {
+  reportId: string;
+  title: string;
+  category: string;
+  reportType: string;
+  status: string;
+  generatedDate: string;
+  format: string;
+};
+
+export type ReportActivityDTO = {
+  date: string;
+  generatedReports: number;
+  exportedReports: number;
+};
+
+export type CategoryDistributionDTO = {
+  category: string;
+  count: number;
+};
+
+export type ScheduledReportDTO = {
+  name: string;
+  frequency: string;
+  nextRun: string;
+  status: string;
+};
+
+export type ReportsAvailabilityDTO = {
+  dataSource: string;
+  status: string;
+  reason?: string | null;
+};
+
+export type ReportsAnalyticsResponseDTO = {
+  generatedAt: string;
+  period: AnalyticsPeriod;
+  dataAvailability: AnalyticsDataAvailability;
+  kpis: ReportsAnalyticsKpiDTO[];
+  reports: ReportSummaryDTO[];
+  reportActivity: ReportActivityDTO[];
+  categoryDistribution: CategoryDistributionDTO[];
+  scheduledReports: ScheduledReportDTO[];
+  availability: ReportsAvailabilityDTO[];
+};
+
 export type ReportCategory = "Healthcare" | "Financial" | "Operational" | "Population Health" | "Hospital Performance" | "Laboratory Performance" | "Executive Summary";
 export type ReportFormat = "PDF" | "Excel";
 export type ReportStatus = "Completed" | "Generating" | "Failed" | "Scheduled";
