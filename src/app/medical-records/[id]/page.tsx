@@ -2,6 +2,10 @@
 
 import Link from "next/link";
 import {
+  useRouter,
+} from "next/navigation";
+
+import {
   useEffect,
   useState,
 } from "react";
@@ -9,10 +13,10 @@ import {
 import {
   Activity,
   AlertCircle,
+  Archive,
   ArrowLeft,
   Building2,
   CalendarDays,
-  ClipboardList,
   FileText,
   FolderOpen,
   Loader2,
@@ -21,7 +25,8 @@ import {
   UserRound,
 } from "lucide-react";
 
-import DashboardLayout from "@/components/medical-records/MedicalRecordsShell";
+import DashboardLayout
+  from "@/components/medical-records/MedicalRecordsShell";
 
 import {
   getStoredUser,
@@ -31,6 +36,10 @@ import {
 import {
   medicalRecordService,
 } from "@/services/medicalRecordService";
+
+import {
+  ehrArchiveService,
+} from "@/services/ehrArchiveService";
 
 import type {
   Diagnosis,
@@ -50,6 +59,7 @@ interface MedicalRecordDetailsPageProps {
 function formatDate(
   value?: string | null
 ): string {
+
   if (!value) {
     return "N/A";
   }
@@ -79,6 +89,7 @@ function formatDate(
 function formatFileSize(
   bytes?: number
 ): string {
+
   if (!bytes) {
     return "0 KB";
   }
@@ -99,11 +110,13 @@ function formatFileSize(
 function getErrorMessage(
   error: unknown
 ): string {
+
   if (
     typeof error === "object"
     && error !== null
     && "response" in error
   ) {
+
     const requestError =
       error as {
         response?: {
@@ -114,25 +127,6 @@ function getErrorMessage(
         };
       };
 
-    if (
-      requestError.response?.status
-      === 403
-    ) {
-      return (
-        "You do not have permission "
-        + "to view this Medical Record."
-      );
-    }
-
-    if (
-      requestError.response?.status
-      === 404
-    ) {
-      return (
-        "The requested Medical Record "
-        + "was not found."
-      );
-    }
 
     if (
       requestError
@@ -140,15 +134,44 @@ function getErrorMessage(
         ?.data
         ?.message
     ) {
+
       return requestError
         .response
         .data
         .message;
     }
+
+
+    if (
+      requestError
+        .response
+        ?.status === 403
+    ) {
+
+      return (
+        "You do not have permission "
+        + "to access this Medical Record."
+      );
+    }
+
+
+    if (
+      requestError
+        .response
+        ?.status === 404
+    ) {
+
+      return (
+        "The requested Medical Record "
+        + "was not found."
+      );
+    }
   }
 
+
   return (
-    "Unable to load Medical Record details."
+    "Unable to complete the "
+    + "Medical Record request."
   );
 }
 
@@ -156,6 +179,11 @@ function getErrorMessage(
 export default function MedicalRecordDetailsPage({
   params,
 }: MedicalRecordDetailsPageProps) {
+
+  const router =
+    useRouter();
+
+
   const [
     currentUser,
     setCurrentUser,
@@ -164,11 +192,13 @@ export default function MedicalRecordDetailsPage({
       null
     );
 
+
   const [
     recordId,
     setRecordId,
   ] =
     useState("");
+
 
   const [
     record,
@@ -178,6 +208,7 @@ export default function MedicalRecordDetailsPage({
       null
     );
 
+
   const [
     diagnoses,
     setDiagnoses,
@@ -185,6 +216,7 @@ export default function MedicalRecordDetailsPage({
     useState<Diagnosis[]>(
       []
     );
+
 
   const [
     treatments,
@@ -194,6 +226,7 @@ export default function MedicalRecordDetailsPage({
       []
     );
 
+
   const [
     documents,
     setDocuments,
@@ -202,11 +235,20 @@ export default function MedicalRecordDetailsPage({
       []
     );
 
+
   const [
     loading,
     setLoading,
   ] =
     useState(true);
+
+
+  const [
+    archiving,
+    setArchiving,
+  ] =
+    useState(false);
+
 
   const [
     error,
@@ -222,21 +264,25 @@ export default function MedicalRecordDetailsPage({
    */
   useEffect(
     () => {
+
       setCurrentUser(
         getStoredUser()
       );
 
-      const resolveParams =
+
+      void (
         async () => {
+
           const resolved =
             await params;
+
 
           setRecordId(
             resolved.id
           );
-        };
+        }
+      )();
 
-      void resolveParams();
     },
     [
       params,
@@ -251,50 +297,65 @@ export default function MedicalRecordDetailsPage({
    */
   useEffect(
     () => {
+
       if (!recordId) {
         return;
       }
 
+
       let cancelled =
         false;
 
-      const loadRecord =
+
+      void (
         async () => {
-          setLoading(true);
-          setError("");
+
+          setLoading(
+            true
+          );
+
+          setError(
+            ""
+          );
+
 
           try {
+
             const [
               recordResponse,
               diagnosisResponse,
               treatmentResponse,
               documentResponse,
             ] =
-              await Promise.all([
-                medicalRecordService
-                  .getMedicalRecordById(
-                    recordId
-                  ),
+              await Promise.all(
+                [
+                  medicalRecordService
+                    .getMedicalRecordById(
+                      recordId
+                    ),
 
-                medicalRecordService
-                  .getDiagnosesByRecord(
-                    recordId
-                  ),
+                  medicalRecordService
+                    .getDiagnosesByRecord(
+                      recordId
+                    ),
 
-                medicalRecordService
-                  .getTreatmentsByRecord(
-                    recordId
-                  ),
+                  medicalRecordService
+                    .getTreatmentsByRecord(
+                      recordId
+                    ),
 
-                medicalRecordService
-                  .getDocumentsByRecord(
-                    recordId
-                  ),
-              ]);
+                  medicalRecordService
+                    .getDocumentsByRecord(
+                      recordId
+                    ),
+                ]
+              );
+
 
             if (cancelled) {
               return;
             }
+
 
             setRecord(
               recordResponse
@@ -311,28 +372,39 @@ export default function MedicalRecordDetailsPage({
             setDocuments(
               documentResponse
             );
+
+
           } catch (
             requestError
           ) {
+
             if (!cancelled) {
+
               setError(
                 getErrorMessage(
                   requestError
                 )
               );
             }
+
+
           } finally {
+
             if (!cancelled) {
-              setLoading(false);
+
+              setLoading(
+                false
+              );
             }
           }
-        };
+        }
+      )();
 
-      void loadRecord();
 
       return () => {
         cancelled = true;
       };
+
     },
     [
       recordId,
@@ -341,9 +413,8 @@ export default function MedicalRecordDetailsPage({
 
 
   /*
-   * =========================================================
-   * DOCTOR OWNERSHIP
-   * =========================================================
+   * Doctor can modify/archive only
+   * a record created by that doctor.
    */
   const canEdit =
     Boolean(
@@ -355,9 +426,14 @@ export default function MedicalRecordDetailsPage({
     );
 
 
+  const canOpenArchiveManagement =
+    currentUser?.role === "ADMIN"
+    || currentUser?.role === "SUPER_ADMIN";
+
+
   /*
    * =========================================================
-   * NAVIGATION LINKS
+   * LINKS
    * =========================================================
    */
   const backHref =
@@ -384,12 +460,22 @@ export default function MedicalRecordDetailsPage({
       : "/medical-records/history";
 
 
+  /*
+   * recordId is also passed.
+   *
+   * This keeps the document upload context
+   * tied to this exact Medical Record.
+   */
   const documentsHref =
     record
       ? (
         `/medical-records/documents?patientId=${
           encodeURIComponent(
             record.patientId
+          )
+        }&recordId=${
+          encodeURIComponent(
+            record.id
           )
         }`
       )
@@ -432,10 +518,90 @@ export default function MedicalRecordDetailsPage({
       : "#";
 
 
+  /*
+   * =========================================================
+   * DOCTOR ARCHIVE
+   * =========================================================
+   */
+  const handleArchiveRecord =
+    async () => {
+
+      if (
+        !record
+        || !canEdit
+      ) {
+        return;
+      }
+
+
+      const confirmed =
+        window.confirm(
+          "Archive this Medical Record?\n\n"
+          + "It will be removed from the active patient EHR. "
+          + "An Admin or Super Admin can restore it later."
+        );
+
+
+      if (!confirmed) {
+        return;
+      }
+
+
+      setArchiving(
+        true
+      );
+
+      setError(
+        ""
+      );
+
+
+      try {
+
+        await ehrArchiveService
+          .archiveMedicalRecord(
+            record.id
+          );
+
+
+        router.push(
+          `/medical-records?patientId=${
+            encodeURIComponent(
+              record.patientId
+            )
+          }`
+        );
+
+
+        router.refresh();
+
+
+      } catch (
+        requestError
+      ) {
+
+        setError(
+          getErrorMessage(
+            requestError
+          )
+        );
+
+
+      } finally {
+
+        setArchiving(
+          false
+        );
+      }
+    };
+
+
   return (
+
     <DashboardLayout
       pageTitle="Medical Record Details"
     >
+
       <div
         className="
           mx-auto
@@ -444,9 +610,8 @@ export default function MedicalRecordDetailsPage({
           space-y-5
         "
       >
-        {/* ==============================================
-            HEADER
-            ============================================== */}
+
+        {/* HEADER */}
         <div
           className="
             flex
@@ -457,7 +622,9 @@ export default function MedicalRecordDetailsPage({
             sm:justify-between
           "
         >
+
           <div>
+
             <Link
               href={
                 backHref
@@ -469,7 +636,6 @@ export default function MedicalRecordDetailsPage({
                 text-sm
                 font-semibold
                 text-blue-600
-                transition
                 hover:text-blue-700
               "
             >
@@ -506,10 +672,12 @@ export default function MedicalRecordDetailsPage({
               Complete clinical information
               for this patient visit.
             </p>
+
           </div>
 
 
           {record && (
+
             <div
               className="
                 flex
@@ -517,8 +685,9 @@ export default function MedicalRecordDetailsPage({
                 gap-2
               "
             >
-              {/* EDIT RECORD */}
+
               {canEdit && (
+
                 <Link
                   href={
                     editHref
@@ -526,7 +695,6 @@ export default function MedicalRecordDetailsPage({
                   className="
                     inline-flex
                     items-center
-                    justify-center
                     gap-2
                     rounded-xl
                     bg-blue-600
@@ -535,8 +703,6 @@ export default function MedicalRecordDetailsPage({
                     text-sm
                     font-semibold
                     text-white
-                    shadow-sm
-                    transition
                     hover:bg-blue-700
                   "
                 >
@@ -549,11 +715,12 @@ export default function MedicalRecordDetailsPage({
 
                   Edit Record
                 </Link>
+
               )}
 
 
-              {/* MANAGE DIAGNOSES */}
               {canEdit && (
+
                 <Link
                   href={
                     diagnosesHref
@@ -561,7 +728,6 @@ export default function MedicalRecordDetailsPage({
                   className="
                     inline-flex
                     items-center
-                    justify-center
                     gap-2
                     rounded-xl
                     border
@@ -572,8 +738,6 @@ export default function MedicalRecordDetailsPage({
                     text-sm
                     font-semibold
                     text-indigo-700
-                    shadow-sm
-                    transition
                     hover:bg-indigo-100
                   "
                 >
@@ -586,11 +750,12 @@ export default function MedicalRecordDetailsPage({
 
                   Manage Diagnoses
                 </Link>
+
               )}
 
 
-              {/* MANAGE TREATMENTS */}
               {canEdit && (
+
                 <Link
                   href={
                     treatmentsHref
@@ -598,7 +763,6 @@ export default function MedicalRecordDetailsPage({
                   className="
                     inline-flex
                     items-center
-                    justify-center
                     gap-2
                     rounded-xl
                     border
@@ -609,8 +773,6 @@ export default function MedicalRecordDetailsPage({
                     text-sm
                     font-semibold
                     text-emerald-700
-                    shadow-sm
-                    transition
                     hover:bg-emerald-100
                   "
                 >
@@ -623,10 +785,69 @@ export default function MedicalRecordDetailsPage({
 
                   Manage Treatments
                 </Link>
+
               )}
 
 
-              {/* FULL HISTORY */}
+              {canEdit && (
+
+                <button
+                  type="button"
+                  onClick={
+                    () =>
+                      void handleArchiveRecord()
+                  }
+                  disabled={
+                    archiving
+                  }
+                  className="
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-amber-200
+                    bg-amber-50
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-semibold
+                    text-amber-700
+                    hover:bg-amber-100
+                    disabled:opacity-50
+                  "
+                >
+
+                  {archiving
+                    ? (
+                      <Loader2
+                        className="
+                          h-4
+                          w-4
+                          animate-spin
+                        "
+                      />
+                    )
+                    : (
+                      <Archive
+                        className="
+                          h-4
+                          w-4
+                        "
+                      />
+                    )
+                  }
+
+                  {archiving
+                    ? "Archiving..."
+                    : "Archive Record"
+                  }
+
+                </button>
+
+              )}
+
+
               <Link
                 href={
                   historyHref
@@ -634,7 +855,6 @@ export default function MedicalRecordDetailsPage({
                 className="
                   inline-flex
                   items-center
-                  justify-center
                   rounded-xl
                   border
                   border-slate-200
@@ -644,8 +864,6 @@ export default function MedicalRecordDetailsPage({
                   text-sm
                   font-semibold
                   text-slate-700
-                  shadow-sm
-                  transition
                   hover:border-blue-300
                   hover:text-blue-600
                 "
@@ -654,7 +872,6 @@ export default function MedicalRecordDetailsPage({
               </Link>
 
 
-              {/* DOCUMENTS */}
               <Link
                 href={
                   documentsHref
@@ -662,7 +879,6 @@ export default function MedicalRecordDetailsPage({
                 className="
                   inline-flex
                   items-center
-                  justify-center
                   rounded-xl
                   border
                   border-slate-200
@@ -672,27 +888,97 @@ export default function MedicalRecordDetailsPage({
                   text-sm
                   font-semibold
                   text-slate-700
-                  shadow-sm
-                  transition
                   hover:border-blue-300
                   hover:text-blue-600
                 "
               >
                 Documents
               </Link>
+
+
+              {canOpenArchiveManagement && (
+
+                <Link
+                  href="/medical-records/archived"
+                  className="
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-amber-200
+                    bg-white
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-semibold
+                    text-amber-700
+                    hover:bg-amber-50
+                  "
+                >
+                  <Archive
+                    className="
+                      h-4
+                      w-4
+                    "
+                  />
+
+                  Archived Records
+                </Link>
+
+              )}
+
             </div>
+
           )}
+
         </div>
 
 
-        {/* ==============================================
-            LOADING
-            ============================================== */}
-        {loading && (
+        {/* ERROR */}
+        {error && (
+
           <div
             className="
               flex
-              min-h-72
+              items-start
+              gap-3
+              rounded-2xl
+              border
+              border-red-200
+              bg-red-50
+              p-4
+              text-red-700
+            "
+          >
+            <AlertCircle
+              className="
+                mt-0.5
+                h-5
+                w-5
+                shrink-0
+              "
+            />
+
+            <p
+              className="
+                text-sm
+              "
+            >
+              {error}
+            </p>
+          </div>
+
+        )}
+
+
+        {/* LOADING */}
+        {loading && (
+
+          <div
+            className="
+              flex
+              min-h-64
               items-center
               justify-center
               rounded-2xl
@@ -701,94 +987,25 @@ export default function MedicalRecordDetailsPage({
               bg-white
             "
           >
-            <div
+            <Loader2
               className="
-                text-center
+                h-8
+                w-8
+                animate-spin
+                text-blue-600
               "
-            >
-              <Loader2
-                className="
-                  mx-auto
-                  h-8
-                  w-8
-                  animate-spin
-                  text-blue-600
-                "
-              />
-
-              <p
-                className="
-                  mt-3
-                  text-sm
-                  text-slate-500
-                "
-              >
-                Loading Medical Record...
-              </p>
-            </div>
+            />
           </div>
+
         )}
 
 
-        {/* ==============================================
-            ERROR
-            ============================================== */}
         {!loading
-          && error
-          && (
-            <div
-              className="
-                flex
-                items-start
-                gap-3
-                rounded-2xl
-                border
-                border-red-200
-                bg-red-50
-                p-5
-                text-red-700
-              "
-            >
-              <AlertCircle
-                className="
-                  mt-0.5
-                  h-5
-                  w-5
-                  shrink-0
-                "
-              />
-
-              <div>
-                <p
-                  className="
-                    font-semibold
-                  "
-                >
-                  Unable to load record
-                </p>
-
-                <p
-                  className="
-                    mt-1
-                    text-sm
-                  "
-                >
-                  {error}
-                </p>
-              </div>
-            </div>
-          )
-        }
-
-
-        {!loading
-          && !error
           && record
           && (
             <>
-              {/* ==========================================
-                  RECORD HERO
-                  ========================================== */}
+
+              {/* MAIN RECORD */}
               <section
                 className="
                   rounded-2xl
@@ -799,27 +1016,28 @@ export default function MedicalRecordDetailsPage({
                   shadow-sm
                 "
               >
+
                 <div
                   className="
                     flex
                     flex-col
                     gap-5
                     lg:flex-row
-                    lg:items-start
                     lg:justify-between
                   "
                 >
+
                   <div
                     className="
                       min-w-0
                       flex-1
                     "
                   >
+
                     <div
                       className="
                         flex
                         flex-wrap
-                        items-center
                         gap-2
                       "
                     >
@@ -828,81 +1046,70 @@ export default function MedicalRecordDetailsPage({
                           rounded-full
                           bg-blue-50
                           px-3
-                          py-1.5
+                          py-1
                           text-xs
-                          font-bold
+                          font-semibold
                           text-blue-700
                         "
                       >
-                        {
-                          record.recordType
-                        }
+                        {record.recordType}
                       </span>
-
 
                       <span
                         className="
                           rounded-full
                           bg-emerald-50
                           px-3
-                          py-1.5
+                          py-1
                           text-xs
-                          font-bold
+                          font-semibold
                           text-emerald-700
                         "
                       >
-                        {
-                          record.status
-                        }
+                        {record.status}
                       </span>
-
 
                       <span
                         className="
                           rounded-full
                           bg-slate-100
                           px-3
-                          py-1.5
+                          py-1
                           text-xs
                           font-semibold
                           text-slate-600
                         "
                       >
                         Version{" "}
-                        {
-                          record.version
-                        }
+                        {record.version}
                       </span>
                     </div>
 
 
                     <h2
                       className="
-                        mt-4
-                        text-2xl
+                        mt-5
+                        text-xl
                         font-bold
                         text-slate-900
                       "
                     >
-                      {
-                        record.diagnosis
-                      }
+                      {record.diagnosis}
                     </h2>
 
 
                     <p
                       className="
                         mt-2
-                        max-w-3xl
+                        whitespace-pre-wrap
                         text-sm
                         leading-6
                         text-slate-600
                       "
                     >
-                      {
-                        record.clinicalSummary
-                      }
+                      {record.clinicalSummary}
                     </p>
+
                   </div>
 
 
@@ -911,104 +1118,98 @@ export default function MedicalRecordDetailsPage({
                       grid
                       min-w-72
                       gap-3
+                      sm:grid-cols-2
+                      lg:grid-cols-1
                     "
                   >
+
                     <div
                       className="
-                        flex
-                        items-start
-                        gap-3
                         rounded-xl
                         bg-slate-50
-                        p-3
+                        p-4
                       "
                     >
-                      <CalendarDays
+                      <div
                         className="
-                          mt-0.5
-                          h-5
-                          w-5
-                          text-blue-600
+                          flex
+                          items-center
+                          gap-2
+                          text-xs
+                          text-slate-400
                         "
-                      />
-
-                      <div>
-                        <p
+                      >
+                        <CalendarDays
                           className="
-                            text-xs
-                            text-slate-400
+                            h-4
+                            w-4
+                            text-blue-600
                           "
-                        >
-                          Visit Date
-                        </p>
+                        />
 
-                        <p
-                          className="
-                            mt-1
-                            text-sm
-                            font-semibold
-                            text-slate-800
-                          "
-                        >
-                          {formatDate(
-                            record.visitDate
-                          )}
-                        </p>
+                        Visit Date
                       </div>
+
+                      <p
+                        className="
+                          mt-1
+                          font-semibold
+                          text-slate-800
+                        "
+                      >
+                        {formatDate(
+                          record.visitDate
+                        )}
+                      </p>
                     </div>
 
 
                     <div
                       className="
-                        flex
-                        items-start
-                        gap-3
                         rounded-xl
                         bg-slate-50
-                        p-3
+                        p-4
                       "
                     >
-                      <Building2
+                      <div
                         className="
-                          mt-0.5
-                          h-5
-                          w-5
-                          text-blue-600
+                          flex
+                          items-center
+                          gap-2
+                          text-xs
+                          text-slate-400
                         "
-                      />
-
-                      <div>
-                        <p
+                      >
+                        <Building2
                           className="
-                            text-xs
-                            text-slate-400
+                            h-4
+                            w-4
+                            text-blue-600
                           "
-                        >
-                          Hospital
-                        </p>
+                        />
 
-                        <p
-                          className="
-                            mt-1
-                            text-sm
-                            font-semibold
-                            text-slate-800
-                          "
-                        >
-                          {
-                            record.hospitalName
-                          }
-                        </p>
+                        Hospital
                       </div>
+
+                      <p
+                        className="
+                          mt-1
+                          font-semibold
+                          text-slate-800
+                        "
+                      >
+                        {record.hospitalName}
+                      </p>
                     </div>
+
                   </div>
+
                 </div>
+
               </section>
 
 
-              {/* ==========================================
-                  PATIENT / DOCTOR
-                  ========================================== */}
+              {/* PATIENT / DOCTOR */}
               <div
                 className="
                   grid
@@ -1016,6 +1217,7 @@ export default function MedicalRecordDetailsPage({
                   lg:grid-cols-2
                 "
               >
+
                 <section
                   className="
                     rounded-2xl
@@ -1033,31 +1235,15 @@ export default function MedicalRecordDetailsPage({
                       gap-3
                     "
                   >
-                    <div
+                    <UserRound
                       className="
-                        flex
-                        h-10
-                        w-10
-                        items-center
-                        justify-center
-                        rounded-xl
-                        bg-blue-50
+                        h-5
+                        w-5
                         text-blue-600
                       "
-                    >
-                      <UserRound
-                        className="
-                          h-5
-                          w-5
-                        "
-                      />
-                    </div>
+                    />
 
-                    <div
-                      className="
-                        min-w-0
-                      "
-                    >
+                    <div>
                       <p
                         className="
                           text-xs
@@ -1074,14 +1260,11 @@ export default function MedicalRecordDetailsPage({
                         className="
                           mt-1
                           break-all
-                          text-sm
-                          font-bold
+                          font-semibold
                           text-slate-800
                         "
                       >
-                        {
-                          record.patientId
-                        }
+                        {record.patientId}
                       </p>
                     </div>
                   </div>
@@ -1105,25 +1288,13 @@ export default function MedicalRecordDetailsPage({
                       gap-3
                     "
                   >
-                    <div
+                    <Stethoscope
                       className="
-                        flex
-                        h-10
-                        w-10
-                        items-center
-                        justify-center
-                        rounded-xl
-                        bg-indigo-50
+                        h-5
+                        w-5
                         text-indigo-600
                       "
-                    >
-                      <Stethoscope
-                        className="
-                          h-5
-                          w-5
-                        "
-                      />
-                    </div>
+                    />
 
                     <div>
                       <p
@@ -1141,228 +1312,20 @@ export default function MedicalRecordDetailsPage({
                       <p
                         className="
                           mt-1
-                          text-sm
-                          font-bold
+                          font-semibold
                           text-slate-800
                         "
                       >
-                        {
-                          record.doctorName
-                        }
+                        {record.doctorName}
                       </p>
                     </div>
                   </div>
                 </section>
+
               </div>
 
 
-              {/* ==========================================
-                  SYMPTOMS / TREATMENT PLAN
-                  ========================================== */}
-              <div
-                className="
-                  grid
-                  gap-5
-                  lg:grid-cols-2
-                "
-              >
-                {/* SYMPTOMS */}
-                <section
-                  className="
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    bg-white
-                    p-5
-                    shadow-sm
-                  "
-                >
-                  <h2
-                    className="
-                      flex
-                      items-center
-                      gap-2
-                      font-bold
-                      text-slate-900
-                    "
-                  >
-                    <ClipboardList
-                      className="
-                        h-5
-                        w-5
-                        text-rose-500
-                      "
-                    />
-
-                    Symptoms
-                  </h2>
-
-
-                  {record.symptoms
-                    ?.length > 0
-                    ? (
-                      <div
-                        className="
-                          mt-4
-                          flex
-                          flex-wrap
-                          gap-2
-                        "
-                      >
-                        {record.symptoms.map(
-                          (
-                            symptom
-                          ) => (
-                            <span
-                              key={
-                                symptom
-                              }
-                              className="
-                                rounded-xl
-                                border
-                                border-rose-100
-                                bg-rose-50
-                                px-3
-                                py-2
-                                text-sm
-                                font-medium
-                                text-rose-700
-                              "
-                            >
-                              {symptom}
-                            </span>
-                          )
-                        )}
-                      </div>
-                    )
-                    : (
-                      <p
-                        className="
-                          mt-4
-                          text-sm
-                          text-slate-500
-                        "
-                      >
-                        No symptoms recorded.
-                      </p>
-                    )
-                  }
-                </section>
-
-
-                {/* TREATMENT PLAN */}
-                <section
-                  className="
-                    rounded-2xl
-                    border
-                    border-slate-200
-                    bg-white
-                    p-5
-                    shadow-sm
-                  "
-                >
-                  <h2
-                    className="
-                      flex
-                      items-center
-                      gap-2
-                      font-bold
-                      text-slate-900
-                    "
-                  >
-                    <Activity
-                      className="
-                        h-5
-                        w-5
-                        text-emerald-600
-                      "
-                    />
-
-                    Treatment Plan
-                  </h2>
-
-
-                  {record.treatmentPlan
-                    ?.length > 0
-                    ? (
-                      <div
-                        className="
-                          mt-4
-                          space-y-2
-                        "
-                      >
-                        {record
-                          .treatmentPlan
-                          .map(
-                            (
-                              item,
-                              index
-                            ) => (
-                              <div
-                                key={
-                                  `${item}-${index}`
-                                }
-                                className="
-                                  flex
-                                  gap-3
-                                  rounded-xl
-                                  border
-                                  border-emerald-100
-                                  bg-emerald-50/60
-                                  p-3
-                                "
-                              >
-                                <span
-                                  className="
-                                    flex
-                                    h-6
-                                    w-6
-                                    shrink-0
-                                    items-center
-                                    justify-center
-                                    rounded-full
-                                    bg-emerald-600
-                                    text-xs
-                                    font-bold
-                                    text-white
-                                  "
-                                >
-                                  {index + 1}
-                                </span>
-
-                                <p
-                                  className="
-                                    text-sm
-                                    leading-6
-                                    text-emerald-800
-                                  "
-                                >
-                                  {item}
-                                </p>
-                              </div>
-                            )
-                          )}
-                      </div>
-                    )
-                    : (
-                      <p
-                        className="
-                          mt-4
-                          text-sm
-                          text-slate-500
-                        "
-                      >
-                        No treatment plan recorded.
-                      </p>
-                    )
-                  }
-                </section>
-              </div>
-
-
-              {/* ==========================================
-                  DIAGNOSES
-                  ========================================== */}
+              {/* DIAGNOSES */}
               <section
                 className="
                   rounded-2xl
@@ -1373,16 +1336,16 @@ export default function MedicalRecordDetailsPage({
                   shadow-sm
                 "
               >
+
                 <div
                   className="
                     flex
-                    flex-col
+                    items-center
+                    justify-between
                     gap-3
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
                   "
                 >
+
                   <div
                     className="
                       flex
@@ -1425,15 +1388,12 @@ export default function MedicalRecordDetailsPage({
 
 
                   {canEdit && (
+
                     <Link
                       href={
                         diagnosesHref
                       }
                       className="
-                        inline-flex
-                        items-center
-                        justify-center
-                        gap-2
                         rounded-xl
                         border
                         border-indigo-200
@@ -1443,20 +1403,14 @@ export default function MedicalRecordDetailsPage({
                         text-xs
                         font-semibold
                         text-indigo-700
-                        transition
                         hover:bg-indigo-100
                       "
                     >
-                      <Stethoscope
-                        className="
-                          h-3.5
-                          w-3.5
-                        "
-                      />
-
                       Manage Diagnoses
                     </Link>
+
                   )}
+
                 </div>
 
 
@@ -1482,104 +1436,93 @@ export default function MedicalRecordDetailsPage({
                         md:grid-cols-2
                       "
                     >
+
                       {diagnoses.map(
                         (
                           diagnosis
                         ) => (
-                          <article
+
+                          <div
                             key={
                               diagnosis.id
                             }
                             className="
                               rounded-xl
                               border
-                              border-indigo-100
-                              bg-indigo-50/60
+                              border-slate-200
+                              bg-slate-50
                               p-4
                             "
                           >
-                            <div
+
+                            <p
                               className="
-                                flex
-                                items-start
-                                justify-between
-                                gap-3
+                                font-semibold
+                                text-slate-900
                               "
                             >
-                              <h3
-                                className="
-                                  text-sm
-                                  font-bold
-                                  text-indigo-950
-                                "
-                              >
-                                {
-                                  diagnosis.diagnosisName
-                                }
-                              </h3>
+                              {
+                                diagnosis
+                                  .diagnosisName
+                              }
+                            </p>
 
 
-                              {diagnosis.severity && (
-                                <span
+                            {diagnosis
+                              .description
+                              && (
+                                <p
                                   className="
-                                    rounded-full
-                                    bg-white
-                                    px-2.5
-                                    py-1
-                                    text-[10px]
-                                    font-bold
-                                    uppercase
-                                    text-indigo-600
+                                    mt-1
+                                    text-sm
+                                    text-slate-500
                                   "
                                 >
                                   {
-                                    diagnosis.severity
+                                    diagnosis
+                                      .description
                                   }
-                                </span>
-                              )}
-                            </div>
-
-
-                            {diagnosis.description && (
-                              <p
-                                className="
-                                  mt-2
-                                  text-xs
-                                  leading-5
-                                  text-indigo-700
-                                "
-                              >
-                                {
-                                  diagnosis.description
-                                }
-                              </p>
-                            )}
+                                </p>
+                              )
+                            }
 
 
                             <p
                               className="
-                                mt-3
-                                text-[11px]
-                                text-indigo-500
+                                mt-2
+                                text-xs
+                                text-slate-400
                               "
                             >
-                              Diagnosed:{" "}
                               {formatDate(
-                                diagnosis.diagnosedDate
+                                diagnosis
+                                  .diagnosedDate
                               )}
+
+                              {diagnosis
+                                .severity
+                                ? (
+                                  ` · ${
+                                    diagnosis
+                                      .severity
+                                  }`
+                                )
+                                : ""
+                              }
                             </p>
-                          </article>
+
+                          </div>
                         )
                       )}
+
                     </div>
                   )
                 }
+
               </section>
 
 
-              {/* ==========================================
-                  TREATMENT RECORDS
-                  ========================================== */}
+              {/* TREATMENTS */}
               <section
                 className="
                   rounded-2xl
@@ -1590,16 +1533,16 @@ export default function MedicalRecordDetailsPage({
                   shadow-sm
                 "
               >
+
                 <div
                   className="
                     flex
-                    flex-col
+                    items-center
+                    justify-between
                     gap-3
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
                   "
                 >
+
                   <div
                     className="
                       flex
@@ -1642,15 +1585,12 @@ export default function MedicalRecordDetailsPage({
 
 
                   {canEdit && (
+
                     <Link
                       href={
                         treatmentsHref
                       }
                       className="
-                        inline-flex
-                        items-center
-                        justify-center
-                        gap-2
                         rounded-xl
                         border
                         border-emerald-200
@@ -1660,20 +1600,14 @@ export default function MedicalRecordDetailsPage({
                         text-xs
                         font-semibold
                         text-emerald-700
-                        transition
                         hover:bg-emerald-100
                       "
                     >
-                      <Activity
-                        className="
-                          h-3.5
-                          w-3.5
-                        "
-                      />
-
                       Manage Treatments
                     </Link>
+
                   )}
+
                 </div>
 
 
@@ -1698,85 +1632,62 @@ export default function MedicalRecordDetailsPage({
                         md:grid-cols-2
                       "
                     >
+
                       {treatments.map(
                         (
                           treatment
                         ) => (
-                          <article
+
+                          <div
                             key={
                               treatment.id
                             }
                             className="
                               rounded-xl
                               border
-                              border-emerald-100
-                              bg-emerald-50/60
+                              border-slate-200
+                              bg-slate-50
                               p-4
                             "
                           >
-                            <div
+
+                            <p
                               className="
-                                flex
-                                items-start
-                                justify-between
-                                gap-3
+                                font-semibold
+                                text-slate-900
                               "
                             >
-                              <h3
-                                className="
-                                  text-sm
-                                  font-bold
-                                  text-emerald-950
-                                "
-                              >
-                                {
-                                  treatment.treatmentType
-                                }
-                              </h3>
+                              {
+                                treatment
+                                  .treatmentType
+                              }
+                            </p>
 
 
-                              {treatment.status && (
-                                <span
+                            {treatment
+                              .description
+                              && (
+                                <p
                                   className="
-                                    rounded-full
-                                    bg-white
-                                    px-2.5
-                                    py-1
-                                    text-[10px]
-                                    font-bold
-                                    uppercase
-                                    text-emerald-600
+                                    mt-1
+                                    text-sm
+                                    text-slate-500
                                   "
                                 >
                                   {
-                                    treatment.status
+                                    treatment
+                                      .description
                                   }
-                                </span>
-                              )}
-                            </div>
-
-
-                            {treatment.description && (
-                              <p
-                                className="
-                                  mt-2
-                                  text-xs
-                                  leading-5
-                                  text-emerald-700
-                                "
-                              >
-                                {
-                                  treatment.description
-                                }
-                              </p>
-                            )}
+                                </p>
+                              )
+                            }
 
 
                             <p
                               className="
-                                mt-3
-                                text-[11px]
-                                text-emerald-600
+                                mt-2
+                                text-xs
+                                text-slate-400
                               "
                             >
                               {formatDate(
@@ -1785,28 +1696,37 @@ export default function MedicalRecordDetailsPage({
 
                               {treatment.endDate
                                 ? (
-                                  <>
-                                    {" → "}
-                                    {formatDate(
+                                  ` → ${
+                                    formatDate(
                                       treatment.endDate
-                                    )}
-                                  </>
+                                    )
+                                  }`
                                 )
-                                : " → Ongoing"
+                                : ""
+                              }
+
+                              {treatment.status
+                                ? (
+                                  ` · ${
+                                    treatment.status
+                                  }`
+                                )
+                                : ""
                               }
                             </p>
-                          </article>
+
+                          </div>
                         )
                       )}
+
                     </div>
                   )
                 }
+
               </section>
 
 
-              {/* ==========================================
-                  CONSULTATION NOTES
-                  ========================================== */}
+              {/* CONSULTATION NOTES */}
               <section
                 className="
                   rounded-2xl
@@ -1817,6 +1737,7 @@ export default function MedicalRecordDetailsPage({
                   shadow-sm
                 "
               >
+
                 <div
                   className="
                     flex
@@ -1844,43 +1765,27 @@ export default function MedicalRecordDetailsPage({
                 </div>
 
 
-                {record.consultationNotes
-                  ? (
-                    <p
-                      className="
-                        mt-4
-                        whitespace-pre-wrap
-                        rounded-xl
-                        bg-slate-50
-                        p-4
-                        text-sm
-                        leading-7
-                        text-slate-700
-                      "
-                    >
-                      {
-                        record.consultationNotes
-                      }
-                    </p>
-                  )
-                  : (
-                    <p
-                      className="
-                        mt-4
-                        text-sm
-                        text-slate-500
-                      "
-                    >
-                      No consultation notes recorded.
-                    </p>
-                  )
-                }
+                <div
+                  className="
+                    mt-4
+                    rounded-xl
+                    bg-slate-50
+                    p-4
+                    text-sm
+                    leading-6
+                    text-slate-700
+                  "
+                >
+                  {
+                    record.consultationNotes
+                    || "No consultation notes recorded."
+                  }
+                </div>
+
               </section>
 
 
-              {/* ==========================================
-                  DOCUMENTS
-                  ========================================== */}
+              {/* LINKED DOCUMENTS */}
               <section
                 className="
                   rounded-2xl
@@ -1891,16 +1796,16 @@ export default function MedicalRecordDetailsPage({
                   shadow-sm
                 "
               >
+
                 <div
                   className="
                     flex
-                    flex-col
+                    items-center
+                    justify-between
                     gap-3
-                    sm:flex-row
-                    sm:items-center
-                    sm:justify-between
                   "
                 >
+
                   <div
                     className="
                       flex
@@ -1950,12 +1855,15 @@ export default function MedicalRecordDetailsPage({
                       text-sm
                       font-semibold
                       text-blue-600
-                      transition
                       hover:text-blue-700
                     "
                   >
-                    View all documents
+                    {canEdit
+                      ? "Upload / View documents"
+                      : "View all documents"
+                    }
                   </Link>
+
                 </div>
 
 
@@ -1982,10 +1890,12 @@ export default function MedicalRecordDetailsPage({
                         xl:grid-cols-3
                       "
                     >
+
                       {documents.map(
                         (
                           document
                         ) => (
+
                           <article
                             key={
                               document.id
@@ -1994,10 +1904,11 @@ export default function MedicalRecordDetailsPage({
                               rounded-xl
                               border
                               border-slate-200
-                              bg-slate-50/60
+                              bg-slate-50
                               p-4
                             "
                           >
+
                             <div
                               className="
                                 flex
@@ -2010,11 +1921,9 @@ export default function MedicalRecordDetailsPage({
                                 className="
                                   h-5
                                   w-5
-                                  shrink-0
                                   text-blue-600
                                 "
                               />
-
 
                               <span
                                 className="
@@ -2022,14 +1931,12 @@ export default function MedicalRecordDetailsPage({
                                   bg-emerald-50
                                   px-2
                                   py-1
-                                  text-[10px]
-                                  font-bold
+                                  text-[11px]
+                                  font-semibold
                                   text-emerald-700
                                 "
                               >
-                                {
-                                  document.status
-                                }
+                                {document.status}
                               </span>
                             </div>
 
@@ -2046,9 +1953,7 @@ export default function MedicalRecordDetailsPage({
                                 text-slate-900
                               "
                             >
-                              {
-                                document.fileName
-                              }
+                              {document.fileName}
                             </h3>
 
 
@@ -2060,52 +1965,24 @@ export default function MedicalRecordDetailsPage({
                                 text-blue-600
                               "
                             >
-                              {
-                                document.documentType
-                              }
+                              {document.documentType}
                             </p>
 
 
-                            {document.description && (
-                              <p
-                                className="
-                                  mt-2
-                                  line-clamp-2
-                                  text-xs
-                                  leading-5
-                                  text-slate-500
-                                "
-                              >
-                                {
-                                  document.description
-                                }
-                              </p>
-                            )}
-
-
-                            <div
+                            <p
                               className="
                                 mt-3
-                                flex
-                                items-center
-                                justify-between
-                                text-[11px]
+                                text-xs
                                 text-slate-400
                               "
                             >
-                              <span>
-                                Version{" "}
-                                {
-                                  document.version
-                                }
-                              </span>
-
-                              <span>
-                                {formatFileSize(
-                                  document.fileSize
-                                )}
-                              </span>
-                            </div>
+                              Version{" "}
+                              {document.version}
+                              {" · "}
+                              {formatFileSize(
+                                document.fileSize
+                              )}
+                            </p>
 
 
                             <a
@@ -2115,7 +1992,7 @@ export default function MedicalRecordDetailsPage({
                               target="_blank"
                               rel="noreferrer"
                               className="
-                                mt-4
+                                mt-3
                                 inline-flex
                                 rounded-lg
                                 bg-blue-600
@@ -2124,23 +2001,28 @@ export default function MedicalRecordDetailsPage({
                                 text-xs
                                 font-semibold
                                 text-white
-                                transition
                                 hover:bg-blue-700
                               "
                             >
                               Open Document
                             </a>
+
                           </article>
                         )
                       )}
+
                     </div>
                   )
                 }
+
               </section>
+
             </>
           )
         }
+
       </div>
+
     </DashboardLayout>
   );
 }
