@@ -1,5 +1,6 @@
 export const ROUTES = {
   home: "/",
+  welcome: "/welcome",
   login: "/login",
   register: "/register",
   forgotPassword: "/forgot-password",
@@ -27,6 +28,7 @@ export const ROUTES = {
 
 export const PUBLIC_ROUTES = [
   ROUTES.home,
+  ROUTES.welcome,
   ROUTES.login,
   ROUTES.register,
   ROUTES.forgotPassword,

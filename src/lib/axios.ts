@@ -1,7 +1,9 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 
 const TOKEN_KEY = "healthbridge_token";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:8088/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+  || process.env.NEXT_PUBLIC_API_URL
+  || 'http://localhost:8088/api';
 
 interface ApiErrorPayload {
   message?: string;
@@ -43,7 +45,7 @@ class ApiClient {
     // Request interceptor
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem(TOKEN_KEY);
+        const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
           console.log('🔑 Token added to request');
@@ -78,9 +80,9 @@ class ApiClient {
         console.error('❌ Response Error:', error);
         if (error.response?.status === 401) {
           console.error('🔐 401 Unauthorized - Token invalid or missing');
-          localStorage.removeItem(TOKEN_KEY);
-          localStorage.removeItem("healthbridge_user");
           if (typeof window !== 'undefined') {
+            localStorage.removeItem(TOKEN_KEY);
+            localStorage.removeItem("healthbridge_user");
             window.location.href = '/login';
           }
         } else if (error.code === 'ERR_NETWORK') {
