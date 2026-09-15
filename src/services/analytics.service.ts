@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import type { AnalyticsDashboardResponseDto, AnalyticsPeriod, FinancialAnalyticsResponseDto } from "@/types/analytics";
+import type { AnalyticsDashboardResponseDto, AnalyticsPeriod, FinancialAnalyticsResponseDto, OperationalAnalyticsResponseDto } from "@/types/analytics";
 import type { HealthcareAnalyticsResponseDto } from "@/types/healthcareAnalytics";
 
 export const analyticsService = {
@@ -16,6 +16,10 @@ export const analyticsService = {
   },
   async getFinancial(period: AnalyticsPeriod, signal?: AbortSignal): Promise<FinancialAnalyticsResponseDto> {
     const response = await api.get<FinancialAnalyticsResponseDto>("/analytics/financial", { params: { period }, signal });
+    return response.data;
+  },
+  async getOperational(period: AnalyticsPeriod, signal?: AbortSignal): Promise<OperationalAnalyticsResponseDto> {
+    const response = await api.get<OperationalAnalyticsResponseDto>("/analytics/operational", { params: { period }, signal });
     return response.data;
   },
 };

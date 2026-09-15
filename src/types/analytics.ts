@@ -255,6 +255,101 @@ export type OperationalAnalyticsData = {
 
 export type OperationalAnalyticsByPeriod = Record<AnalyticsPeriod, OperationalAnalyticsData>;
 
+export type OperationalKpiResponseDto = {
+  name: string;
+  value: number | null;
+  unit: string;
+  status: AnalyticsDataAvailability;
+  definition: string | null;
+  reason: string | null;
+};
+
+export type OperationalInventoryStatusDto = {
+  status: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK" | "EXPIRED";
+  count: number;
+};
+
+export type OperationalInventorySummaryDto = {
+  status: AnalyticsDataAvailability;
+  totalItems: number;
+  statusBreakdown: OperationalInventoryStatusDto[];
+  inventoryValue: number;
+  validValueRecords: number;
+  excludedValueRecords: number;
+  definition: string;
+};
+
+export type OperationalLabStatusCountDto = {
+  status: string;
+  count: number;
+};
+
+export type OperationalLaboratoryOperationsDto = {
+  status: AnalyticsDataAvailability;
+  totalOrders: number;
+  eligibleOrders: number;
+  completedOrders: number;
+  completionRate: number;
+  orderStatus: OperationalLabStatusCountDto[];
+  sampleStatus: OperationalLabStatusCountDto[];
+  linkedSamples: number;
+  orderDefinition: string;
+  sampleDefinition: string;
+};
+
+export type OperationalLabTurnaroundDto = {
+  status: AnalyticsDataAvailability;
+  averageHours: number;
+  eligibleRecords: number;
+  validRecords: number;
+  excludedRecords: number;
+  definition: string;
+};
+
+export type OperationalResourceAvailabilityDto = {
+  resource: string;
+  status: AnalyticsDataAvailability;
+  workloadCount: number | null;
+  workloadUnit: string | null;
+  reason: string | null;
+  definition: string | null;
+};
+
+export type OperationalMetricAvailabilityDto = {
+  metric: string;
+  status: AnalyticsDataAvailability;
+  reason: string | null;
+  definition: string | null;
+};
+
+export type OperationalSummaryDto = {
+  status: AnalyticsDataAvailability;
+  inventoryItems: number;
+  lowStockItems: number;
+  outOfStockItems: number;
+  laboratoryOrders: number;
+  laboratoryCompletionRate: number;
+  averageLaboratoryTurnaroundHours: number;
+  turnaroundValidRecords: number;
+  departmentPerformance: OperationalMetricAvailabilityDto;
+};
+
+export type OperationalAnalyticsResponseDto = {
+  generatedAt: string;
+  period: AnalyticsPeriod;
+  dataAvailability: AnalyticsDataAvailability;
+  kpis: OperationalKpiResponseDto[];
+  inventorySummary: OperationalInventorySummaryDto;
+  laboratoryOperations: OperationalLaboratoryOperationsDto;
+  labTurnaround: OperationalLabTurnaroundDto;
+  resourceAvailability: OperationalResourceAvailabilityDto[];
+  patientFlow: OperationalMetricAvailabilityDto;
+  appointmentEfficiency: OperationalMetricAvailabilityDto;
+  departmentPerformance: OperationalMetricAvailabilityDto;
+  operationalSummary: OperationalSummaryDto;
+  availability: OperationalMetricAvailabilityDto[];
+};
+
 export type PopulationGrowthPoint = {
   month: string;
   totalPopulation: number;
