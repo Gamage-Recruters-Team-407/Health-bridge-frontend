@@ -1,7 +1,8 @@
-import type { FinancialPerformanceRow } from "@/types/analytics";
+import type { FinancialSummaryDto } from "@/types/analytics";
 
-const statusStyles: Record<FinancialPerformanceRow["status"], string> = { Strong: "bg-emerald-50 text-emerald-700", Stable: "bg-blue-50 text-blue-700", Watch: "bg-amber-50 text-amber-700", Attention: "bg-rose-50 text-rose-700" };
+const money = (value: number) => `Rs. ${(value / 1_000_000).toFixed(2)}M`;
 
-export default function FinancialPerformanceTable({ data }: { data: FinancialPerformanceRow[] }) {
-  return <div className="overflow-x-auto"><table className="w-full min-w-[720px] text-left text-sm"><thead className="border-b border-slate-200 text-xs text-slate-400"><tr>{["Revenue Source", "Transactions", "Revenue", "Pending", "Growth", "Status"].map((heading) => <th key={heading} className="px-4 py-3 font-medium first:pl-0">{heading}</th>)}</tr></thead><tbody className="divide-y divide-slate-100">{data.map((row) => <tr key={row.source} className="text-slate-600"><td className="px-4 py-3.5 pl-0 font-semibold text-slate-800">{row.source}</td><td className="px-4 py-3.5">{row.transactions.toLocaleString()}</td><td className="px-4 py-3.5">Rs. {row.revenue.toFixed(2)}M</td><td className="px-4 py-3.5">{row.pending.toLocaleString()}</td><td className="px-4 py-3.5 font-semibold text-emerald-600">+{row.growth.toFixed(1)}%</td><td className="px-4 py-3.5"><span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${statusStyles[row.status]}`}>{row.status}</span></td></tr>)}</tbody></table></div>;
+export default function FinancialPerformanceTable({ data }: { data: FinancialSummaryDto }) {
+  const rows = [["Invoice count", data.invoiceCount.toLocaleString()], ["Billed revenue", money(data.billedRevenue)], ["Paid invoices", data.paidInvoiceCount.toLocaleString()], ["Unpaid invoices", data.unpaidInvoiceCount.toLocaleString()], ["Partially paid invoices", data.partiallyPaidInvoiceCount.toLocaleString()], ["Known unpaid invoice amount", money(data.knownUnpaidInvoiceAmount)]];
+  return <div><div className="divide-y divide-slate-100">{rows.map(([label, value]) => <div key={label} className="flex items-center justify-between gap-4 py-3 text-sm"><span className="text-slate-500">{label}</span><strong className="text-slate-800">{value}</strong></div>)}</div><p className="mt-3 text-xs text-amber-700">{data.limitation}</p></div>;
 }
