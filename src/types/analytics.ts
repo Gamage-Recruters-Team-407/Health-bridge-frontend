@@ -420,6 +420,101 @@ export type PopulationHealthAnalyticsData = {
 
 export type PopulationHealthAnalyticsByPeriod = Record<AnalyticsPeriod, PopulationHealthAnalyticsData>;
 
+export type PopulationHealthKpiResponseDto = {
+  name: string;
+  value: number | null;
+  status: AnalyticsDataAvailability;
+  definition: string | null;
+  reason: string | null;
+};
+
+export type PopulationGrowthResponseDto = {
+  periodLabel: string;
+  newPatientAccounts: number;
+  totalPatientAccounts: number;
+};
+
+export type PopulationAgeBucketDto = { ageGroup: string; count: number };
+export type PopulationGenderBucketDto = { gender: string; count: number };
+export type PopulationBloodGroupBucketDto = { bloodGroup: string; count: number };
+
+export type PopulationAgeDistributionDto = {
+  status: AnalyticsDataAvailability;
+  distribution: PopulationAgeBucketDto[];
+  totalPatientAccounts: number;
+  validRecords: number;
+  excludedRecords: number;
+  note: string;
+};
+
+export type PopulationGenderDistributionDto = {
+  status: AnalyticsDataAvailability;
+  distribution: PopulationGenderBucketDto[];
+  totalPatientAccounts: number;
+  validRecords: number;
+  unknownRecords: number;
+  note: string;
+};
+
+export type PopulationBloodGroupDistributionDto = {
+  status: AnalyticsDataAvailability;
+  distribution: PopulationBloodGroupBucketDto[];
+  totalPatientAccounts: number;
+  validRecords: number;
+  unknownRecords: number;
+  note: string;
+};
+
+export type PopulationLabHealthIndicatorsDto = {
+  status: AnalyticsDataAvailability;
+  publishedResults: number;
+  abnormalResults: number;
+  criticalResults: number;
+  abnormalResultPercentage: number;
+  criticalResultPercentage: number;
+  denominator: string;
+  limitation: string;
+};
+
+export type PopulationMetricAvailabilityDto = {
+  metric: string;
+  status: AnalyticsDataAvailability;
+  reason: string | null;
+  definition: string | null;
+};
+
+export type PopulationHealthSummaryDto = {
+  status: AnalyticsDataAvailability;
+  registeredPatientAccounts: number;
+  newPatientAccounts: number;
+  validAgeRecords: number;
+  validGenderRecords: number;
+  validBloodGroupRecords: number;
+  publishedLabResults: number;
+  abnormalLabResults: number;
+  criticalLabResults: number;
+  limitation: string;
+};
+
+export type PopulationHealthAnalyticsResponseDto = {
+  generatedAt: string;
+  period: AnalyticsPeriod;
+  dataAvailability: AnalyticsDataAvailability;
+  kpis: PopulationHealthKpiResponseDto[];
+  populationGrowth: PopulationGrowthResponseDto[];
+  ageDistribution: PopulationAgeDistributionDto;
+  genderDistribution: PopulationGenderDistributionDto;
+  bloodGroupDistribution: PopulationBloodGroupDistributionDto;
+  labHealthIndicators: PopulationLabHealthIndicatorsDto;
+  commonConditions: PopulationMetricAvailabilityDto;
+  healthRisk: PopulationMetricAvailabilityDto;
+  healthcareUtilizationByAge: PopulationMetricAvailabilityDto;
+  regionalPatterns: PopulationMetricAvailabilityDto;
+  preventiveCare: PopulationMetricAvailabilityDto;
+  populationHealthSummary: PopulationHealthSummaryDto;
+  availability: PopulationMetricAvailabilityDto[];
+};
+
 export type ReportCategory = "Healthcare" | "Financial" | "Operational" | "Population Health" | "Hospital Performance" | "Laboratory Performance" | "Executive Summary";
 export type ReportFormat = "PDF" | "Excel";
 export type ReportStatus = "Completed" | "Generating" | "Failed" | "Scheduled";
