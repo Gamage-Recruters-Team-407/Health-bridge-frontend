@@ -14,10 +14,10 @@ export default function AccountSettingsPage() {
 
   useEffect(() => {
     api
-      .get("/users/profile")
-      .then((res) => {
-        setAccountStatus(res.data.accountStatus || "Active");
-        setCreatedAt(res.data.createdAt || null);
+      .get<any>("/users/profile")
+      .then((data) => {
+        setAccountStatus(data.accountStatus || "Active");
+        setCreatedAt(data.createdAt || null);
       })
       .catch(() => setError("Could not load account status."))
       .finally(() => setLoading(false));
@@ -32,11 +32,11 @@ export default function AccountSettingsPage() {
     setUpdating(true);
     setError("");
     try {
-      const res = await api.put("/users/profile/deactivate");
-      setAccountStatus(res.data.accountStatus);
+      const data = await api.put<any>("/users/profile/deactivate");
+      setAccountStatus(data.accountStatus);
     } catch (err) {
       console.error(err);
-      setError("Could not deactivate account.");
+      setError("Failed to deactivate account.");
     } finally {
       setUpdating(false);
     }
@@ -46,8 +46,8 @@ export default function AccountSettingsPage() {
     setUpdating(true);
     setError("");
     try {
-      const res = await api.put("/users/profile/reactivate");
-      setAccountStatus(res.data.accountStatus);
+      const data = await api.put<any>("/users/profile/reactivate");
+      setAccountStatus(data.accountStatus);
     } catch (err) {
       console.error(err);
       setError("Could not reactivate account.");

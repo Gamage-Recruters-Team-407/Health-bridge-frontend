@@ -15,7 +15,7 @@ export default function InsuranceOfficerDashboard() {
   useEffect(() => {
     insuranceService
       .getAllClaims()
-      .then(setClaims)
+      .then((data) => setClaims(Array.isArray(data) ? data : []))
       .catch(() => setError("Failed to load claims"))
       .finally(() => setLoading(false));
   }, []);
@@ -23,10 +23,11 @@ export default function InsuranceOfficerDashboard() {
   if (loading) return <Loader />;
   if (error) return <p className="text-red-500">{error}</p>;
 
-  const approved = claims.filter(c => c.status === "APPROVED" || c.status === "PAID").length;
-  const pending = claims.filter(c => c.status === "SUBMITTED" || c.status === "UNDER_REVIEW").length;
-  const rejected = claims.filter(c => c.status === "REJECTED").length;
-  const approvalRate = claims.length ? ((approved / claims.length) * 100).toFixed(0) : "0";
+  const safeClaims = Array.isArray(claims) ? claims : [];
+  const approved = safeClaims.filter(c => c.status === "APPROVED" || c.status === "PAID").length;
+  const pending = safeClaims.filter(c => c.status === "SUBMITTED" || c.status === "UNDER_REVIEW").length;
+  const rejected = safeClaims.filter(c => c.status === "REJECTED").length;
+  const approvalRate = safeClaims.length ? ((approved / safeClaims.length) * 100).toFixed(0) : "0";
 
   return (
     <DashboardLayout pageTitle="Insurance Dashboard" userRole="INSURANCE_OFFICER">

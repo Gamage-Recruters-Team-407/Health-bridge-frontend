@@ -60,7 +60,7 @@ export const getRoleRedirectPath = (role: string): string => {
     case "INSURANCE_OFFICER":
       return "/insurance-officer/dashboard";
     case "LAB_OFFICER":
-      return "/lab-officer/dashboard";
+      return "/laboratory/dashboard";
     case "PATIENT":
     default:
       return "/patient/dashboard";

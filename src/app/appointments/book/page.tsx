@@ -20,7 +20,7 @@ export default function BookAppointmentPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const { bookAppointment } = useAppointments();
+  const { bookAppointment } = useAppointments({}, false);
 
   useEffect(() => {
     let cancelled = false;

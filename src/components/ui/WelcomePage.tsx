@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import Link from "next/link";
 import {
   Check,
   ArrowRight,
@@ -123,15 +124,13 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </button>
 
-              <button
-                onClick={() => {
-                  if (onBookAppointment) onBookAppointment();
-                  else alert("Redirecting to Appointment Booking...");
-                }}
+              <Link
+                href="/appointments/search-doctor"
+                onClick={onBookAppointment}
                 className="px-6 py-3.5 rounded-xl bg-[#0052CC] hover:bg-[#0047B3] text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition-all"
               >
                 Book an Appointment
-              </button>
+              </Link>
             </div>
           </div>
         </div>
