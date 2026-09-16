@@ -6,6 +6,7 @@ export const ROUTES = {
   forgotPassword: "/forgot-password",
   otp: "/otp",
   resetPassword: "/reset-password",
+  loadingDemo: "/loading-demo",
   dashboard: {
     patient: "/patient/dashboard",
     doctor: "/doctor/dashboard",
@@ -34,6 +35,7 @@ export const PUBLIC_ROUTES = [
   ROUTES.forgotPassword,
   ROUTES.otp,
   ROUTES.resetPassword,
+  ROUTES.loadingDemo,
   ROUTES.appointments.searchDoctor,
 ];
 
