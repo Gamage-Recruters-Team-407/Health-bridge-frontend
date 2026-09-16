@@ -1,5 +1,11 @@
 export type TicketStatus = "OPEN" | "PROCESSING" | "SOLVED";
 
+export interface TicketFeedback {
+  rating: number;
+  comment: string | null;
+  createdAt?: string;
+}
+
 export interface TicketReply {
   id: string;
   senderId: string;
@@ -22,6 +28,10 @@ export interface Ticket {
   attachmentUrl: string | null;
   status: TicketStatus;
   replies: TicketReply[];
+  feedback?: TicketFeedback | null;
+  feedbackRating?: number | null;
+  feedbackComment?: string | null;
+  feedbackCreatedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }
