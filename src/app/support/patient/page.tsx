@@ -199,9 +199,7 @@ setSelectedId((current) =>
                   isActive ? "bg-[#EBF3FC]" : "hover:bg-[#F5F5F5]"
                 }`}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-xs font-semibold text-[#0F6CBD]">
-                  {(t.subject || "?").slice(0, 2).toUpperCase()}
-                </div>
+                
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-[#242424]">{t.subject || "Untitled ticket"}</p>
