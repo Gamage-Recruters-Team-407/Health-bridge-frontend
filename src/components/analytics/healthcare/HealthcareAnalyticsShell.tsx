@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import AnalyticsHeader from "@/components/analytics/AnalyticsHeader";
 import AnalyticsKpiCard from "@/components/analytics/AnalyticsKpiCard";
+import AnalyticsNavigation from "@/components/analytics/AnalyticsNavigation";
 import ClinicalActivityChart from "@/components/analytics/healthcare/ClinicalActivityChart";
 import HealthcarePanel from "@/components/analytics/healthcare/HealthcarePanel";
 import PatientDemographics from "@/components/analytics/healthcare/PatientDemographics";
@@ -56,6 +57,7 @@ export default function HealthcareAnalyticsShell() {
 
   return <main className="min-h-screen overflow-x-hidden bg-[#f7faff] px-4 py-6 text-slate-900 sm:px-6 lg:px-10 lg:py-8"><div className="mx-auto max-w-7xl">
     <AnalyticsHeader period={period} onPeriodChange={changePeriod} title="Healthcare Analytics" subtitle="Patient activity, clinical trends, and healthcare service performance." lastUpdated={lastUpdated} />
+    <AnalyticsNavigation />
     {!data && !error && <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-20 text-center text-sm text-slate-500 shadow-sm" role="status">Loading healthcare analytics…</div>}
     {error && <div className="mt-6 rounded-2xl border border-rose-200 bg-white px-6 py-16 text-center shadow-sm" role="alert"><h2 className="font-bold text-slate-900">Unable to load Healthcare Analytics</h2><p className="mt-2 text-sm text-slate-500">The healthcare analytics API request failed. Please try again.</p><button type="button" onClick={retry} className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Retry</button></div>}
     {data && <><div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{kpis.map((kpi) => <AnalyticsKpiCard key={kpi.label} kpi={kpi} />)}</div>

@@ -616,7 +616,7 @@ export type PatientTrendDto = { month: string; patients: number };
 export type RevenueTrendDto = { month: string; revenue: number };
 export type ResourceUtilizationDto = { resource: string; utilization: number };
 export type DepartmentPerformanceDto = { department: string; performance: number };
-export type OperationalSummaryDto = {
+export type DashboardOperationalSummaryDto = {
   department: string;
   patients: number;
   appointments: number;
@@ -634,5 +634,5 @@ export type AnalyticsDashboardResponseDto = {
   revenueTrend: RevenueTrendDto[];
   resourceUtilization: ResourceUtilizationDto[];
   departmentPerformance: DepartmentPerformanceDto[];
-  operationalSummary: OperationalSummaryDto[];
+  operationalSummary: DashboardOperationalSummaryDto[];
 };
