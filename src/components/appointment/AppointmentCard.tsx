@@ -21,11 +21,13 @@ const formatDate = (date: string) =>
     year: "numeric",
   }).format(new Date(`${date}T00:00:00`));
 
-const formatTime = (time: string) =>
-  new Intl.DateTimeFormat("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  }).format(new Date(`2026-08-20T${time}:00`));
+const formatTime = (time: string) => {
+  const [hoursRaw, minutes] = time.split(":");
+  const hours = Number(hoursRaw);
+  const suffix = hours >= 12 ? "PM" : "AM";
+  const normalizedHours = ((hours + 11) % 12) + 1;
+  return `${normalizedHours}:${minutes} ${suffix}`;
+};
 
 export default function AppointmentCard({
   appointment,
