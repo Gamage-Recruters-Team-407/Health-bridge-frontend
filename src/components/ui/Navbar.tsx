@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Menu,
   Search,
@@ -12,6 +13,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearAuthData } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 
 export interface NavbarProps {
@@ -27,6 +29,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   userName = "User",
   userRole = "Patient",
 }) => {
+  const router = useRouter();
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -39,9 +42,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   ];
 
   const handleLogout = () => {
-    localStorage.removeItem("healthbridge_token");
-    localStorage.removeItem("healthbridge_user");
-    window.location.href = "/login";
+    clearAuthData();
+    router.push("/login");
   };
 
   return (

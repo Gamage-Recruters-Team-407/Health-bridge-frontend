@@ -2,18 +2,15 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
   Calendar,
-  UserCheck,
   FileText,
   FileSpreadsheet,
   FlaskConical,
   Pill,
-  CreditCard,
-  AlertTriangle,
   Bell,
   ChevronLeft,
   ChevronRight,
@@ -27,6 +24,7 @@ import {
   ClipboardCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearAuthData } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 
 export interface SidebarProps {
@@ -194,6 +192,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   userName = "User",
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
   const navGroups = getNavGroups(userRole);
 
   const sidebarContent = (
@@ -326,9 +325,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <button
               onClick={() => {
-                localStorage.removeItem("healthbridge_token");
-                localStorage.removeItem("healthbridge_user");
-                window.location.href = "/login";
+                clearAuthData();
+                router.push("/login");
               }}
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Logout"
