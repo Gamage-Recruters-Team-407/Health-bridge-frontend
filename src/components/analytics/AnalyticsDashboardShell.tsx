@@ -1,5 +1,8 @@
 "use client";
 
+import { Activity, BarChart3, FileBarChart2, Landmark, LayoutDashboard, Users } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { analyticsService } from "@/services/analytics.service";
 import type { AnalyticsDashboardPresentation, AnalyticsDashboardResponseDto, AnalyticsDataAvailability, AnalyticsKpi, AnalyticsPeriod } from "@/types/analytics";
@@ -33,6 +36,48 @@ function mapDashboard(response: AnalyticsDashboardResponseDto): AnalyticsDashboa
 
 function Panel({ title, description, children }: { title: string; description: string; children: React.ReactNode }) {
   return <section className="rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_20px_rgba(15,23,42,0.04)] sm:p-5"><div className="mb-4"><h2 className="text-sm font-bold text-slate-900">{title}</h2><p className="mt-1 text-xs text-slate-400">{description}</p></div>{children}</section>;
+}
+
+const analyticsNavigation = [
+  { label: "Analytics Dashboard", href: "/analytics/dashboard", icon: LayoutDashboard },
+  { label: "Healthcare Analytics", href: "/analytics/healthcare", icon: Activity },
+  { label: "Financial Analytics", href: "/analytics/financial", icon: Landmark },
+  { label: "Operational Analytics", href: "/analytics/operational", icon: BarChart3 },
+  { label: "Population Health", href: "/analytics/population-health", icon: Users },
+  { label: "Reports Analytics", href: "/analytics/reports", icon: FileBarChart2 },
+] as const;
+
+function AnalyticsNavigationSection() {
+  const pathname = usePathname();
+
+  return (
+    <nav aria-label="Analytics navigation" className="mt-6">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        {analyticsNavigation.map(({ label, href, icon: Icon }) => {
+          const isActive = pathname === href;
+
+          return (
+            <Link
+              key={href}
+              href={href}
+              className={`group rounded-2xl border p-4 text-left shadow-[0_6px_20px_rgba(15,23,42,0.04)] transition-all duration-200 ${isActive ? "border-blue-200 bg-blue-50 ring-2 ring-blue-100" : "border-slate-200 bg-white hover:border-blue-200 hover:bg-slate-50"}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className={`flex h-11 w-11 items-center justify-center rounded-xl ${isActive ? "bg-blue-600 text-white" : "bg-slate-100 text-slate-700 group-hover:bg-blue-100 group-hover:text-blue-700"}`}>
+                  <Icon className="h-5 w-5" />
+                </div>
+                {isActive && <span className="rounded-full bg-blue-600/10 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-blue-700">Current</span>}
+              </div>
+              <div className="mt-4">
+                <h2 className="text-sm font-semibold text-slate-900">{label}</h2>
+                <p className="mt-1 text-xs text-slate-500">Open {label.toLowerCase()}</p>
+              </div>
+            </Link>
+          );
+        })}
+      </div>
+    </nav>
+  );
 }
 
 export default function AnalyticsDashboardShell() {
@@ -74,7 +119,7 @@ export default function AnalyticsDashboardShell() {
 
   const lastUpdated = generatedAt ? new Intl.DateTimeFormat(undefined, { dateStyle: "medium", timeStyle: "short" }).format(new Date(generatedAt)) : "Loading…";
 
-  return <main className="min-h-screen bg-[#f7faff] px-4 py-6 text-slate-900 sm:px-6 lg:px-10 lg:py-8"><div className="mx-auto max-w-7xl"><AnalyticsHeader period={period} onPeriodChange={handlePeriodChange} lastUpdated={lastUpdated} />{!data && !error && <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-20 text-center text-sm text-slate-500 shadow-[0_6px_20px_rgba(15,23,42,0.04)]" role="status">Loading dashboard data…</div>}{error && <div className="mt-6 rounded-2xl border border-rose-200 bg-white px-6 py-16 text-center shadow-[0_6px_20px_rgba(15,23,42,0.04)]" role="alert"><h2 className="font-bold text-slate-900">Unable to load Analytics Dashboard</h2><p className="mt-2 text-sm text-slate-500">The dashboard API request failed. Please try again.</p><button type="button" onClick={retry} className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Retry</button></div>}{data && <><div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{data.kpis.map((kpi) => <AnalyticsKpiCard key={kpi.label} kpi={kpi} />)}</div><div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2"><Panel title="Patient Trends" description="Monthly patient growth">{data.patientTrends.length ? <PatientTrendChart data={data.patientTrends} /> : <EmptyState />}</Panel><Panel title="Revenue Overview" description="Monthly revenue in millions">{data.revenue.length ? <RevenueTrendChart data={data.revenue} /> : <EmptyState />}</Panel><Panel title="Resource Utilization" description="Current usage by resource">{data.resources.length ? <ResourceUtilizationChart data={data.resources} /> : <EmptyState />}</Panel><Panel title="Department Performance" description="Performance comparison across departments">{data.departmentPerformance.length ? <DepartmentPerformance data={data.departmentPerformance} /> : <EmptyState />}</Panel></div><div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_20px_rgba(15,23,42,0.04)] sm:p-5"><div className="mb-4"><h2 className="text-sm font-bold text-slate-900">Operational Summary</h2><p className="mt-1 text-xs text-slate-400">Department-level snapshot for the selected period</p></div>{data.operationalSummary.length ? <AnalyticsSummaryTable data={data.operationalSummary} /> : <p className="py-10 text-center text-sm text-slate-400">No operational summary is available for this period.</p>}</div><p className="mt-5 text-center text-xs font-medium text-slate-500">Dashboard data source: {availability}</p></>}</div></main>;
+  return <main className="min-h-screen bg-[#f7faff] px-4 py-6 text-slate-900 sm:px-6 lg:px-10 lg:py-8"><div className="mx-auto max-w-7xl"><AnalyticsHeader period={period} onPeriodChange={handlePeriodChange} lastUpdated={lastUpdated} /><AnalyticsNavigationSection />{!data && !error && <div className="mt-6 rounded-2xl border border-slate-200 bg-white px-6 py-20 text-center text-sm text-slate-500 shadow-[0_6px_20px_rgba(15,23,42,0.04)]" role="status">Loading dashboard data…</div>}{error && <div className="mt-6 rounded-2xl border border-rose-200 bg-white px-6 py-16 text-center shadow-[0_6px_20px_rgba(15,23,42,0.04)]" role="alert"><h2 className="font-bold text-slate-900">Unable to load Analytics Dashboard</h2><p className="mt-2 text-sm text-slate-500">The dashboard API request failed. Please try again.</p><button type="button" onClick={retry} className="mt-5 rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">Retry</button></div>}{data && <><div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">{data.kpis.map((kpi) => <AnalyticsKpiCard key={kpi.label} kpi={kpi} />)}</div><div className="mt-6 grid grid-cols-1 gap-4 xl:grid-cols-2"><Panel title="Patient Trends" description="Monthly patient growth">{data.patientTrends.length ? <PatientTrendChart data={data.patientTrends} /> : <EmptyState />}</Panel><Panel title="Revenue Overview" description="Monthly revenue in millions">{data.revenue.length ? <RevenueTrendChart data={data.revenue} /> : <EmptyState />}</Panel><Panel title="Resource Utilization" description="Current usage by resource">{data.resources.length ? <ResourceUtilizationChart data={data.resources} /> : <EmptyState />}</Panel><Panel title="Department Performance" description="Performance comparison across departments">{data.departmentPerformance.length ? <DepartmentPerformance data={data.departmentPerformance} /> : <EmptyState />}</Panel></div><div className="mt-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-[0_6px_20px_rgba(15,23,42,0.04)] sm:p-5"><div className="mb-4"><h2 className="text-sm font-bold text-slate-900">Operational Summary</h2><p className="mt-1 text-xs text-slate-400">Department-level snapshot for the selected period</p></div>{data.operationalSummary.length ? <AnalyticsSummaryTable data={data.operationalSummary} /> : <p className="py-10 text-center text-sm text-slate-400">No operational summary is available for this period.</p>}</div><p className="mt-5 text-center text-xs font-medium text-slate-500">Dashboard data source: {availability}</p></>}</div></main>;
 }
 
 function EmptyState() {
