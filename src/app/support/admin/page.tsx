@@ -21,13 +21,6 @@ const STATUS_OPTIONS: TicketStatus[] = ["OPEN", "PROCESSING", "SOLVED"];
 function formatListDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
-function sortTicketsByUpdatedAt(tickets: TicketSummary[]) {
-  return [...tickets].sort(
-    (a, b) =>
-      new Date(b.updatedAt).getTime() -
-      new Date(a.updatedAt).getTime()
-  );
-}
 
 export default function AdminTicketsPage() {
   const searchParams = useSearchParams();
@@ -35,6 +28,7 @@ export default function AdminTicketsPage() {
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TicketStatus | "ALL">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -44,31 +38,32 @@ export default function AdminTicketsPage() {
   const [updatingStatus, setUpdatingStatus] = useState(false);
 
   const loadList = async () => {
-  setLoadingList(true);
-  setListError(null);
+    setLoadingList(true);
+    setListError(null);
 
-  try {
-    const data = await getAllTickets();
+    try {
+      const data = await getAllTickets();
 
-    const sortedData = [...data].sort(
-      (a, b) =>
-        new Date(b.updatedAt).getTime() -
-        new Date(a.updatedAt).getTime()
-    );
+      const sortedData = [...data].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() -
+          new Date(a.updatedAt).getTime()
+      );
 
-    setTickets(sortedData);
+      setTickets(sortedData);
 
-    setSelectedId((current) =>
-      current ?? (sortedData.length > 0 ? sortedData[0].id : null)
-    );
-  } catch (e) {
-    setListError(
-      e instanceof Error ? e.message : "Failed to load tickets."
-    );
-  } finally {
-    setLoadingList(false);
-  }
-};
+      setSelectedId((current) =>
+        current ?? (sortedData.length > 0 ? sortedData[0].id : null)
+      );
+    } catch (e) {
+      setListError(
+        e instanceof Error ? e.message : "Failed to load tickets."
+      );
+    } finally {
+      setLoadingList(false);
+    }
+  };
+
   const loadTicket = async (id: string) => {
     setLoadingTicket(true);
     setTicketError(null);
@@ -82,22 +77,21 @@ export default function AdminTicketsPage() {
     }
   };
 
-useEffect(() => {
-  loadList();
-}, []);
+  useEffect(() => {
+    loadList();
+  }, []);
 
   useEffect(() => {
     if (selectedId) loadTicket(selectedId);
   }, [selectedId]);
 
   useEffect(() => {
-  const ticketId = searchParams.get("ticketId");
+    const ticketId = searchParams.get("ticketId");
 
-  if (ticketId) {
-    setSelectedId(ticketId);
-  }
-}, [searchParams]);
-
+    if (ticketId) {
+      setSelectedId(ticketId);
+    }
+  }, [searchParams]);
 
   const handleSend = async (message: string, image: File | null) => {
     if (!selectedId) return;
@@ -137,7 +131,20 @@ useEffect(() => {
     await loadList();
   };
 
-  const filtered = filter === "ALL" ? tickets : tickets.filter((t) => t.status === filter);
+  // Filtered by both status tab and search query
+  const filtered = useMemo(() => {
+    return tickets.filter((t) => {
+      const matchesFilter = filter === "ALL" || t.status === filter;
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        t.userName?.toLowerCase().includes(query) ||
+        t.subject?.toLowerCase().includes(query) 
+       
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [tickets, filter, searchQuery]);
 
   const counts: Record<TicketStatus | "ALL", number> = useMemo(
     () => ({
@@ -161,6 +168,40 @@ useEffect(() => {
           <p className="mt-0.5 text-xs text-[#616161]">All tickets raised by patients across the platform.</p>
         </div>
 
+        {/* Search Input Bar */}
+        <div className="px-4 pt-2">
+          <div className="relative flex items-center">
+            <svg
+              className="absolute left-3 h-4 w-4 text-[#616161]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, subject..."
+              className="w-full rounded-md border border-[#E1DFDD] bg-[#FAF9F8] py-1.5 pl-9 pr-8 text-xs text-[#242424] placeholder-[#616161] outline-none focus:border-[#0F6CBD] focus:bg-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 text-xs text-[#616161] hover:text-[#242424]"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-4 border-b border-[#E1DFDD] px-4 pt-3">
           {FILTERS.map((f) => (
             <button
@@ -182,7 +223,9 @@ useEffect(() => {
           {listError && <p className="px-4 py-3 text-sm text-red-600">{listError}</p>}
 
           {!loadingList && !listError && filtered.length === 0 && (
-            <p className="px-4 py-10 text-center text-sm text-[#616161]">No tickets in this category.</p>
+            <p className="px-4 py-10 text-center text-sm text-[#616161]">
+              {searchQuery ? "No tickets matching your search." : "No tickets in this category."}
+            </p>
           )}
 
           {filtered.map((t) => {
@@ -196,7 +239,7 @@ useEffect(() => {
                 }`}
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-xs font-semibold text-[#0F6CBD]">
-                 {(t.userName || "?").slice(0, 2).toUpperCase()}
+                  {(t.userName || "?").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
@@ -236,11 +279,11 @@ useEffect(() => {
         {selectedId && !loadingTicket && !ticketError && ticket && (
           <>
             <div className="flex items-center justify-between border-b border-[#E1DFDD] px-6 py-3">
-             <h2 className="truncate text-base font-semibold text-[#242424]">
-  <span className="text-blue-600">{ticket.category}</span>
-  {" : "}
-  {ticket.subject}
-</h2>
+              <h2 className="truncate text-base font-semibold text-[#242424]">
+                <span className="text-blue-600">{ticket.category}</span>
+                {" : "}
+                {ticket.subject}
+              </h2>
               <StatusBadge status={ticket.status} />
             </div>
             <div className="border-b border-[#E1DFDD] bg-[#FAF9F8] px-6 py-2 text-xs text-[#616161]">
@@ -294,7 +337,6 @@ useEffect(() => {
       {selectedId && ticket && !loadingTicket && !ticketError && (
         <aside className="w-72 shrink-0 space-y-4 overflow-y-auto border-l border-[#E1DFDD] bg-[#FAF9F8] p-5">
           <div>
-            
             <p className="text-sm font-medium text-[#242424]">{ticket.userName}</p>
             <p className="mt-0.5 text-xs text-[#616161]">{ticket.userEmail}</p>
             <p className="mt-0.5 text-xs text-[#9A9A9A]">ID: {ticket.userId}</p>
