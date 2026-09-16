@@ -376,6 +376,37 @@ export default function AdminTicketsPage() {
               </a>
             </div>
           )}
+
+          <div className="border-t border-[#E1DFDD] pt-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#616161]">Patient feedback</h3>
+            {ticket.feedback ? (
+              <div className="rounded-md border border-[#E1DFDD] bg-white p-3">
+                <div className="flex items-center gap-1" aria-label={`${ticket.feedback.rating} out of 5 stars`}>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <span
+                      key={value}
+                      className={`text-lg leading-none ${
+                        value <= ticket.feedback!.rating ? "text-amber-500" : "text-[#D6D3D1]"
+                      }`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                  <span className="ml-1 text-xs text-[#616161]">{ticket.feedback.rating}/5</span>
+                </div>
+                {ticket.feedback.comment && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-[#424242]">{ticket.feedback.comment}</p>
+                )}
+                {ticket.feedback.createdAt && (
+                  <p className="mt-2 text-[11px] text-[#9A9A9A]">
+                    Submitted {new Date(ticket.feedback.createdAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[#9A9A9A]">No feedback submitted.</p>
+            )}
+          </div>
         </aside>
       )}
     </div>
