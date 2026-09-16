@@ -274,9 +274,18 @@ useEffect(() => {
               ))}
             </div>
 
-            <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
-              <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to patient…" />
-            </div>
+            {ticket.status === "SOLVED" ? (
+              <div className="border-t border-[#E1DFDD] bg-[#F0FDF4] px-6 py-4">
+                <p className="text-sm font-semibold text-emerald-800">This conversation is solved</p>
+                <p className="mt-0.5 text-xs text-emerald-700">
+                  Replies are disabled. Change the ticket status to Open or Processing to continue the conversation.
+                </p>
+              </div>
+            ) : (
+              <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
+                <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to patient…" />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -302,7 +311,7 @@ useEffect(() => {
                   disabled={updatingStatus}
                   className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium transition ${
                     ticket.status === s
-                      ? "bg-[#0F6CBD] text-white"
+                      ? "bg-[#0052CC] text-white"
                       : "bg-white text-[#616161] hover:bg-[#F0F6FC]"
                   }`}
                 >
