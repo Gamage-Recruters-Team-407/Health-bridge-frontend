@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, LogOut, Bell, HeadphonesIcon, CreditCard } from "lucide-react";
-import DashboardLayout from "@/app/dashboard/layout";
 import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
@@ -89,7 +88,7 @@ export default function PatientDashboardPage() {
   }
 
   return (
-    <DashboardLayout pageTitle="Patient Dashboard">
+    <>
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -290,6 +289,6 @@ export default function PatientDashboardPage() {
             </div>
           </div>
         </div>
-    </DashboardLayout>
+    </>
   );
 }
