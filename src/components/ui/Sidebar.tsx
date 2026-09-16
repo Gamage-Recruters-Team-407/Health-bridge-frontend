@@ -11,6 +11,7 @@ import {
   FileSpreadsheet,
   FlaskConical,
   Pill,
+  CreditCard,
   Bell,
   ChevronLeft,
   ChevronRight,
