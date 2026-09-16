@@ -96,8 +96,15 @@ setSelectedId((current) =>
     contactNumber: string,
     attachment: File | null
   ) => {
-    await createTicket(subject, description, category, contactNumber, attachment);
+    const createdTicket = await createTicket(
+      subject,
+      description,
+      category,
+      contactNumber,
+      attachment
+    );
     await loadList();
+    setSelectedId(createdTicket.id);
   };
 
   const handleSend = async (message: string, image: File | null) => {
@@ -192,9 +199,7 @@ setSelectedId((current) =>
                   isActive ? "bg-[#EBF3FC]" : "hover:bg-[#F5F5F5]"
                 }`}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-xs font-semibold text-[#0F6CBD]">
-                  {(t.subject || "?").slice(0, 2).toUpperCase()}
-                </div>
+                
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-[#242424]">{t.subject || "Untitled ticket"}</p>
@@ -275,9 +280,27 @@ setSelectedId((current) =>
               ))}
             </div>
 
-            <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
-              <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to support…" />
-            </div>
+            {ticket.status === "SOLVED" ? (
+              <div className="flex items-center justify-between gap-4 border-t border-[#E1DFDD] bg-[#F0FDF4] px-6 py-4">
+                <div>
+                  <p className="text-sm font-semibold text-emerald-800">This problem was solved</p>
+                  <p className="mt-0.5 text-xs text-emerald-700">
+                    This conversation is closed. Create a new ticket if you need more help.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setModalOpen(true)}
+                  className="shrink-0 rounded-md bg-[#0F6CBD] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#0B5A9F]"
+                >
+                  Create new ticket
+                </button>
+              </div>
+            ) : (
+              <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
+                <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to support…" />
+              </div>
+            )}
           </>
         )}
       </div>
