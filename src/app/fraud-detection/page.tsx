@@ -1,3 +1,6 @@
+import DashboardLayout from "@/components/layout/DashboardLayout";
+import FraudDetectionTabs from "@/components/fraud-detection/FraudDetectionTabs";
+
 const claims = [
   { id: "CLM-20481", patient: "Ava Thompson", provider: "BlueCross", risk: "high", reason: "Duplicate billing", date: "12 Aug 2026" },
   { id: "CLM-20412", patient: "Marcus Lee", provider: "Aetna", risk: "medium", reason: "Unusual frequency", date: "11 Aug 2026" },
@@ -30,8 +33,10 @@ function ReasonBadge({ risk, reason }: { risk: string; reason: string }) {
 
 export default function FraudDetectionPage() {
   return (
-    <main className="min-h-screen bg-[#fbfcfd] px-4 py-6 text-[#16191d] sm:px-7 lg:px-10 lg:py-9">
+    <DashboardLayout pageTitle="Insurance" userRole="INSURANCE_OFFICER">
+      <div className="min-h-screen bg-[#fbfcfd] px-4 py-6 text-[#16191d] sm:px-7 lg:px-10 lg:py-9">
       <div className="mx-auto max-w-[1280px]">
+        <FraudDetectionTabs />
         <header className="mb-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
           <div>
             <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6c7680]">Claims intelligence</p>
@@ -60,6 +65,7 @@ export default function FraudDetectionPage() {
           <article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 shadow-[0_2px_10px_rgba(26,36,44,0.02)] sm:p-6"><h2 className="text-sm font-semibold text-[#20252a]">Risk distribution</h2><p className="mt-1 text-[11px] text-[#9299a0]">Distribution of claims by risk level</p><div className="mt-6 space-y-5">{riskLevels.map((level) => <div key={level.label}><div className="mb-2 flex justify-between text-[11px] text-[#65707a]"><span>{level.label}</span><span className="font-medium text-[#343b42]">{level.value}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f0f1f2]"><div className="h-full rounded-full" style={{ width: level.width, backgroundColor: level.color }} /></div></div>)}</div><div className="mt-6 rounded-xl bg-[#fafafa] px-3 py-3 text-[10px] leading-[1.45] text-[#7b838b]">Claims with repeated billing patterns and mismatched provider codes are automatically escalated for manual review.</div></article>
         </section>
       </div>
-    </main>
+      </div>
+    </DashboardLayout>
   );
 }
