@@ -1,327 +1,314 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
-import { invoiceService, billingItemService } from '@/services/billingService';
-import { Invoice, InvoiceRequest, BillingItem, BillingItemRequest } from '@/types/hospital';
+'use client';
 
-const TOKEN_KEY = "healthbridge_token";
+import {
+  useSyncExternalStore,
+  useEffect,
+} from 'react';
 
-// Helper to check if we're on login page
-const isLoginPage = () => {
-  if (typeof window === 'undefined') return false;
-  return window.location.pathname === '/login' || window.location.pathname === '/';
+import { invoiceService } from '@/services/billingService';
+import { Invoice } from '@/types/hospital';
+
+// ============================================================
+// Types
+// ============================================================
+
+type Listener = () => void;
+
+// ============================================================
+// Constants
+// ============================================================
+
+const TOKEN_KEY = 'healthbridge_token';
+
+// ============================================================
+// Store State
+// ============================================================
+
+let invoices: Invoice[] = [];
+
+let loading = true;
+
+let error: string | null = null;
+
+// ============================================================
+// Listeners
+// ============================================================
+
+let listeners: Listener[] = [];
+
+// ============================================================
+// Initialization
+// ============================================================
+
+let initialized = false;
+
+let fetchPromise: Promise<void> | null = null;
+
+// ============================================================
+// Snapshot
+// ============================================================
+
+// IMPORTANT:
+// useSyncExternalStore requires a cached snapshot.
+// Do NOT return { invoices, loading, error } directly
+// from getSnapshot(), because that creates a new object
+// every time.
+
+let snapshot: {
+  invoices: Invoice[];
+  loading: boolean;
+  error: string | null;
+} = {
+  invoices,
+  loading,
+  error,
 };
 
-export const useInvoices = () => {
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
-  const hasFetched = useRef(false);
+// ============================================================
+// Notify Subscribers
+// ============================================================
 
-  const fetchAllInvoices = useCallback(async () => {
-    // Skip if on login page
-    if (isLoginPage()) {
-      console.log('⏳ On login page - Skipping API call');
-      return;
-    }
-
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      console.log('⏳ No token found - Skipping API call');
-      return;
-    }
-
-    if (!isMounted.current) return;
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const data = await invoiceService.getAllInvoices();
-      if (isMounted.current) {
-        setInvoices(data);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch invoices';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  const createInvoice = useCallback(async (data: InvoiceRequest): Promise<Invoice> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const newInvoice = await invoiceService.createInvoice(data);
-      if (isMounted.current) {
-        setInvoices((prev) => [...prev, newInvoice]);
-      }
-      return newInvoice;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create invoice';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  const updateInvoice = useCallback(async (id: string, data: InvoiceRequest): Promise<Invoice> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const updated = await invoiceService.updateInvoice(id, data);
-      if (isMounted.current) {
-        setInvoices((prev) =>
-          prev.map((inv) => (inv.id === id ? updated : inv))
-        );
-      }
-      return updated;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update invoice';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  const deleteInvoice = useCallback(async (id: string): Promise<void> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await invoiceService.deleteInvoice(id);
-      if (isMounted.current) {
-        setInvoices((prev) => prev.filter((inv) => inv.id !== id));
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete invoice';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  const getPatientInvoices = useCallback(async (patientId: string): Promise<Invoice[]> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      return await invoiceService.getPatientInvoices(patientId);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch patient invoices';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  // ✅ Effect only runs once - fetch data
-  useEffect(() => {
-    if (!isLoginPage() && !hasFetched.current) {
-      hasFetched.current = true;
-      fetchAllInvoices();
-    }
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, [fetchAllInvoices]);
-
-  return {
+const emitChange = () => {
+  // Update the cached snapshot only when store data changes.
+  snapshot = {
     invoices,
     loading,
     error,
-    fetchAllInvoices,
-    createInvoice,
-    updateInvoice,
-    deleteInvoice,
-    getPatientInvoices,
+  };
+
+  listeners.forEach((listener) => {
+    listener();
+  });
+};
+
+// ============================================================
+// Subscribe
+// ============================================================
+
+const subscribe = (listener: Listener) => {
+  listeners = [...listeners, listener];
+
+  return () => {
+    listeners = listeners.filter(
+      (existingListener) =>
+        existingListener !== listener
+    );
   };
 };
 
-export const useBillingItems = () => {
-  const [items, setItems] = useState<BillingItem[]>([]);
-  const [loading, setLoading] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
-  const isMounted = useRef(true);
-  const hasFetched = useRef(false);
+// ============================================================
+// Get Snapshot
+// ============================================================
 
-  const fetchAllItems = useCallback(async () => {
-    // Skip if on login page
-    if (isLoginPage()) {
-      console.log('⏳ On login page - Skipping API call');
-      return;
-    }
+const getSnapshot = () => {
+  return snapshot;
+};
 
-    const token = localStorage.getItem(TOKEN_KEY);
-    if (!token) {
-      console.log('⏳ No token found - Skipping API call');
-      return;
-    }
+// ============================================================
+// Server Snapshot
+// ============================================================
 
-    if (!isMounted.current) return;
-    setLoading(true);
-    setError(null);
-    
+// Needed for Next.js SSR / hydration.
+
+const getServerSnapshot = () => {
+  return snapshot;
+};
+
+// ============================================================
+// Login Page Check
+// ============================================================
+
+const isLoginPage = () => {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  return (
+    window.location.pathname === '/login' ||
+    window.location.pathname === '/'
+  );
+};
+
+// ============================================================
+// Fetch Billing Data
+// ============================================================
+
+const fetchData = async (): Promise<void> => {
+  // Prevent duplicate requests.
+  if (fetchPromise) {
+    return fetchPromise;
+  }
+
+  fetchPromise = (async () => {
     try {
-      const data = await billingItemService.getAllBillingItems();
-      if (isMounted.current) {
-        setItems(data);
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch billing items';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
+      // --------------------------------------------------------
+      // Check Browser
+      // --------------------------------------------------------
 
-  const createItem = useCallback(async (data: BillingItemRequest): Promise<BillingItem> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const newItem = await billingItemService.createBillingItem(data);
-      if (isMounted.current) {
-        setItems((prev) => [...prev, newItem]);
+      if (typeof window === 'undefined') {
+        return;
       }
-      return newItem;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to create billing item';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
 
-  const updateItem = useCallback(async (id: string, data: BillingItemRequest): Promise<BillingItem> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      const updated = await billingItemService.updateBillingItem(id, data);
-      if (isMounted.current) {
-        setItems((prev) =>
-          prev.map((item) => (item.id === id ? updated : item))
+      // --------------------------------------------------------
+      // Check Login Page
+      // --------------------------------------------------------
+
+      if (isLoginPage()) {
+        console.log(
+          '⏳ Billing Store: On login page'
         );
-      }
-      return updated;
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to update billing item';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
 
-  const deleteItem = useCallback(async (id: string): Promise<void> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      await billingItemService.deleteBillingItem(id);
-      if (isMounted.current) {
-        setItems((prev) => prev.filter((item) => item.id !== id));
-      }
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to delete billing item';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
+        loading = false;
+        error = null;
 
-  const getInvoiceItems = useCallback(async (invoiceId: string): Promise<BillingItem[]> => {
-    if (!isMounted.current) throw new Error('Component unmounted');
-    setLoading(true);
-    setError(null);
-    
-    try {
-      return await billingItemService.getInvoiceItems(invoiceId);
-    } catch (err: unknown) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch invoice items';
-      if (isMounted.current) {
-        setError(errorMessage);
-      }
-      throw err;
-    } finally {
-      if (isMounted.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
+        emitChange();
 
-  // ✅ Effect only runs once
+        return;
+      }
+
+      // --------------------------------------------------------
+      // Check Token
+      // --------------------------------------------------------
+
+      const token =
+        localStorage.getItem(TOKEN_KEY);
+
+      if (!token) {
+        console.warn(
+          '⚠️ Billing Store: No authentication token found'
+        );
+
+        invoices = [];
+        loading = false;
+        error = null;
+
+        emitChange();
+
+        return;
+      }
+
+      // --------------------------------------------------------
+      // Start Loading
+      // --------------------------------------------------------
+
+      console.log(
+        '🚀 Billing Store: Fetching invoices...'
+      );
+
+      loading = true;
+      error = null;
+
+      emitChange();
+
+      // --------------------------------------------------------
+      // API Request
+      // --------------------------------------------------------
+
+      const data =
+        await invoiceService.getAllInvoices();
+
+      console.log(
+        '✅ Billing Store: Invoices received:',
+        data?.length || 0
+      );
+
+      // --------------------------------------------------------
+      // Save Data
+      // --------------------------------------------------------
+
+      invoices = data || [];
+
+      loading = false;
+      error = null;
+
+      emitChange();
+
+      console.log(
+        '✅ Billing Store: Loading completed'
+      );
+    } catch (err: unknown) {
+      console.error(
+        '❌ Billing Store: Failed to fetch invoices',
+        err
+      );
+
+      error =
+        err instanceof Error
+          ? err.message
+          : 'Failed to fetch invoices';
+
+      loading = false;
+
+      emitChange();
+    } finally {
+      fetchPromise = null;
+    }
+  })();
+
+  return fetchPromise;
+};
+
+// ============================================================
+// Force Refresh
+// ============================================================
+
+const refreshData = async (): Promise<void> => {
+  console.log(
+    '🔄 Billing Store: Refreshing invoices...'
+  );
+
+  // Allow a new request.
+  initialized = false;
+
+  await fetchData();
+
+  initialized = true;
+};
+
+// ============================================================
+// Initialize Store
+// ============================================================
+
+const initializeStore = () => {
+  if (initialized) {
+    return;
+  }
+
+  initialized = true;
+
+  console.log(
+    '🔧 Billing Store: Initializing...'
+  );
+
+  void fetchData();
+};
+
+// ============================================================
+// Hook
+// ============================================================
+
+export const useBillingStore = () => {
+  const store = useSyncExternalStore(
+    subscribe,
+    getSnapshot,
+    getServerSnapshot
+  );
+
+  // ----------------------------------------------------------
+  // Initialize external store
+  // ----------------------------------------------------------
+
   useEffect(() => {
-    if (!isLoginPage() && !hasFetched.current) {
-      hasFetched.current = true;
-      fetchAllItems();
-    }
-    
-    return () => {
-      isMounted.current = false;
-    };
-  }, [fetchAllItems]);
+    initializeStore();
+  }, []);
 
   return {
-    items,
-    loading,
-    error,
-    fetchAllItems,
-    createItem,
-    updateItem,
-    deleteItem,
-    getInvoiceItems,
+    ...store,
+
+    // --------------------------------------------------------
+    // Refresh
+    // --------------------------------------------------------
+
+    refreshData,
   };
 };

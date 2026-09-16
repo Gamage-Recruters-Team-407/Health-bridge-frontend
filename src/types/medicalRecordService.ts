@@ -1,11 +1,8 @@
 export interface MedicalRecord {
   id: string;
-
   patientId: string;
-
   doctorId: string;
   doctorName: string;
-
   hospitalName: string;
 
   visitDate: string;
@@ -18,7 +15,6 @@ export interface MedicalRecord {
   treatmentPlan: string[];
 
   consultationNotes?: string | null;
-
   status: string;
 
   version: number;
@@ -35,7 +31,6 @@ export interface Diagnosis {
   id: string;
 
   medicalRecordId: string;
-
   patientId: string;
   doctorId: string;
 
@@ -52,7 +47,6 @@ export interface TreatmentRecord {
   id: string;
 
   medicalRecordId: string;
-
   patientId: string;
   doctorId: string;
 
@@ -77,14 +71,12 @@ export interface MedicalDocument {
   id: string;
 
   medicalRecordId: string;
-
   patientId: string;
   doctorId: string;
 
   documentGroupId: string;
 
   version: number;
-
   status: MedicalDocumentStatus;
 
   documentType: string;
@@ -98,87 +90,58 @@ export interface MedicalDocument {
   description?: string | null;
 
   uploadedAt: string;
-
   updatedAt?: string | null;
   archivedAt?: string | null;
 
+  /*
+   * Optional compatibility fields.
+   * Current frontend does not depend on these.
+   */
   cloudinaryPublicId?: string;
   cloudinaryResourceType?: string;
 }
 
 
-/*
- * =========================================================
- * PATIENT LOOKUP
- * =========================================================
- */
-export interface PatientLookupResult {
-  id: string;
-
-  fullName: string;
-
-  dateOfBirth?: string | null;
-
-  gender?: string | null;
-
-  bloodGroup?: string | null;
-
-  picture?: string | null;
-
-  /*
-   * Available for:
-   * Doctor -> My EHR Patients
-   */
-  lastVisitDate?: string | null;
-
-  recordCount?: number | null;
-}
-
-
-/*
- * =========================================================
- * UNIFIED PATIENT HISTORY
- * =========================================================
- */
 export interface PatientEhrHistory {
   patientId: string;
-
   generatedAt: string;
 
   medicalRecords: MedicalRecord[];
-
   diagnoses: Diagnosis[];
-
   treatments: TreatmentRecord[];
-
   documents: MedicalDocument[];
+}
+
+
+export interface PatientLookupResult {
+  id: string;
+  fullName: string;
+  dateOfBirth?: string | null;
+  gender?: string | null;
+  bloodGroup?: string | null;
+  picture?: string | null;
 }
 
 
 /*
  * =========================================================
  * MEDICAL RECORD REQUEST
- *
- * doctorId and doctorName are intentionally NOT included.
- *
- * Backend gets doctor identity from JWT.
  * =========================================================
+ *
+ * doctorId and doctorName are intentionally NOT sent.
+ * Backend takes them from JWT.
  */
 export interface MedicalRecordRequest {
   patientId: string;
 
   hospitalName: string;
-
   visitDate: string;
-
   recordType: string;
 
   diagnosis: string;
-
   clinicalSummary: string;
 
   symptoms?: string[];
-
   treatmentPlan?: string[];
 
   consultationNotes?: string;
@@ -191,16 +154,16 @@ export interface MedicalRecordRequest {
  * =========================================================
  * DIAGNOSIS REQUEST
  * =========================================================
+ *
+ * doctorId is intentionally NOT sent.
  */
 export interface DiagnosisRequest {
   medicalRecordId: string;
-
   patientId: string;
 
   diagnosisName: string;
 
   description?: string;
-
   severity?: string;
 
   diagnosedDate: string;
@@ -211,10 +174,11 @@ export interface DiagnosisRequest {
  * =========================================================
  * TREATMENT REQUEST
  * =========================================================
+ *
+ * doctorId is intentionally NOT sent.
  */
 export interface TreatmentRecordRequest {
   medicalRecordId: string;
-
   patientId: string;
 
   treatmentType: string;
@@ -222,7 +186,6 @@ export interface TreatmentRecordRequest {
   description?: string;
 
   startDate: string;
-
   endDate?: string;
 
   status?: string;
@@ -231,26 +194,24 @@ export interface TreatmentRecordRequest {
 
 /*
  * =========================================================
- * DOCUMENT UPDATE REQUEST
+ * DOCUMENT METADATA UPDATE
  * =========================================================
  */
 export interface MedicalDocumentUpdateRequest {
   documentType?: string;
-
   description?: string;
 }
 
 
 /*
  * =========================================================
- * DOCUMENT UPLOAD REQUEST
+ * DOCUMENT UPLOAD
  * =========================================================
  */
 export interface MedicalDocumentUploadRequest {
   file: File;
 
   medicalRecordId: string;
-
   patientId: string;
 
   documentType: string;
@@ -261,11 +222,10 @@ export interface MedicalDocumentUploadRequest {
 
 /*
  * =========================================================
- * DOCUMENT REPLACE REQUEST
+ * DOCUMENT REPLACEMENT
  * =========================================================
  */
 export interface MedicalDocumentReplaceRequest {
   file: File;
-
   description?: string;
 }

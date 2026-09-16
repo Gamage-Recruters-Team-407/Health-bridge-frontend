@@ -3,18 +3,48 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/axios";
+import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import {
+  validateFullName,
+  validatePhoneNumber,
+  validateDateOfBirth,
+  validateGender,
+  validateBloodGroup,
+  validateAddress,
+  ADDRESS_MAX_LENGTH,
+} from "@/utils/validators";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB, matches backend limit
+
+const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
+
+type FormData = {
+  fullName: string;
+  phoneNumber: string;
+  dateOfBirth: string;
+  gender: string;
+  bloodGroup: string;
+  address: string;
+};
+
+type FormErrors = Partial<Record<keyof FormData, string>>;
 
 export default function EditProfilePage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     fullName: "",
     phoneNumber: "",
+    dateOfBirth: "",
+    gender: "",
+    bloodGroup: "",
+    address: "",
   });
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
   const [picture, setPicture] = useState<string>("");
+  const [role, setRole] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPicture, setUploadingPicture] = useState(false);
@@ -28,15 +58,77 @@ export default function EditProfilePage() {
         setFormData({
           fullName: data.fullName || "",
           phoneNumber: data.phoneNumber || "",
+          dateOfBirth: data.dateOfBirth || "",
+          gender: data.gender || "",
+          bloodGroup: data.bloodGroup || "",
+          address: data.address || "",
         });
         setPicture(data.picture || "");
+        setRole(data.role || "");
       })
       .catch(() => setError("Could not load profile."))
       .finally(() => setLoading(false));
   }, []);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Runs the correct validator for a single field, returns "" if valid
+  const validateField = (name: keyof FormData, value: string): string => {
+    switch (name) {
+      case "fullName":
+        return validateFullName(value);
+      case "phoneNumber":
+        return validatePhoneNumber(value);
+      case "dateOfBirth":
+        return validateDateOfBirth(value);
+      case "gender":
+        return validateGender(value);
+      case "bloodGroup":
+        return validateBloodGroup(value, role === "PATIENT");
+      case "address":
+        return validateAddress(value);
+      default:
+        return "";
+    }
+  };
+
+  const validateAll = (data: FormData): FormErrors => {
+    const nextErrors: FormErrors = {
+      fullName: validateField("fullName", data.fullName),
+      phoneNumber: validateField("phoneNumber", data.phoneNumber),
+      dateOfBirth: validateField("dateOfBirth", data.dateOfBirth),
+      gender: validateField("gender", data.gender),
+      address: validateField("address", data.address),
+    };
+    if (role === "PATIENT") {
+      nextErrors.bloodGroup = validateField("bloodGroup", data.bloodGroup);
+    }
+    // Drop empty-string entries so only real errors remain
+    Object.keys(nextErrors).forEach((key) => {
+      if (!nextErrors[key as keyof FormData]) delete nextErrors[key as keyof FormData];
+    });
+    return nextErrors;
+  };
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    const fieldName = name as keyof FormData;
+    setFormData((prev) => ({ ...prev, [fieldName]: value }));
+
+    if (touched[fieldName]) {
+      const msg = validateField(fieldName, value);
+      setErrors((prev) => ({ ...prev, [fieldName]: msg || undefined }));
+    }
+  };
+
+  const handleBlur = (
+    e: React.FocusEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    const fieldName = name as keyof FormData;
+    setTouched((prev) => ({ ...prev, [fieldName]: true }));
+    const msg = validateField(fieldName, value);
+    setErrors((prev) => ({ ...prev, [fieldName]: msg || undefined }));
   };
 
   const handlePictureClick = () => {
@@ -61,7 +153,6 @@ export default function EditProfilePage() {
       return;
     }
 
-    // Show an instant local preview while the upload is in progress
     const localPreviewUrl = URL.createObjectURL(file);
     setPicture(localPreviewUrl);
     setUploadingPicture(true);
@@ -102,12 +193,33 @@ export default function EditProfilePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setSaving(true);
     setError("");
+
+    const nextErrors = validateAll(formData);
+    setErrors(nextErrors);
+    setTouched({
+      fullName: true,
+      phoneNumber: true,
+      dateOfBirth: true,
+      gender: true,
+      bloodGroup: true,
+      address: true,
+    });
+
+    if (Object.keys(nextErrors).length > 0) {
+      setError("Please fix the highlighted fields before saving.");
+      return;
+    }
+
+    setSaving(true);
     try {
       await api.put("/users/profile", {
-        fullName: formData.fullName,
-        phoneNumber: formData.phoneNumber,
+        fullName: formData.fullName.trim(),
+        phoneNumber: formData.phoneNumber.trim(),
+        dateOfBirth: formData.dateOfBirth,
+        gender: formData.gender,
+        address: formData.address.trim(),
+        ...(role === "PATIENT" ? { bloodGroup: formData.bloodGroup } : {}),
       });
       router.push("/profile");
     } catch (err) {
@@ -118,14 +230,6 @@ export default function EditProfilePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-gray-500">Loading...</p>
-      </div>
-    );
-  }
-
   const initials = formData.fullName
     .split(" ")
     .filter(Boolean)
@@ -133,119 +237,239 @@ export default function EditProfilePage() {
     .map((part) => part[0]?.toUpperCase())
     .join("");
 
+  const inputClass = (fieldName: keyof FormData) =>
+    `w-full border rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 ${
+      errors[fieldName]
+        ? "border-red-400 focus:ring-red-400"
+        : "border-gray-300 focus:ring-blue-500"
+    }`;
+
   return (
-    <div className="min-h-screen bg-gray-50 py-10 px-4">
-      <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-md p-8">
-        <h1 className="text-2xl font-bold text-gray-800 mb-8">Edit Profile</h1>
+    <DashboardLayout pageTitle="Edit Profile">
+      {loading ? (
+        <div className="flex items-center justify-center py-20">
+          <p className="text-gray-500">Loading...</p>
+        </div>
+      ) : (
+        <div className="max-w-2xl mx-auto bg-white rounded-2xl shadow-md p-8">
+          <h1 className="text-2xl font-bold text-gray-800 mb-8">
+            Edit Profile
+          </h1>
 
-        {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+          {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-        {/* Profile Picture */}
-        <div className="flex flex-col items-center mb-8">
-          <div className="relative">
-            <button
-              type="button"
-              onClick={handlePictureClick}
-              disabled={uploadingPicture}
-              className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition disabled:opacity-60"
-              aria-label="Change profile picture"
-            >
-              {picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={picture}
-                  alt="Profile"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <span className="text-2xl font-semibold text-gray-500">
-                  {initials || "?"}
-                </span>
-              )}
-
-              {uploadingPicture && (
-                <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full">
-                  <span className="text-white text-xs">Uploading...</span>
-                </div>
-              )}
-            </button>
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handlePictureChange}
-              className="hidden"
-            />
-          </div>
-
-          <div className="mt-3 flex items-center gap-4">
-            <button
-              type="button"
-              onClick={handlePictureClick}
-              disabled={uploadingPicture}
-              className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-60"
-            >
-              Change Photo
-            </button>
-
-            {picture && (
+          {/* Profile Picture */}
+          <div className="flex flex-col items-center mb-8">
+            <div className="relative">
               <button
                 type="button"
-                onClick={handleRemovePicture}
+                onClick={handlePictureClick}
                 disabled={uploadingPicture}
-                className="text-sm text-red-500 hover:text-red-600 font-medium disabled:opacity-60"
+                className="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-gray-200 hover:border-blue-400 transition disabled:opacity-60"
+                aria-label="Change profile picture"
               >
-                Remove Photo
+                {picture ? (
+                  <img
+                    src={picture}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-2xl font-semibold text-gray-500">
+                    {initials || "?"}
+                  </span>
+                )}
+
+                {uploadingPicture && (
+                  <div className="absolute inset-0 bg-black/40 flex items-center justify-center rounded-full">
+                    <span className="text-white text-xs">Uploading...</span>
+                  </div>
+                )}
               </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handlePictureChange}
+                className="hidden"
+              />
+            </div>
+
+            <div className="mt-3 flex items-center gap-4">
+              <button
+                type="button"
+                onClick={handlePictureClick}
+                disabled={uploadingPicture}
+                className="text-sm text-blue-600 hover:text-blue-700 font-medium disabled:opacity-60"
+              >
+                Change Photo
+              </button>
+
+              {picture && (
+                <button
+                  type="button"
+                  onClick={handleRemovePicture}
+                  disabled={uploadingPicture}
+                  className="text-sm text-red-500 hover:text-red-600 font-medium disabled:opacity-60"
+                >
+                  Remove Photo
+                </button>
+              )}
+            </div>
+
+            {pictureError && (
+              <p className="text-red-500 text-xs mt-2">{pictureError}</p>
             )}
           </div>
 
-          {pictureError && (
-            <p className="text-red-500 text-xs mt-2">{pictureError}</p>
-          )}
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">
+                Full Name
+              </label>
+              <input
+                type="text"
+                name="fullName"
+                value={formData.fullName}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={inputClass("fullName")}
+              />
+              {errors.fullName && (
+                <p className="text-red-500 text-xs mt-1">{errors.fullName}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">
+                Phone
+              </label>
+              <input
+                type="text"
+                name="phoneNumber"
+                placeholder="07XXXXXXXX"
+                value={formData.phoneNumber}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                className={inputClass("phoneNumber")}
+              />
+              {errors.phoneNumber && (
+                <p className="text-red-500 text-xs mt-1">{errors.phoneNumber}</p>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+              <div>
+                <label className="block text-sm text-gray-500 mb-1">
+                  Date of Birth
+                </label>
+                <input
+                  type="date"
+                  name="dateOfBirth"
+                  value={formData.dateOfBirth}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  max={new Date().toISOString().split("T")[0]}
+                  className={inputClass("dateOfBirth")}
+                />
+                {errors.dateOfBirth && (
+                  <p className="text-red-500 text-xs mt-1">{errors.dateOfBirth}</p>
+                )}
+              </div>
+
+              <div>
+                <label className="block text-sm text-gray-500 mb-1">
+                  Gender
+                </label>
+                <select
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`${inputClass("gender")} bg-white`}
+                >
+                  <option value="">Select gender</option>
+                  <option value="Male">Male</option>
+                  <option value="Female">Female</option>
+                  <option value="Other">Other</option>
+                  <option value="Prefer not to say">Prefer not to say</option>
+                </select>
+                {errors.gender && (
+                  <p className="text-red-500 text-xs mt-1">{errors.gender}</p>
+                )}
+              </div>
+            </div>
+
+            {role === "PATIENT" && (
+              <div>
+                <label className="block text-sm text-gray-500 mb-1">
+                  Blood Group
+                </label>
+                <select
+                  name="bloodGroup"
+                  value={formData.bloodGroup}
+                  onChange={handleChange}
+                  onBlur={handleBlur}
+                  className={`${inputClass("bloodGroup")} bg-white`}
+                >
+                  <option value="">Select blood group</option>
+                  {BLOOD_GROUPS.map((bg) => (
+                    <option key={bg} value={bg}>
+                      {bg}
+                    </option>
+                  ))}
+                </select>
+                {errors.bloodGroup && (
+                  <p className="text-red-500 text-xs mt-1">{errors.bloodGroup}</p>
+                )}
+              </div>
+            )}
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">
+                Address
+              </label>
+              <textarea
+                name="address"
+                value={formData.address}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                rows={3}
+                maxLength={ADDRESS_MAX_LENGTH}
+                placeholder="Street, city, postal code"
+                className={`${inputClass("address")} resize-none`}
+              />
+              <div className="flex justify-between mt-1">
+                {errors.address ? (
+                  <p className="text-red-500 text-xs">{errors.address}</p>
+                ) : (
+                  <span />
+                )}
+                <span className="text-xs text-gray-400">
+                  {formData.address.length}/{ADDRESS_MAX_LENGTH}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex gap-4 pt-4">
+              <button
+                type="submit"
+                disabled={saving}
+                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50"
+              >
+                {saving ? "Saving..." : "Save Changes"}
+              </button>
+              <a
+                href="/profile"
+                className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
+              >
+                Cancel
+              </a>
+            </div>
+          </form>
         </div>
-
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">Full Name</label>
-            <input
-              type="text"
-              name="fullName"
-              value={formData.fullName}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm text-gray-500 mb-1">Phone</label>
-            <input
-              type="text"
-              name="phoneNumber"
-              value={formData.phoneNumber}
-              onChange={handleChange}
-              className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          <div className="flex gap-4 pt-4">
-            <button
-              type="submit"
-              disabled={saving}
-              className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition disabled:opacity-50"
-            >
-              {saving ? "Saving..." : "Save Changes"}
-            </button>
-            <a
-              href="/profile"
-              className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
-            >
-              Cancel
-            </a>
-          </div>
-        </form>
-      </div>
-    </div>
+      )}
+    </DashboardLayout>
   );
 }
