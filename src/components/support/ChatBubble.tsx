@@ -72,8 +72,8 @@ export default function ChatBubble({
         <div
           className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed shadow-sm ${
             isOwn
-              ? "rounded-br-sm bg-teal-600 text-white"
-              : "rounded-bl-sm border border-slate-200 bg-white text-slate-800"
+              ? "rounded-br-sm bg-[#0052CC] text-white"
+              : "rounded-bl-sm border border-slate-200 bg-[#F4F5F7] text-slate-800"
           }`}
         >
           {editing ? (

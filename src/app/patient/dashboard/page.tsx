@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import DashboardLayout from "@/app/dashboard/layout";
-import { Calendar, Clock, FileText, Heart, Pill } from "lucide-react";
+import { Bell, Calendar, Clock, CreditCard, FileText, HeadphonesIcon, Heart, Pill } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const stats = [
   { label: "Upcoming Appointments", value: "3", icon: Calendar, color: "bg-blue-500" },
@@ -23,11 +25,38 @@ const prescriptions = [
 ];
 
 export default function PatientDashboardPage() {
+  const { user } = useAuth();
+
   return (
     <DashboardLayout pageTitle="Patient Dashboard">
-      <div className="bg-gradient-to-r from-blue-500 to-cyan-500 rounded-2xl p-6 text-white">
-        <h1 className="text-2xl font-bold">Welcome back, Patient!</h1>
+      <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+        <h1 className="text-2xl font-bold">Welcome back, {user?.fullName || "Patient"}!</h1>
         <p className="mt-1 text-blue-100">Your health is our priority. Here&apos;s your health summary.</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <Link
+            href="/payments"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-semibold backdrop-blur-sm transition"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Pay Bills</span>
+          </Link>
+          <Link
+            href="/notifications/patient"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm transition"
+          >
+            <Bell className="w-4 h-4" />
+            <span>Notifications</span>
+          </Link>
+          <Link
+            href="/support/patient"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold shadow-sm transition"
+          >
+            <HeadphonesIcon className="w-4 h-4" />
+            <span>Support</span>
+          </Link>
+        </div>
       </div>
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mt-6">
@@ -58,7 +87,6 @@ export default function PatientDashboardPage() {
             ))}
           </div>
         </div>
-
         <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-6">
           <h2 className="text-lg font-semibold text-slate-900 mb-4">Recent Prescriptions</h2>
           <div className="space-y-3">
