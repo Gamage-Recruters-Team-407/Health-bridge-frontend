@@ -1,7 +1,5 @@
-import axios from 'axios';
+import { apiClient } from './apiClient';
 import { Department, DepartmentStats } from '../types/department';
-
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8088/api';
 
 export const departmentService = {
   async getAll(status?: string, search?: string): Promise<Department[]> {
@@ -9,38 +7,32 @@ export const departmentService = {
     if (status && status !== 'All') params.append('status', status);
     if (search) params.append('search', search);
 
-    const response = await axios.get<Department[]>(`${API_BASE_URL}/departments`, { params });
-    return response.data;
+    return apiClient.get<Department[]>('/departments', { params });
   },
 
   async getStats(): Promise<DepartmentStats> {
-    const response = await axios.get<DepartmentStats>(`${API_BASE_URL}/departments/stats`);
-    return response.data;
+    return apiClient.get<DepartmentStats>('/departments/stats');
   },
 
   async getById(id: string): Promise<Department> {
-    const response = await axios.get<Department>(`${API_BASE_URL}/departments/${id}`);
-    return response.data;
+    return apiClient.get<Department>(`/departments/${id}`);
   },
 
   async create(data: Partial<Department>): Promise<Department> {
-    const response = await axios.post<Department>(`${API_BASE_URL}/departments`, data);
-    return response.data;
+    return apiClient.post<Department>('/departments', data);
   },
 
   async update(id: string, data: Partial<Department>): Promise<Department> {
-    const response = await axios.put<Department>(`${API_BASE_URL}/departments/${id}`, data);
-    return response.data;
+    return apiClient.put<Department>(`/departments/${id}`, data);
   },
 
   async updateStatus(id: string, status: 'Active' | 'Inactive'): Promise<Department> {
-    const response = await axios.patch<Department>(`${API_BASE_URL}/departments/${id}/status`, null, {
+    return apiClient.patch<Department>(`/departments/${id}/status`, null, {
       params: { status }
     });
-    return response.data;
   },
 
   async delete(id: string): Promise<void> {
-    await axios.delete(`${API_BASE_URL}/departments/${id}`);
+    await apiClient.delete(`/departments/${id}`);
   }
 };

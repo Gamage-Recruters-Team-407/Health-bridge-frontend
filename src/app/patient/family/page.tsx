@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
-import DashboardLayout from "@/app/dashboard/layout";
 import { Users, UserPlus, X, Trash2, Mail, Edit2 } from "lucide-react";
 import api from "@/lib/axios";
 
@@ -154,7 +153,7 @@ export default function FamilyPage() {
   }
 
   return (
-    <DashboardLayout pageTitle="Family Members">
+    <>
       <main className="flex-1 p-6 sm:p-10 w-full relative">
         <div className="max-w-6xl mx-auto w-full pb-10">
           {/* Beautiful Header Banner */}
@@ -349,6 +348,6 @@ export default function FamilyPage() {
           </div>
         )}
       </main>
-    </DashboardLayout>
+    </>
   );
 }

@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
-import DashboardLayout from "@/app/dashboard/layout";
 import { Activity, HeartPulse, Scale, Droplet, Plus, X } from "lucide-react";
 import api from "@/lib/axios";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -149,7 +148,7 @@ export default function HealthMetricsPage() {
   }
 
   return (
-    <DashboardLayout pageTitle="Health Metrics">
+    <>
       <main className="flex-1 p-6 sm:p-10 w-full relative">
         <div className="flex flex-col gap-6 max-w-6xl mx-auto w-full pb-10">
           <div className="flex justify-between items-center">
@@ -350,6 +349,6 @@ export default function HealthMetricsPage() {
           </div>
         )}
       </main>
-    </DashboardLayout>
+    </>
   );
 }

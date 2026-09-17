@@ -1,5 +1,5 @@
 import { apiClient } from "@/services/apiClient";
-import { AuthUser } from "@/lib/auth";
+import { AuthUser, clearAuthData, saveAuthData } from "@/lib/auth";
 
 const TOKEN_KEY = "healthbridge_token";
 const USER_KEY = "healthbridge_user";
@@ -47,13 +47,12 @@ export const authService = {
     const response = await apiClient.post<AuthResponseData>("/auth/register", payload);
     
     if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
+      saveAuthData(response.token, {
         id: response.id,
         fullName: response.fullName,
         email: response.email,
         role: response.role,
-      }));
+      });
     }
     
     return response;
@@ -65,13 +64,12 @@ export const authService = {
     console.log('✅ Login response received');
     
     if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
+      saveAuthData(response.token, {
         id: response.id,
         fullName: response.fullName,
         email: response.email,
         role: response.role,
-      }));
+      });
       console.log('🔑 Token saved successfully');
       console.log('👤 User:', response.fullName);
     }
@@ -93,13 +91,12 @@ export const authService = {
     const response = await apiClient.post<AuthResponseData>("/auth/reset-password", payload);
     
     if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
+      saveAuthData(response.token, {
         id: response.id,
         fullName: response.fullName,
         email: response.email,
         role: response.role,
-      }));
+      });
       console.log('✅ Auth data saved after password reset');
     }
     
@@ -116,13 +113,12 @@ export const authService = {
     console.log('✅ Google auth response received');
     
     if (response.token) {
-      localStorage.setItem(TOKEN_KEY, response.token);
-      localStorage.setItem(USER_KEY, JSON.stringify({
+      saveAuthData(response.token, {
         id: response.id,
         fullName: response.fullName,
         email: response.email,
         role: response.role,
-      }));
+      });
       console.log('🔑 Token saved successfully');
       console.log('👤 User:', response.fullName);
     }
@@ -132,8 +128,7 @@ export const authService = {
 
   // ✅ Helper methods
   logout(): void {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
+    clearAuthData();
     if (typeof window !== 'undefined') {
       window.location.href = '/login';
     }

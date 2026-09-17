@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User as UserIcon, LogOut, Bell, HeadphonesIcon } from "lucide-react";
-import DashboardLayout from "@/app/dashboard/layout";
+import { User as UserIcon, LogOut, Bell, HeadphonesIcon, CreditCard } from "lucide-react";
 import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
@@ -19,11 +18,20 @@ export default function PatientDashboardPage() {
 
   useEffect(() => {
     const storedUser = getStoredUser();
+    
+    // 1. Check if they are logged in at all
     if (!storedUser) {
       router.push("/login");
       return;
     }
     
+    // 2. Check if their role is strictly 'PATIENT'
+    if (storedUser.role !== "PATIENT") {
+      router.replace("/login");
+      return;
+    }
+    
+    // 3. If they pass both checks, let them in!
     setUser(storedUser);
 
     const fetchData = () => {
@@ -89,7 +97,7 @@ export default function PatientDashboardPage() {
   }
 
   return (
-    <DashboardLayout pageTitle="Patient Dashboard">
+    <>
       {/* Welcome Header */}
       <div className="bg-gradient-to-r from-blue-600 via-blue-500 to-cyan-500 rounded-2xl p-6 text-white shadow-md flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
         <div>
@@ -99,6 +107,13 @@ export default function PatientDashboardPage() {
           <p className="mt-1 text-blue-100">Your health is our priority. Here&apos;s your health summary.</p>
         </div>
         <div className="flex items-center gap-2">
+          <Link
+            href="/payments"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-semibold backdrop-blur-sm transition"
+          >
+            <CreditCard className="w-4 h-4" />
+            <span>Pay Bills</span>
+          </Link>
           <Link
             href="/notifications/patient"
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/15 hover:bg-white/25 text-white text-xs font-semibold backdrop-blur-sm transition"
@@ -283,6 +298,6 @@ export default function PatientDashboardPage() {
             </div>
           </div>
         </div>
-    </DashboardLayout>
+    </>
   );
 }
