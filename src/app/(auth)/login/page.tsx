@@ -224,13 +224,6 @@ export default function LoginPage() {
                     onError={(msg) => setError(msg)}
                   />
                 </div>
-
-                <div className="mt-4 text-center text-xs text-slate-400 bg-slate-50 p-3 rounded-xl">
-                  <p className="font-medium text-slate-500">Demo Credentials:</p>
-                  <p className="font-mono text-slate-600">
-                    admin@healthbridge.com / admin123
-                  </p>
-                </div>
               </div>
             </div>
           </div>

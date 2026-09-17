@@ -11,11 +11,12 @@ const LiveMap = dynamic(() => import('./LiveMap'), {
 interface LocationCardProps {
   location: LocationInfo;
   isActive?: boolean;
+  alertStatus?: string;
   onLocationChange?: (lat: number, lng: number) => void;
   onArrival?: () => void;
 }
 
-export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive = false, onLocationChange, onArrival }) => {
+export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive = false, alertStatus = 'ACTIVE', onLocationChange, onArrival }) => {
   const [ambulanceArrived, setAmbulanceArrived] = React.useState(false);
   const [liveDistanceKm, setLiveDistanceKm] = React.useState<number | null>(null);
   const [liveTimeMins, setLiveTimeMins] = React.useState<number | null>(null);
@@ -85,6 +86,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive =
             patientLat={location.latitude} 
             patientLng={location.longitude} 
             isActive={isActive}
+            alertStatus={alertStatus}
             onLocationChange={isActive ? undefined : onLocationChange} // Disable dragging when active
             onArrival={handleArrival}
             onProgress={handleProgress}

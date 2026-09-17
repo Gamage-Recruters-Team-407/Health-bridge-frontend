@@ -19,12 +19,10 @@ import {
   CheckCircle2,
   ClipboardPlus,
   Loader2,
-  Plus,
   Search,
   Stethoscope,
   UserCheck,
   UserRound,
-  X,
 } from "lucide-react";
 
 import DashboardLayout from "@/components/medical-records/MedicalRecordsShell";
@@ -231,36 +229,8 @@ export default function CreateMedicalRecordPage() {
     useState("");
 
 
-  const [
-    symptoms,
-    setSymptoms,
-  ] =
-    useState<string[]>(
-      []
-    );
 
 
-  const [
-    symptomInput,
-    setSymptomInput,
-  ] =
-    useState("");
-
-
-  const [
-    treatmentPlan,
-    setTreatmentPlan,
-  ] =
-    useState<string[]>(
-      []
-    );
-
-
-  const [
-    treatmentInput,
-    setTreatmentInput,
-  ] =
-    useState("");
 
 
   const [
@@ -431,11 +401,20 @@ export default function CreateMedicalRecordPage() {
       if (
         query.length === 0
       ) {
+        setPatientResults(
+          []
+        );
+
+        setPatientSearchError(
+          ""
+        );
+
+        setSearchingPatients(
+          false
+        );
+
         return;
       }
-
-
-     
 
 
       let cancelled =
@@ -616,8 +595,81 @@ export default function CreateMedicalRecordPage() {
     };
 
 
+  /*
+   * =========================================================
+   * CLINICAL FORM RESET
+   * =========================================================
+   *
+   * Clinical details belong to one patient only.
+   * When the doctor changes the selected patient,
+   * these values must never carry over to another patient.
+   */
+  const resetClinicalFields =
+    () => {
+      setHospitalName(
+        ""
+      );
+
+      setVisitDate(
+        today()
+      );
+
+      setRecordType(
+        "Consultation"
+      );
+
+      setDiagnosis(
+        ""
+      );
+
+      setClinicalSummary(
+        ""
+      );
+
+      setConsultationNotes(
+        ""
+      );
+
+      setError(
+        ""
+      );
+
+      setSuccess(
+        ""
+      );
+    };
+
+
+  const hasClinicalDraft =
+    Boolean(
+      hospitalName.trim()
+      || diagnosis.trim()
+      || clinicalSummary.trim()
+      || consultationNotes.trim()
+      || visitDate !== today()
+      || recordType !== "Consultation"
+    );
+
+
   const changePatient =
     () => {
+      if (hasClinicalDraft) {
+        const confirmed =
+          window.confirm(
+            "Changing the patient will clear the clinical data "
+            + "you have entered for this record. Continue?"
+          );
+
+
+        if (!confirmed) {
+          return;
+        }
+      }
+
+
+      resetClinicalFields();
+
+
       setSelectedPatient(
         null
       );
@@ -633,119 +685,9 @@ export default function CreateMedicalRecordPage() {
       setPatientListOpen(
         false
       );
-    };
 
-
-  /*
-   * =========================================================
-   * SYMPTOMS
-   * =========================================================
-   */
-  const addSymptom =
-    () => {
-      const value =
-        symptomInput.trim();
-
-
-      if (!value) {
-        return;
-      }
-
-
-      const exists =
-        symptoms.some(
-          (
-            symptom
-          ) =>
-            symptom.toLowerCase()
-            === value.toLowerCase()
-        );
-
-
-      if (!exists) {
-        setSymptoms(
-          (
-            previous
-          ) => [
-            ...previous,
-            value,
-          ]
-        );
-      }
-
-
-      setSymptomInput(
+      setPatientSearchError(
         ""
-      );
-    };
-
-
-  const removeSymptom =
-    (
-      index: number
-    ) => {
-      setSymptoms(
-        (
-          previous
-        ) =>
-          previous.filter(
-            (
-              _,
-              currentIndex
-            ) =>
-              currentIndex !== index
-          )
-      );
-    };
-
-
-  /*
-   * =========================================================
-   * TREATMENT PLAN
-   * =========================================================
-   */
-  const addTreatment =
-    () => {
-      const value =
-        treatmentInput.trim();
-
-
-      if (!value) {
-        return;
-      }
-
-
-      setTreatmentPlan(
-        (
-          previous
-        ) => [
-          ...previous,
-          value,
-        ]
-      );
-
-
-      setTreatmentInput(
-        ""
-      );
-    };
-
-
-  const removeTreatment =
-    (
-      index: number
-    ) => {
-      setTreatmentPlan(
-        (
-          previous
-        ) =>
-          previous.filter(
-            (
-              _,
-              currentIndex
-            ) =>
-              currentIndex !== index
-          )
       );
     };
 
@@ -757,6 +699,7 @@ export default function CreateMedicalRecordPage() {
           selectedPatient?.id
           && hospitalName.trim()
           && visitDate
+          && visitDate <= today()
           && recordType.trim()
           && diagnosis.trim()
           && clinicalSummary.trim()
@@ -803,6 +746,17 @@ export default function CreateMedicalRecordPage() {
       }
 
 
+      if (
+        visitDate > today()
+      ) {
+        setError(
+          "Visit date cannot be in the future."
+        );
+
+        return;
+      }
+
+
       if (!formValid) {
         setError(
           "Please complete all required fields."
@@ -812,6 +766,14 @@ export default function CreateMedicalRecordPage() {
       }
 
 
+      /*
+       * Symptoms and the legacy Treatment Plan are intentionally
+       * not collected on this page anymore.
+       *
+       * Diagnoses and Treatment Records are managed after the
+       * Medical Record is created from the record details page.
+       * Empty arrays keep the current backend contract compatible.
+       */
       const request:
         MedicalRecordRequest = {
           patientId:
@@ -831,9 +793,9 @@ export default function CreateMedicalRecordPage() {
           clinicalSummary:
             clinicalSummary.trim(),
 
-          symptoms,
+          symptoms: [],
 
-          treatmentPlan,
+          treatmentPlan: [],
 
           consultationNotes:
             consultationNotes.trim()
@@ -1464,8 +1426,8 @@ export default function CreateMedicalRecordPage() {
                             text-slate-500
                           "
                         >
-                          Click the field to browse registered
-                          patients, or type at least 2 characters.
+                          Click the field to browse all registered
+                          patients, or type a patient name or exact Patient ID.
                         </p>
 
 
@@ -1707,6 +1669,7 @@ export default function CreateMedicalRecordPage() {
                   <input
                     type="date"
                     value={visitDate}
+                    max={today()}
                     onChange={
                       (
                         event
@@ -1943,238 +1906,38 @@ export default function CreateMedicalRecordPage() {
             </section>
 
 
-            {/* SYMPTOMS */}
+            {/* POST-CREATION CLINICAL MANAGEMENT NOTE */}
             <section
               className="
                 rounded-2xl
                 border
-                border-slate-200
-                bg-white
-                p-5
-                shadow-sm
+                border-indigo-100
+                bg-indigo-50/60
+                p-4
               "
             >
-              <h2 className="text-lg font-bold">
-                Symptoms
-              </h2>
-
-              <div
+              <p
                 className="
-                  mt-4
-                  flex
-                  gap-2
+                  text-sm
+                  font-semibold
+                  text-indigo-900
                 "
               >
-                <input
-                  value={symptomInput}
-                  onChange={
-                    (
-                      event
-                    ) =>
-                      setSymptomInput(
-                        event.target.value
-                      )
-                  }
-                  onKeyDown={
-                    (
-                      event
-                    ) => {
-                      if (
-                        event.key
-                        === "Enter"
-                      ) {
-                        event.preventDefault();
+                Additional diagnoses and treatment records are managed
+                after this Medical Record is created.
+              </p>
 
-                        addSymptom();
-                      }
-                    }
-                  }
-                  placeholder="Add symptom"
-                  className="
-                    flex-1
-                    rounded-xl
-                    border
-                    border-slate-200
-                    px-3
-                    py-2.5
-                    text-sm
-                  "
-                />
-
-                <button
-                  type="button"
-                  onClick={addSymptom}
-                  className="
-                    rounded-xl
-                    bg-blue-50
-                    px-4
-                    text-blue-700
-                  "
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-
-
-              <div
+              <p
                 className="
-                  mt-3
-                  flex
-                  flex-wrap
-                  gap-2
+                  mt-1
+                  text-xs
+                  leading-5
+                  text-indigo-700
                 "
               >
-                {symptoms.map(
-                  (
-                    symptom,
-                    index
-                  ) => (
-                    <span
-                      key={`${symptom}-${index}`}
-                      className="
-                        inline-flex
-                        items-center
-                        gap-2
-                        rounded-full
-                        bg-rose-50
-                        px-3
-                        py-1.5
-                        text-sm
-                        text-rose-700
-                      "
-                    >
-                      {symptom}
-
-                      <button
-                        type="button"
-                        onClick={
-                          () =>
-                            removeSymptom(
-                              index
-                            )
-                        }
-                      >
-                        <X className="h-3 w-3" />
-                      </button>
-                    </span>
-                  )
-                )}
-              </div>
-            </section>
-
-
-            {/* TREATMENT PLAN */}
-            <section
-              className="
-                rounded-2xl
-                border
-                border-slate-200
-                bg-white
-                p-5
-                shadow-sm
-              "
-            >
-              <h2 className="text-lg font-bold">
-                Treatment Plan
-              </h2>
-
-              <div
-                className="
-                  mt-4
-                  flex
-                  gap-2
-                "
-              >
-                <input
-                  value={treatmentInput}
-                  onChange={
-                    (
-                      event
-                    ) =>
-                      setTreatmentInput(
-                        event.target.value
-                      )
-                  }
-                  onKeyDown={
-                    (
-                      event
-                    ) => {
-                      if (
-                        event.key
-                        === "Enter"
-                      ) {
-                        event.preventDefault();
-
-                        addTreatment();
-                      }
-                    }
-                  }
-                  placeholder="Add treatment plan item"
-                  className="
-                    flex-1
-                    rounded-xl
-                    border
-                    border-slate-200
-                    px-3
-                    py-2.5
-                    text-sm
-                  "
-                />
-
-                <button
-                  type="button"
-                  onClick={addTreatment}
-                  className="
-                    rounded-xl
-                    bg-emerald-50
-                    px-4
-                    text-emerald-700
-                  "
-                >
-                  <Plus className="h-4 w-4" />
-                </button>
-              </div>
-
-
-              <div className="mt-3 space-y-2">
-                {treatmentPlan.map(
-                  (
-                    item,
-                    index
-                  ) => (
-                    <div
-                      key={`${item}-${index}`}
-                      className="
-                        flex
-                        items-start
-                        justify-between
-                        gap-3
-                        rounded-xl
-                        bg-emerald-50
-                        p-3
-                        text-sm
-                        text-emerald-800
-                      "
-                    >
-                      <span>
-                        {index + 1}. {item}
-                      </span>
-
-                      <button
-                        type="button"
-                        onClick={
-                          () =>
-                            removeTreatment(
-                              index
-                            )
-                        }
-                      >
-                        <X className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )
-                )}
-              </div>
+                After saving, use Manage Diagnoses and Manage Treatments
+                on the Medical Record Details page.
+              </p>
             </section>
 
 
@@ -2226,9 +1989,61 @@ export default function CreateMedicalRecordPage() {
             <div
               className="
                 flex
-                justify-end
+                flex-col
+                gap-4
+                rounded-2xl
+                border
+                border-blue-100
+                bg-blue-50/60
+                p-4
+                sm:flex-row
+                sm:items-center
+                sm:justify-between
               "
             >
+              <div>
+                <p
+                  className="
+                    text-xs
+                    font-semibold
+                    uppercase
+                    tracking-wide
+                    text-blue-600
+                  "
+                >
+                  Patient Confirmation
+                </p>
+
+                <p
+                  className="
+                    mt-1
+                    text-sm
+                    font-bold
+                    text-slate-900
+                  "
+                >
+                  {selectedPatient
+                    ? selectedPatient.fullName
+                    : "No patient selected"
+                  }
+                </p>
+
+                {selectedPatient && (
+                  <p
+                    className="
+                      mt-1
+                      break-all
+                      text-xs
+                      text-slate-500
+                    "
+                  >
+                    Patient ID:{" "}
+                    {selectedPatient.id}
+                  </p>
+                )}
+              </div>
+
+
               <button
                 type="submit"
                 disabled={
@@ -2265,7 +2080,9 @@ export default function CreateMedicalRecordPage() {
 
                 {submitting
                   ? "Creating..."
-                  : "Create Medical Record"
+                  : selectedPatient
+                    ? `Create Record for ${selectedPatient.fullName}`
+                    : "Create Medical Record"
                 }
               </button>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AppointmentForm from "@/components/appointment/AppointmentForm";
 import AppointmentModuleShell from "@/components/appointment/AppointmentModuleShell";
@@ -33,9 +33,7 @@ const formatTime = (time: string) => {
   return `${normalizedHours}:${minutes} ${suffix}`;
 };
 
-export default function AppointmentDetailsPage({
-  params,
-}: AppointmentDetailsPageProps) {
+function AppointmentDetailsContent({ params }: AppointmentDetailsPageProps) {
   const searchParams = useSearchParams();
   const [appointmentId, setAppointmentId] = useState("");
   const [appointment, setAppointment] = useState<Appointment | null>(null);
@@ -339,5 +337,13 @@ export default function AppointmentDetailsPage({
         </div>
       ) : null}
     </AppointmentModuleShell>
+  );
+}
+
+export default function AppointmentDetailsPage(props: AppointmentDetailsPageProps) {
+  return (
+    <Suspense fallback={<div className="p-8 text-center text-sm text-slate-500">Loading appointment details...</div>}>
+      <AppointmentDetailsContent {...props} />
+    </Suspense>
   );
 }
