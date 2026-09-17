@@ -1,4 +1,5 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
+import { clearAuthData } from '@/lib/auth';
 
 const TOKEN_KEY = "healthbridge_token";
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
@@ -80,8 +81,7 @@ class ApiClient {
         if (error.response?.status === 401) {
           console.error('🔐 401 Unauthorized - Token invalid or missing');
           if (typeof window !== 'undefined') {
-            localStorage.removeItem(TOKEN_KEY);
-            localStorage.removeItem("healthbridge_user");
+            clearAuthData();
             window.location.href = '/login';
           }
         } else if (error.code === 'ERR_NETWORK') {
