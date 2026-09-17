@@ -2,9 +2,16 @@ import { ROUTES } from "@/constants/routes";
 
 export interface AuthUser {
   id: string;
-  fullName: string;
-  email: string;
-  role: "PATIENT" | "ADMIN" | "SUPER_ADMIN" | "DOCTOR" | "PHARMACIST" | "INSURANCE_OFFICER" | "LAB_OFFICER";
+  fullName?: string;
+  email?: string;
+  role:
+      | "PATIENT"
+      | "ADMIN"
+      | "SUPER_ADMIN"
+      | "DOCTOR"
+      | "PHARMACIST"
+      | "INSURANCE_OFFICER"
+      | "LAB_OFFICER";
 }
 
 const TOKEN_KEY = "healthbridge_token";
@@ -30,6 +37,7 @@ const clearCookie = (name: string) => {
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 };
 
+/** Persists the token and user after a successful login/register/OAuth call. */
 export const saveAuthData = (token: string, user: AuthUser) => {
   if (typeof window !== "undefined") {
     localStorage.setItem(TOKEN_KEY, token);
@@ -87,6 +95,7 @@ export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
 
+/** Where to send a user right after auth, based on their role. */
 export const getRoleRedirectPath = (role: string): string => {
   switch (role) {
     case "SUPER_ADMIN":
