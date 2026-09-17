@@ -20,7 +20,9 @@ export const insuranceService = {
     const formData = new FormData();
     formData.append("claim", new Blob([JSON.stringify(claim)], { type: "application/json" }));
     documents.forEach(file => formData.append("documents", file));
-    const res: any = await api.post(`${BASE}/claims`, formData);
+    const res: any = await api.post(`${BASE}/claims`, formData, {
+      headers: { "Content-Type": "multipart/form-data" },
+    });
     return res?.data ?? res;
   },
 
@@ -43,6 +45,7 @@ export const insuranceService = {
   },
   createPolicy: async (payload: {
     patientId: string;
+    policyNumber: string;
     providerName: string;
     policyType: string;
     coverageAmount: number;
@@ -56,5 +59,11 @@ export const insuranceService = {
     const res: any = await api.get(`${BASE}/policies/verify/${policyNumber}`);
     return res?.data ?? res;
   },
-  getDocumentUrl: (fileId: string) => `${BASE}/documents/${fileId}`,
+  getDocumentUrl: (fileId: string) => {
+    const apiBase =
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_URL ||
+      "http://localhost:8088/api";
+    return `${apiBase}${BASE}/documents/${fileId}`;
+  },
 };

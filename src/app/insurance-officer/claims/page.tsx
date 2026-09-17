@@ -42,7 +42,7 @@ export default function ClaimsListPage() {
     insuranceService
       .getAllClaims()
       .then(setClaims)
-      .catch(() => toast.error("Failed to load claims"))
+      .catch(() => toast.error("Error", "Failed to load claims"))
       .finally(() => setLoading(false));
   };
 

@@ -14,6 +14,7 @@ export default function NewPolicyPage() {
   const toast = useToast();
 
   const [patientId, setPatientId] = useState("");
+  const [policyNumber, setPolicyNumber] = useState("");
   const [providerName, setProviderName] = useState("");
   const [policyType, setPolicyType] = useState("");
   const [coverageAmount, setCoverageAmount] = useState(0);
@@ -22,32 +23,32 @@ export default function NewPolicyPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async () => {
-    if (!patientId.trim() || !providerName.trim() || !policyType.trim()) {
-      toast.error("Fill in all required fields");
+    if (!patientId.trim() || !policyNumber.trim() || !providerName.trim() || !policyType.trim()) {
+      toast.error("Validation Error", "Fill in all required fields including policy number");
       return;
     }
     if (!startDate || !endDate) {
-      toast.error("Start and end dates are required");
+      toast.error("Validation Error", "Start and end dates are required");
       return;
     }
     if (new Date(endDate) < new Date(startDate)) {
-      toast.error("End date cannot be before start date");
+      toast.error("Validation Error", "End date cannot be before start date");
       return;
     }
     if (coverageAmount <= 0) {
-      toast.error("Enter a valid coverage amount");
+      toast.error("Validation Error", "Enter a valid coverage amount");
       return;
     }
 
     setSubmitting(true);
     try {
       const policy = await insuranceService.createPolicy({
-        patientId, providerName, policyType, coverageAmount, startDate, endDate,
+        patientId, policyNumber, providerName, policyType, coverageAmount, startDate, endDate,
       });
-      toast.success(`Policy ${policy.policyNumber} created`);
+      toast.success("Success", `Policy ${policy.policyNumber} created`);
       router.push(`/insurance-officer/policies/${policy.id}`);
     } catch {
-      toast.error("Failed to create policy");
+      toast.error("Error", "Failed to create policy");
     } finally {
       setSubmitting(false);
     }
@@ -61,6 +62,8 @@ export default function NewPolicyPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           <Input label="Patient ID" value={patientId} onChange={e => setPatientId(e.target.value)} />
+          <Input label="Policy Number" value={policyNumber} onChange={e => setPolicyNumber(e.target.value)}
+            placeholder="e.g. POL-98234" />
           <Input label="Provider Name" value={providerName} onChange={e => setProviderName(e.target.value)}
             placeholder="e.g. Ceylinco Life" />
           <Input label="Policy Type" value={policyType} onChange={e => setPolicyType(e.target.value)}
