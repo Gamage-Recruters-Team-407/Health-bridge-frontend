@@ -54,5 +54,13 @@ export const addStock = (data: Partial<InventoryItem>) =>
 export const getDeliveriesByPharmacy = (pharmacyId: string) =>
     apiFetch<Delivery[]>(`/deliveries/pharmacy/${pharmacyId}`);
 
+export const getDeliveryById = (id: string) => apiFetch<Delivery>(`/deliveries/${id}`);
+
+export const updateDeliveryStatus = (id: string, status: string) =>
+    apiFetch<Delivery>(`/deliveries/${id}/status`, {
+        method: "PATCH",
+        body: JSON.stringify({ status }),
+    });
+
 export const createDelivery = (data: Partial<Delivery> & { items: unknown[] }) =>
     apiFetch<Delivery>("/deliveries", { method: "POST", body: JSON.stringify(data) });
