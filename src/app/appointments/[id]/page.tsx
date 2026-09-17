@@ -205,7 +205,7 @@ function AppointmentDetailsContent({ params }: AppointmentDetailsPageProps) {
                     <div>
                       <h2 className="text-xl font-bold text-slate-900">{doctor.name}</h2>
                       <p className="text-sm font-medium text-blue-700">{doctor.specialization}</p>
-                      <p className="mt-1 text-xs text-slate-500">★ {doctor.rating.toFixed(1)} ({doctor.reviews} reviews)</p>
+                      <p className="mt-1 text-xs text-slate-500">★ {(doctor.rating ?? 0).toFixed(1)} ({doctor.reviews} reviews)</p>
                     </div>
                   </div>
                   <span className={`rounded-full px-3 py-1 text-xs font-semibold ${appointment.status === "UPCOMING" ? "bg-emerald-50 text-emerald-700" : appointment.status === "COMPLETED" ? "bg-slate-100 text-slate-600" : "bg-rose-50 text-rose-700"}`}>

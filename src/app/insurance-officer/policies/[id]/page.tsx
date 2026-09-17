@@ -27,7 +27,7 @@ export default function PolicyDetailsPage() {
     insuranceService
       .getPolicyById(id)
       .then(setPolicy)
-      .catch(() => toast.error("Failed to load policy"))
+      .catch(() => toast.error("Error","Failed to load policy"))
       .finally(() => setLoading(false));
   }, [id]);
 

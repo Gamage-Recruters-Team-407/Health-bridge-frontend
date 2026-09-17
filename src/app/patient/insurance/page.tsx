@@ -35,7 +35,7 @@ export default function PatientInsurancePage() {
         setPolicies(p);
         setClaims(c);
       })
-      .catch(() => toast.error("Failed to load insurance data"))
+      .catch(() => toast.error("Error","Failed to load insurance data"))
       .finally(() => setLoading(false));
   }, []);
 

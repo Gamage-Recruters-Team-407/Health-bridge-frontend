@@ -23,19 +23,19 @@ export default function NewPolicyPage() {
 
   const handleSubmit = async () => {
     if (!patientId.trim() || !providerName.trim() || !policyType.trim()) {
-      toast.error("Fill in all required fields");
+      toast.error("Error","Fill in all required fields");
       return;
     }
     if (!startDate || !endDate) {
-      toast.error("Start and end dates are required");
+      toast.error("Error","Start and end dates are required");
       return;
     }
     if (new Date(endDate) < new Date(startDate)) {
-      toast.error("End date cannot be before start date");
+      toast.error("Error","End date cannot be before start date");
       return;
     }
     if (coverageAmount <= 0) {
-      toast.error("Enter a valid coverage amount");
+      toast.error("Error","Enter a valid coverage amount");
       return;
     }
 
@@ -44,10 +44,10 @@ export default function NewPolicyPage() {
       const policy = await insuranceService.createPolicy({
         patientId, providerName, policyType, coverageAmount, startDate, endDate,
       });
-      toast.success(`Policy ${policy.policyNumber} created`);
+      toast.success("Success",`Policy ${policy.policyNumber} created`);
       router.push(`/insurance-officer/policies/${policy.id}`);
     } catch {
-      toast.error("Failed to create policy");
+      toast.error("Error","Failed to create policy");
     } finally {
       setSubmitting(false);
     }

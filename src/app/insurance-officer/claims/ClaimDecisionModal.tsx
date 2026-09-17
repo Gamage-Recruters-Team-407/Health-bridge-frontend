@@ -22,7 +22,7 @@ export default function ClaimDecisionModal({ claim, onClose, onDecided }: ClaimD
 
   const submit = async (status: "APPROVED" | "REJECTED") => {
     if (status === "REJECTED" && !rejectionReason.trim()) {
-      toast.error("Rejection reason is required");
+      toast.error("Error","Rejection reason is required");
       return;
     }
 
@@ -33,10 +33,10 @@ export default function ClaimDecisionModal({ claim, onClose, onDecided }: ClaimD
         approvedAmount: status === "APPROVED" ? approvedAmount : undefined,
         rejectionReason: status === "REJECTED" ? rejectionReason : undefined,
       });
-      toast.success(`Claim ${status.toLowerCase()}`);
+      toast.success("Success",`Claim ${status.toLowerCase()}`);
       onDecided();
     } catch {
-      toast.error("Failed to submit decision");
+      toast.error("Error","Failed to submit decision");
     } finally {
       setSubmitting(false);
     }
