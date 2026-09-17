@@ -1,7 +1,6 @@
 import React from 'react';
 import styles from './sos.module.css';
 import { EmergencySOS } from '../../../components/sos/EmergencySOS';
-import DashboardLayout from '../../../components/layout/DashboardLayout';
 
 export const metadata = {
   title: 'Emergency SOS | Health Bridge',
@@ -10,7 +9,7 @@ export const metadata = {
 
 export default function SOSPage() {
   return (
-    <DashboardLayout pageTitle="Emergency SOS" userRole="Patient" userName="Sarah Johnson">
+    <>
       <div className={styles.pageContainer}>
         <div className={styles.contentWrapper}>
           <header className={styles.header}>
@@ -28,6 +27,6 @@ export default function SOSPage() {
           </main>
         </div>
       </div>
-    </DashboardLayout>
+    </>
   );
 }

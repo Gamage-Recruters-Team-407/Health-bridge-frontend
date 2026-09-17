@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   getAllTickets,
   getTicketByIdForAdmin,
   updateTicketStatus,
   replyAsAdmin,
+  editReplyAsAdmin,
+  deleteReplyAsAdmin,
 } from "@/services/supportService";
 import { Ticket, TicketSummary, TicketStatus } from "@/types/support";
 import StatusBadge from "@/components/support/StatusBadge";
@@ -20,10 +23,12 @@ function formatListDate(iso: string) {
 }
 
 export default function AdminTicketsPage() {
+  const searchParams = useSearchParams();
   const [tickets, setTickets] = useState<TicketSummary[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
   const [filter, setFilter] = useState<TicketStatus | "ALL">("ALL");
+  const [searchQuery, setSearchQuery] = useState("");
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [ticket, setTicket] = useState<Ticket | null>(null);
@@ -35,12 +40,25 @@ export default function AdminTicketsPage() {
   const loadList = async () => {
     setLoadingList(true);
     setListError(null);
+
     try {
       const data = await getAllTickets();
-      setTickets(data);
-      setSelectedId((current) => current ?? (data.length > 0 ? data[0].id : null));
+
+      const sortedData = [...data].sort(
+        (a, b) =>
+          new Date(b.updatedAt).getTime() -
+          new Date(a.updatedAt).getTime()
+      );
+
+      setTickets(sortedData);
+
+      setSelectedId((current) =>
+        current ?? (sortedData.length > 0 ? sortedData[0].id : null)
+      );
     } catch (e) {
-      setListError(e instanceof Error ? e.message : "Failed to load tickets.");
+      setListError(
+        e instanceof Error ? e.message : "Failed to load tickets."
+      );
     } finally {
       setLoadingList(false);
     }
@@ -67,6 +85,14 @@ export default function AdminTicketsPage() {
     if (selectedId) loadTicket(selectedId);
   }, [selectedId]);
 
+  useEffect(() => {
+    const ticketId = searchParams.get("ticketId");
+
+    if (ticketId) {
+      setSelectedId(ticketId);
+    }
+  }, [searchParams]);
+
   const handleSend = async (message: string, image: File | null) => {
     if (!selectedId) return;
     setSending(true);
@@ -91,7 +117,34 @@ export default function AdminTicketsPage() {
     }
   };
 
-  const filtered = filter === "ALL" ? tickets : tickets.filter((t) => t.status === filter);
+  const handleEdit = async (replyId: string, message: string) => {
+    if (!selectedId) return;
+    const updated = await editReplyAsAdmin(selectedId, replyId, message);
+    setTicket(updated);
+    await loadList();
+  };
+
+  const handleDelete = async (replyId: string) => {
+    if (!selectedId) return;
+    const updated = await deleteReplyAsAdmin(selectedId, replyId);
+    setTicket(updated);
+    await loadList();
+  };
+
+  // Filtered by both status tab and search query
+  const filtered = useMemo(() => {
+    return tickets.filter((t) => {
+      const matchesFilter = filter === "ALL" || t.status === filter;
+      const query = searchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        t.userName?.toLowerCase().includes(query) ||
+        t.subject?.toLowerCase().includes(query) 
+       
+
+      return matchesFilter && matchesSearch;
+    });
+  }, [tickets, filter, searchQuery]);
 
   const counts: Record<TicketStatus | "ALL", number> = useMemo(
     () => ({
@@ -115,6 +168,40 @@ export default function AdminTicketsPage() {
           <p className="mt-0.5 text-xs text-[#616161]">All tickets raised by patients across the platform.</p>
         </div>
 
+        {/* Search Input Bar */}
+        <div className="px-4 pt-2">
+          <div className="relative flex items-center">
+            <svg
+              className="absolute left-3 h-4 w-4 text-[#616161]"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Search by name, subject..."
+              className="w-full rounded-md border border-[#E1DFDD] bg-[#FAF9F8] py-1.5 pl-9 pr-8 text-xs text-[#242424] placeholder-[#616161] outline-none focus:border-[#0F6CBD] focus:bg-white"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-2.5 text-xs text-[#616161] hover:text-[#242424]"
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </div>
+
         <div className="flex gap-4 border-b border-[#E1DFDD] px-4 pt-3">
           {FILTERS.map((f) => (
             <button
@@ -136,7 +223,9 @@ export default function AdminTicketsPage() {
           {listError && <p className="px-4 py-3 text-sm text-red-600">{listError}</p>}
 
           {!loadingList && !listError && filtered.length === 0 && (
-            <p className="px-4 py-10 text-center text-sm text-[#616161]">No tickets in this category.</p>
+            <p className="px-4 py-10 text-center text-sm text-[#616161]">
+              {searchQuery ? "No tickets matching your search." : "No tickets in this category."}
+            </p>
           )}
 
           {filtered.map((t) => {
@@ -150,7 +239,7 @@ export default function AdminTicketsPage() {
                 }`}
               >
                 <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-xs font-semibold text-[#0F6CBD]">
-                 {(t.userName || "?").slice(0, 2).toUpperCase()}
+                  {(t.userName || "?").slice(0, 2).toUpperCase()}
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
@@ -190,7 +279,11 @@ export default function AdminTicketsPage() {
         {selectedId && !loadingTicket && !ticketError && ticket && (
           <>
             <div className="flex items-center justify-between border-b border-[#E1DFDD] px-6 py-3">
-              <h2 className="truncate text-base font-semibold text-[#242424]">{ticket.subject}</h2>
+              <h2 className="truncate text-base font-semibold text-[#242424]">
+                <span className="text-blue-600">{ticket.category}</span>
+                {" : "}
+                {ticket.subject}
+              </h2>
               <StatusBadge status={ticket.status} />
             </div>
             <div className="border-b border-[#E1DFDD] bg-[#FAF9F8] px-6 py-2 text-xs text-[#616161]">
@@ -214,14 +307,28 @@ export default function AdminTicketsPage() {
               </div>
               {ticket.replies.map((r) => (
                 <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
-                  <ChatBubble reply={r} isOwn={r.senderRole === "ADMIN"} />
+                  <ChatBubble
+                    reply={r}
+                    isOwn={r.senderRole === "ADMIN"}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                  />
                 </div>
               ))}
             </div>
 
-            <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
-              <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to patient…" />
-            </div>
+            {ticket.status === "SOLVED" ? (
+              <div className="border-t border-[#E1DFDD] bg-[#F0FDF4] px-6 py-4">
+                <p className="text-sm font-semibold text-emerald-800">This conversation is solved</p>
+                <p className="mt-0.5 text-xs text-emerald-700">
+                  Replies are disabled. Change the ticket status to Open or Processing to continue the conversation.
+                </p>
+              </div>
+            ) : (
+              <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
+                <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to patient…" />
+              </div>
+            )}
           </>
         )}
       </div>
@@ -230,10 +337,10 @@ export default function AdminTicketsPage() {
       {selectedId && ticket && !loadingTicket && !ticketError && (
         <aside className="w-72 shrink-0 space-y-4 overflow-y-auto border-l border-[#E1DFDD] bg-[#FAF9F8] p-5">
           <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#616161]">Patient</h3>
             <p className="text-sm font-medium text-[#242424]">{ticket.userName}</p>
             <p className="mt-0.5 text-xs text-[#616161]">{ticket.userEmail}</p>
             <p className="mt-0.5 text-xs text-[#9A9A9A]">ID: {ticket.userId}</p>
+            <p className="mt-0.5 text-xs text-[#616161]">{ticket.contactNumber}</p>
           </div>
 
           <div>
@@ -246,7 +353,7 @@ export default function AdminTicketsPage() {
                   disabled={updatingStatus}
                   className={`w-full rounded-md px-3 py-2 text-left text-sm font-medium transition ${
                     ticket.status === s
-                      ? "bg-[#0F6CBD] text-white"
+                      ? "bg-[#0052CC] text-white"
                       : "bg-white text-[#616161] hover:bg-[#F0F6FC]"
                   }`}
                 >
@@ -269,6 +376,37 @@ export default function AdminTicketsPage() {
               </a>
             </div>
           )}
+
+          <div className="border-t border-[#E1DFDD] pt-4">
+            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#616161]">Patient feedback</h3>
+            {ticket.feedback ? (
+              <div className="rounded-md border border-[#E1DFDD] bg-white p-3">
+                <div className="flex items-center gap-1" aria-label={`${ticket.feedback.rating} out of 5 stars`}>
+                  {[1, 2, 3, 4, 5].map((value) => (
+                    <span
+                      key={value}
+                      className={`text-lg leading-none ${
+                        value <= ticket.feedback!.rating ? "text-amber-500" : "text-[#D6D3D1]"
+                      }`}
+                    >
+                      ★
+                    </span>
+                  ))}
+                  <span className="ml-1 text-xs text-[#616161]">{ticket.feedback.rating}/5</span>
+                </div>
+                {ticket.feedback.comment && (
+                  <p className="mt-2 whitespace-pre-wrap text-sm text-[#424242]">{ticket.feedback.comment}</p>
+                )}
+                {ticket.feedback.createdAt && (
+                  <p className="mt-2 text-[11px] text-[#9A9A9A]">
+                    Submitted {new Date(ticket.feedback.createdAt).toLocaleString()}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-sm text-[#9A9A9A]">No feedback submitted.</p>
+            )}
+          </div>
         </aside>
       )}
     </div>

@@ -203,9 +203,48 @@ export const EmergencySOS: React.FC = () => {
   }, [isEmergencyActive]);
 
   const [alertId, setAlertId] = useState<string | null>(null);
+  const [alertStatus, setAlertStatus] = useState<string>('ACTIVE');
+
+  // Announce status changes via speech synthesis
+  useEffect(() => {
+    if (!isEmergencyActive) return;
+    
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      if (alertStatus === 'DISPATCHED') {
+        const msg = new SpeechSynthesisUtterance("Ambulance dispatched. Driver is approaching your location.");
+        window.speechSynthesis.speak(msg);
+      } else if (alertStatus === 'ARRIVED' || hasArrived) {
+        const msg = new SpeechSynthesisUtterance("Ambulance arrived at your location. Please proceed outside if possible.");
+        window.speechSynthesis.speak(msg);
+      }
+    }
+  }, [alertStatus, hasArrived, isEmergencyActive]);
+
+  // Poll for alert status updates from driver
+  useEffect(() => {
+    if (!isEmergencyActive || !alertId) return;
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(`http://localhost:8088/api/sos/${alertId}`);
+        if (res.ok) {
+          const data = await res.json();
+          if (data.status !== alertStatus) {
+            setAlertStatus(data.status);
+          }
+          if (data.status === 'ARRIVED' && !hasArrived) {
+            setHasArrived(true);
+          }
+        }
+      } catch (e) {
+        console.error("Polling error", e);
+      }
+    }, 2000);
+    return () => clearInterval(interval);
+  }, [isEmergencyActive, alertId, hasArrived, alertStatus]);
 
   async function handleSOSTrigger() {
     setIsEmergencyActive(true);
+    setAlertStatus('ACTIVE');
     if (typeof navigator !== 'undefined' && navigator.vibrate) {
       navigator.vibrate([100, 50, 100, 50, 200]);
     }
@@ -242,11 +281,17 @@ export const EmergencySOS: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         setAlertId(data.alertId);
+        setAlertStatus(data.status);
         console.log("SOS Triggered successfully on backend:", data.alertId);
         fetchHistory();
+      } else {
+        throw new Error(`Server returned ${res.status}`);
       }
     } catch (e) {
       console.error("Failed to trigger SOS on backend:", e);
+      alert("Failed to connect to the emergency dispatch network. Please ensure the backend is running.");
+      setIsEmergencyActive(false);
+      setAlertStatus('CANCELLED');
     }
   };
 
@@ -307,7 +352,7 @@ export const EmergencySOS: React.FC = () => {
 
   return (
     <div>
-      {isEmergencyActive && <ActiveEmergencyBanner initialMinutes={5} />}
+      {isEmergencyActive && <ActiveEmergencyBanner initialMinutes={5} hasArrived={hasArrived} />}
       
       {!isEmergencyActive && (
         <div style={{ textAlign: 'center', marginBottom: '16px', fontSize: '13px', color: isListening ? '#16A34A' : '#64748B' }}>
@@ -319,9 +364,11 @@ export const EmergencySOS: React.FC = () => {
 
       <SOSButton 
         onTrigger={handleSOSTrigger} 
-        onCancel={handleSOSCancel} 
+        onCancel={hasArrived ? () => setIsEmergencyActive(false) : handleSOSCancel} 
         holdDuration={3000} 
         isActive={isEmergencyActive} 
+        buttonText={hasArrived ? 'Dismiss Alert' : undefined}
+        hasArrived={hasArrived}
       />
       
       <div style={{
@@ -341,10 +388,11 @@ export const EmergencySOS: React.FC = () => {
         </div>
         
         <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-          <ResponseLog isActive={isEmergencyActive} hasArrived={hasArrived} />
+          <ResponseLog isActive={isEmergencyActive} hasArrived={hasArrived} alertStatus={alertStatus} />
           <LocationCard 
             location={location}
             isActive={isEmergencyActive} 
+            alertStatus={alertStatus}
             onArrival={() => setHasArrived(true)}
             onLocationChange={async (lat, lng) => {
               setIsLocationManuallySet(true);

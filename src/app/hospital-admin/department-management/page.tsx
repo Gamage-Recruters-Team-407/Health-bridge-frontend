@@ -239,59 +239,10 @@ export default function ManageDepartmentPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] text-slate-800 p-4 md:p-8 font-sans">
+    <div className="space-y-6">
       <Toaster position="top-right" reverseOrder={false} />
-      {/* Top Header / Search & Profile Bar (No global navbar/sidebar, strictly content area header) */}
-      {/* <header className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-200 mb-8">
-        <div className="relative flex-1 max-w-xl">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-          <input
-            type="text"
-            placeholder="Search departments, staff, or codes..."
-            value={searchTerm}
-            onChange={(e) => {
-              setSearchTerm(e.target.value);
-              setCurrentPage(1);
-            }}
-            className="w-full pl-10 pr-4 py-2.5 bg-slate-100/80 hover:bg-slate-100 focus:bg-white text-sm rounded-full border border-slate-200/80 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all outline-none"
-          />
-        </div>
 
-        <div className="flex items-center gap-4 self-end md:self-auto">
-          <button
-            type="button"
-            className="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors relative"
-            title="Notifications"
-          >
-            <Bell className="w-5 h-5" />
-            <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-blue-600 rounded-full"></span>
-          </button>
-
-          <button
-            type="button"
-            className="p-2.5 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-full transition-colors"
-            title="Settings"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
-
-          <div className="h-8 w-px bg-slate-200"></div>
-
-          <div className="flex items-center gap-3 pl-1">
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-semibold text-slate-900 leading-tight">Admin User</p>
-              <p className="text-[11px] text-slate-500 font-medium">Super Administrator</p>
-            </div>
-            <div className="w-9 h-9 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-sm shadow-sm ring-2 ring-blue-100">
-              AU
-            </div>
-          </div>
-        </div>
-      </header> */}
-
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto space-y-6">
-        {/* Title Section */}
+      {/* Title Section */}
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 tracking-tight">Manage Departments</h1>
           <p className="text-slate-500 text-sm mt-1">Overview and administration of all clinical and administrative units.</p>
@@ -538,7 +489,6 @@ export default function ManageDepartmentPage() {
             </div>
           </div>
         </div>
-      </main>
 
       {/* --- MODAL: Add Department --- */}
       {isAddModalOpen && (

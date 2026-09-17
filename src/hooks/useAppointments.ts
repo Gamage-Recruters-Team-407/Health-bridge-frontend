@@ -19,7 +19,10 @@ const getErrorMessage = (error: unknown, fallback: string) => {
   return error instanceof Error ? error.message : fallback;
 };
 
-export function useAppointments(initialFilters: AppointmentFilters = {}) {
+export function useAppointments(
+  initialFilters: AppointmentFilters = {},
+  autoLoad = true
+) {
   const [appointments, setAppointments] = useState<Appointment[]>([]);
   const [summary, setSummary] = useState<AppointmentSummary>(emptySummary);
   const [loading, setLoading] = useState(true);
@@ -49,12 +52,15 @@ export function useAppointments(initialFilters: AppointmentFilters = {}) {
   );
 
   useEffect(() => {
+    if (!autoLoad) {
+      return;
+    }
     const timer = window.setTimeout(() => {
       void loadAppointments(filters);
     }, 0);
 
     return () => window.clearTimeout(timer);
-  }, [filters, loadAppointments]);
+  }, [autoLoad, filters, loadAppointments]);
 
   const bookAppointment = async (values: AppointmentFormValues) => {
     const appointment = await appointmentService.createAppointment(values);
