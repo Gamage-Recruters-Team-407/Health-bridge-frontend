@@ -6,10 +6,8 @@
   <component name="ChangeListManager">
     <list default="true" id="3cab0e9f-9e0f-4444-b079-bec21acedba7" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/app/appointments/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/appointments/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/features/doctor/components/DoctorAppointmentManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/doctor/components/DoctorAppointmentManager.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/features/doctor/components/DoctorShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/doctor/components/DoctorShell.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/hooks/useAuth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/useAuth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/doctor/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/doctor/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/patient/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/patient/dashboard/page.tsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
