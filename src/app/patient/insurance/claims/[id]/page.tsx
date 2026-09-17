@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
@@ -44,7 +43,7 @@ export default function PatientClaimTrackingPage() {
   const currentStepIndex = statusSteps.indexOf(claim.status);
 
   return (
-    <DashboardLayout pageTitle={`Claim ${claim.claimNumber}`} userRole="PATIENT">
+    <div className="space-y-6">
       <Button variant="outline" onClick={() => router.push("/patient/insurance")} className="mb-4">
         Back to My Insurance
       </Button>
@@ -135,6 +134,6 @@ export default function PatientClaimTrackingPage() {
           </div>
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </div>
   );
 }
