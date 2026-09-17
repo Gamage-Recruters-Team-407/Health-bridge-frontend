@@ -2,18 +2,25 @@ import { useSyncExternalStore, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { getToken, getStoredUser, AuthUser, clearAuthData } from '@/lib/auth';
 
-// ✅ Store for auth state
-let currentUser: AuthUser | null = null;
-let currentToken: string | null = null;
+interface AuthSnapshot {
+  user: AuthUser | null;
+  token: string | null;
+  isAuthenticated: boolean;
+}
+
+// ✅ Cached snapshot — only ever replaced when the underlying data actually
+// changes. useSyncExternalStore compares this by reference (Object.is), so
+// returning a brand-new object literal on every call (as before) causes an
+// infinite re-render loop.
+let snapshot: AuthSnapshot = {
+  user: null,
+  token: null,
+  isAuthenticated: false,
+};
+
 let listeners: (() => void)[] = [];
 
-const getSnapshot = () => {
-  return {
-    user: currentUser,
-    token: currentToken,
-    isAuthenticated: !!currentToken && !!currentUser,
-  };
-};
+const getSnapshot = () => snapshot;
 
 const subscribe = (callback: () => void) => {
   listeners.push(callback);
@@ -22,16 +29,28 @@ const subscribe = (callback: () => void) => {
   };
 };
 
-// ✅ Update auth state
+const usersAreEqual = (a: AuthUser | null, b: AuthUser | null) => {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+};
+
+// ✅ Recompute auth state, and only swap in a new snapshot object (which
+// triggers a re-render) when something actually changed.
 const updateAuth = () => {
   const token = getToken();
   const userData = getStoredUser();
-  
-  currentToken = token;
-  currentUser = userData;
-  
-  // Notify all listeners
-  listeners.forEach((listener) => listener());
+
+  const changed = token !== snapshot.token || !usersAreEqual(userData, snapshot.user);
+
+  if (changed) {
+    snapshot = {
+      user: userData,
+      token,
+      isAuthenticated: !!token && !!userData,
+    };
+    listeners.forEach((listener) => listener());
+  }
 };
 
 // ✅ Initialize auth state
@@ -41,7 +60,7 @@ if (typeof window !== 'undefined') {
 
 export const useAuth = () => {
   const router = useRouter();
-  
+
   // ✅ Use useSyncExternalStore for reactive state
   const state = useSyncExternalStore(subscribe, getSnapshot);
 
