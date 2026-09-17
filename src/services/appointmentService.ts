@@ -29,6 +29,12 @@ const apiRequest = async <T,>(path: string, options?: RequestInit): Promise<T> =
       const message = await response.text();
       throw new Error(message || `Request failed (${response.status})`);
     }
+    const json = await response.json();
+    // Backend wraps every successful response as { success, data, message, statusCode }
+    if (json && typeof json === "object" && "success" in json && "data" in json) {
+      return json.data as T;
+    }
+    return json as T;
     return response.json() as Promise<T>;
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
