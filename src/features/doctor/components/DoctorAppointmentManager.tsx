@@ -37,11 +37,23 @@ const getDecisionTone = (decision: DoctorDecision) => {
   return "bg-amber-100 text-amber-700 border border-amber-200";
 };
 
+const getAppointmentTone = (appointment: DoctorAppointment) => {
+  if (appointment.status === "COMPLETED") {
+    return "bg-slate-100 text-slate-700 border border-slate-200";
+  }
+
+  return getDecisionTone(appointment.doctorDecision);
+};
+
+const getAppointmentLabel = (appointment: DoctorAppointment) =>
+  appointment.status === "COMPLETED" ? "COMPLETED" : appointment.doctorDecision;
+
 export default function DoctorAppointmentManager() {
   const [appointments, setAppointments] = useState<DoctorAppointment[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     let mounted = true;
@@ -96,8 +108,13 @@ export default function DoctorAppointmentManager() {
   const handleComplete = async (appointmentId: string) => {
     const appointment = appointments.find((item) => item.id === appointmentId);
     if (!appointment) return;
-    const updated = await markAppointmentCompleted(appointment);
-    setAppointments((current) => current.map((item) => item.id === appointmentId ? updated : item));
+    try {
+      setActionError("");
+      const updated = await markAppointmentCompleted(appointment);
+      setAppointments((current) => current.map((item) => item.id === appointmentId ? updated : item));
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Unable to complete appointment.");
+    }
   };
 
   if (loading) {
@@ -163,8 +180,8 @@ export default function DoctorAppointmentManager() {
                       <p className="text-base font-semibold text-slate-900">{appointment.doctorName}</p>
                       <p className="text-sm text-slate-500">{appointment.reason}</p>
                     </div>
-                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${getDecisionTone(appointment.doctorDecision)}`}>
-                      {appointment.doctorDecision}
+                    <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${getAppointmentTone(appointment)}`}>
+                      {getAppointmentLabel(appointment)}
                     </span>
                   </div>
 
@@ -189,8 +206,8 @@ export default function DoctorAppointmentManager() {
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-blue-600">Patient appointment</p>
                   <h3 className="mt-2 text-xl font-bold text-slate-900">{selectedAppointment.doctorName}</h3>
                 </div>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${getDecisionTone(selectedAppointment.doctorDecision)}`}>
-                  {selectedAppointment.doctorDecision}
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${getAppointmentTone(selectedAppointment)}`}>
+                  {getAppointmentLabel(selectedAppointment)}
                 </span>
               </div>
 
@@ -212,6 +229,11 @@ export default function DoctorAppointmentManager() {
               </div>
 
               <div className="mt-6 flex flex-col gap-3">
+                {actionError ? (
+                  <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+                    {actionError}
+                  </div>
+                ) : null}
                 <button
                   type="button"
                   onClick={() => void updateDecision(selectedAppointment.id, "ACCEPTED")}

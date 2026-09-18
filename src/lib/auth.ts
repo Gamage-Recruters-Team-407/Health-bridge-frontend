@@ -1,36 +1,81 @@
+import { ROUTES } from "@/constants/routes";
+
 export interface AuthUser {
   id: string;
-  fullName: string;
-  email: string;
-  role: "PATIENT" | "ADMIN" | "SUPER_ADMIN" | "DOCTOR" | "PHARMACIST" | "INSURANCE_OFFICER" | "LAB_OFFICER";
+  fullName?: string;
+  email?: string;
+  role:
+      | "PATIENT"
+      | "ADMIN"
+      | "SUPER_ADMIN"
+      | "DOCTOR"
+      | "PHARMACIST"
+      | "INSURANCE_OFFICER"
+      | "LAB_OFFICER";
 }
 
 const TOKEN_KEY = "healthbridge_token";
 const USER_KEY = "healthbridge_user";
+const TOKEN_COOKIE = "healthbridge_token";
+const USER_COOKIE = "healthbridge_user";
 
+const setCookie = (name: string, value: string, maxAgeInSeconds = 60 * 60 * 24 * 7) => {
+  if (typeof document === "undefined") return;
+
+  const isHttps = window.location.protocol === "https:";
+  const securePart = isHttps ? "; Secure" : "";
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeInSeconds}; SameSite=Lax${securePart}`;
+};
+
+const clearCookie = (name: string) => {
+  if (typeof document === "undefined") return;
+
+  const isHttps = window.location.protocol === "https:";
+  const securePart = isHttps ? "; Secure" : "";
+  document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${securePart}`;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+};
+
+/** Persists the token and user after a successful login/register/OAuth call. */
 export const saveAuthData = (token: string, user: AuthUser) => {
   if (typeof window !== "undefined") {
     localStorage.setItem(TOKEN_KEY, token);
     localStorage.setItem(USER_KEY, JSON.stringify(user));
+    setCookie(TOKEN_COOKIE, token);
+    setCookie(USER_COOKIE, JSON.stringify(user));
   }
 };
 
 export const getToken = (): string | null => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem(TOKEN_KEY);
+    const localToken = localStorage.getItem(TOKEN_KEY);
+    if (localToken) return localToken;
+
+    const match = document.cookie.match(new RegExp(`(?:^|; )${TOKEN_COOKIE}=([^;]*)`));
+    return match ? decodeURIComponent(match[1]) : null;
   }
   return null;
 };
 
 export const getStoredUser = (): AuthUser | null => {
   if (typeof window !== "undefined") {
-    const data = localStorage.getItem(USER_KEY);
-    if (data) {
+    const localData = localStorage.getItem(USER_KEY);
+    if (localData) {
       try {
-        return JSON.parse(data);
+        return JSON.parse(localData);
       } catch {
         return null;
       }
+    }
+
+    const cookieMatch = document.cookie.match(new RegExp(`(?:^|; )${USER_COOKIE}=([^;]*)`));
+    if (!cookieMatch) return null;
+
+    try {
+      return JSON.parse(decodeURIComponent(cookieMatch[1]));
+    } catch {
+      return null;
     }
   }
   return null;
@@ -40,6 +85,9 @@ export const clearAuthData = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.clear();
+    clearCookie(TOKEN_COOKIE);
+    clearCookie(USER_COOKIE);
   }
 };
 
@@ -47,22 +95,27 @@ export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
 
+/** Where to send a user right after auth, based on their role. */
 export const getRoleRedirectPath = (role: string): string => {
   switch (role) {
     case "SUPER_ADMIN":
-      return "/super-admin/dashboard";
+      return ROUTES.dashboard.superAdmin;
     case "ADMIN":
-      return "/admin/dashboard";
+      return ROUTES.dashboard.admin;
     case "DOCTOR":
-      return "/doctor/dashboard";
+      return ROUTES.dashboard.doctor;
     case "PHARMACIST":
+<<<<<<< HEAD
       return "/pharmacy/dashboard";
+=======
+      return ROUTES.dashboard.pharmacist;
+>>>>>>> 86968a85e262a531503ab17e9f003d686fa4e5e1
     case "INSURANCE_OFFICER":
-      return "/insurance-officer/dashboard";
+      return ROUTES.dashboard.insuranceOfficer;
     case "LAB_OFFICER":
-      return "/laboratory/dashboard";
+      return ROUTES.dashboard.labOfficer;
     case "PATIENT":
     default:
-      return "/patient/dashboard";
+      return ROUTES.dashboard.patient;
   }
 };

@@ -7,6 +7,7 @@ import {
   getMyTicketById,
   createTicket,
   replyAsUser,
+  submitTicketFeedback,
   editReplyAsUser,
   deleteReplyAsUser,
 } from "@/services/supportService";
@@ -32,6 +33,10 @@ export default function MyTicketsPage() {
   const [loadingTicket, setLoadingTicket] = useState(false);
   const [ticketError, setTicketError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const [feedbackRating, setFeedbackRating] = useState(0);
+  const [feedbackComment, setFeedbackComment] = useState("");
+  const [submittingFeedback, setSubmittingFeedback] = useState(false);
+  const [feedbackError, setFeedbackError] = useState<string | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -66,6 +71,9 @@ setSelectedId((current) =>
     try {
       const data = await getMyTicketById(id);
       setTicket(data);
+      setFeedbackRating(data.feedback?.rating ?? 0);
+      setFeedbackComment(data.feedback?.comment ?? "");
+      setFeedbackError(null);
     } catch (e) {
       setTicketError(e instanceof Error ? e.message : "Failed to load ticket.");
     } finally {
@@ -96,8 +104,15 @@ setSelectedId((current) =>
     contactNumber: string,
     attachment: File | null
   ) => {
-    await createTicket(subject, description, category, contactNumber, attachment);
+    const createdTicket = await createTicket(
+      subject,
+      description,
+      category,
+      contactNumber,
+      attachment
+    );
     await loadList();
+    setSelectedId(createdTicket.id);
   };
 
   const handleSend = async (message: string, image: File | null) => {
@@ -109,6 +124,23 @@ setSelectedId((current) =>
       await loadList();
     } finally {
       setSending(false);
+    }
+  };
+
+  const handleFeedbackSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!selectedId || !feedbackRating || ticket?.feedback) return;
+
+    setSubmittingFeedback(true);
+    setFeedbackError(null);
+    try {
+      const updated = await submitTicketFeedback(selectedId, feedbackRating, feedbackComment.trim());
+      setTicket(updated);
+      await loadList();
+    } catch (e) {
+      setFeedbackError(e instanceof Error ? e.message : "Failed to submit feedback.");
+    } finally {
+      setSubmittingFeedback(false);
     }
   };
 
@@ -192,9 +224,7 @@ setSelectedId((current) =>
                   isActive ? "bg-[#EBF3FC]" : "hover:bg-[#F5F5F5]"
                 }`}
               >
-                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-xs font-semibold text-[#0F6CBD]">
-                  {(t.subject || "?").slice(0, 2).toUpperCase()}
-                </div>
+                
                 <div className="min-w-0 flex-1">
                   <div className="flex items-baseline justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-[#242424]">{t.subject || "Untitled ticket"}</p>
@@ -275,9 +305,71 @@ setSelectedId((current) =>
               ))}
             </div>
 
-            <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
-              <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to support…" />
-            </div>
+            {ticket.status === "SOLVED" ? (
+              <div className="border-t border-[#E1DFDD] bg-[#F0FDF4] px-6 py-4">
+                <div className="flex items-center justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-800">This problem was solved</p>
+                    <p className="mt-0.5 text-xs text-emerald-700">
+                      This conversation is closed. Create a new ticket if you need more help.
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setModalOpen(true)}
+                    className="shrink-0 rounded-md bg-[#0F6CBD] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#0B5A9F]"
+                  >
+                    Create new ticket
+                  </button>
+                </div>
+
+                <form onSubmit={handleFeedbackSubmit} className="mt-4 border-t border-emerald-200 pt-4">
+                  <p className="text-sm font-semibold text-emerald-900">
+                    {ticket.feedback ? "Your feedback" : "How was the support service?"}
+                  </p>
+                  <div className="mt-2 flex items-center gap-1" aria-label="Support rating">
+                    {[1, 2, 3, 4, 5].map((value) => (
+                      <button
+                        key={value}
+                        type="button"
+                        aria-label={`${value} star${value === 1 ? "" : "s"}`}
+                        onClick={() => setFeedbackRating(value)}
+                        disabled={Boolean(ticket.feedback) || submittingFeedback}
+                        className={`text-2xl leading-none transition ${
+                          value <= feedbackRating ? "text-amber-500" : "text-emerald-300"
+                        } ${ticket.feedback ? "cursor-default" : "hover:text-amber-500"}`}
+                      >
+                        ★
+                      </button>
+                    ))}
+                  </div>
+                  <textarea
+                    value={feedbackComment}
+                    onChange={(event) => setFeedbackComment(event.target.value)}
+                    placeholder="Tell us about your support experience (optional)"
+                    maxLength={1000}
+                    disabled={Boolean(ticket.feedback) || submittingFeedback}
+                    className="mt-3 min-h-20 w-full resize-y rounded-md border border-emerald-200 bg-white px-3 py-2 text-sm text-[#242424] outline-none placeholder:text-[#7A8F82] focus:border-[#0F6CBD] disabled:bg-emerald-50"
+                  />
+                  {feedbackError && <p className="mt-2 text-xs text-red-600">{feedbackError}</p>}
+                  {ticket.feedback ? (
+                    <p className="mt-2 text-xs text-emerald-700">Thank you for your feedback.</p>
+                  ) : (
+                    <button
+                      type="submit"
+                      disabled={!feedbackRating || submittingFeedback}
+                      className="mt-3 rounded-md bg-emerald-700 px-3 py-2 text-sm font-medium text-white transition hover:bg-emerald-800 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      {submittingFeedback ? "Submitting…" : "Submit feedback"}
+                    </button>
+                  )}
+                </form>
+              </div>
+            ) : (
+              <div className="border-t border-[#E1DFDD] bg-[#FAF9F8] px-3 py-3">
+                <ReplyComposer onSend={handleSend} sending={sending} placeholder="Reply to support…" />
+              </div>
+            )}
           </>
         )}
       </div>

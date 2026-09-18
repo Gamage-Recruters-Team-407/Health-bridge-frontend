@@ -8,7 +8,7 @@ import HeaderLogo from "@/components/HeaderLogo";
 import HealthcareIllustration from "@/components/HealthcareIllustration";
 import GoogleSignInButton from "@/components/GoogleSignInButton";
 import { authService } from "@/services/auth.service";
-import { saveAuthData, getRoleRedirectPath, getToken } from "@/lib/auth";
+import { saveAuthData, getRoleRedirectPath, getToken, getStoredUser, clearAuthData } from "@/lib/auth";
 
 // ✅ Define error type properly
 interface ApiError {
@@ -32,8 +32,11 @@ export default function LoginPage() {
   // Check if already logged in
   useEffect(() => {
     const token = getToken();
-    if (token) {
-      router.replace("/admin/dashboard");
+    const user = getStoredUser();
+    if (token && user?.role) {
+      router.replace(getRoleRedirectPath(user.role));
+    } else if (token || user) {
+      clearAuthData();
     }
   }, [router]);
 
@@ -223,13 +226,6 @@ export default function LoginPage() {
                     variant="icon"
                     onError={(msg) => setError(msg)}
                   />
-                </div>
-
-                <div className="mt-4 text-center text-xs text-slate-400 bg-slate-50 p-3 rounded-xl">
-                  <p className="font-medium text-slate-500">Demo Credentials:</p>
-                  <p className="font-mono text-slate-600">
-                    admin@healthbridge.com / admin123
-                  </p>
                 </div>
               </div>
             </div>
