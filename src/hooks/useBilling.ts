@@ -1,314 +1,246 @@
-'use client';
+import { useState, useCallback, useEffect, useRef } from 'react';
+import { invoiceService, billingItemService } from '@/services/billingService';
+import { Invoice, InvoiceRequest, BillingItem, BillingItemRequest } from '@/types/hospital';
 
-import {
-  useSyncExternalStore,
-  useEffect,
-} from 'react';
+const TOKEN_KEY = "healthbridge_token";
 
-import { invoiceService } from '@/services/billingService';
-import { Invoice } from '@/types/hospital';
-
-// ============================================================
-// Types
-// ============================================================
-
-type Listener = () => void;
-
-// ============================================================
-// Constants
-// ============================================================
-
-const TOKEN_KEY = 'healthbridge_token';
-
-// ============================================================
-// Store State
-// ============================================================
-
-let invoices: Invoice[] = [];
-
-let loading = true;
-
-let error: string | null = null;
-
-// ============================================================
-// Listeners
-// ============================================================
-
-let listeners: Listener[] = [];
-
-// ============================================================
-// Initialization
-// ============================================================
-
-let initialized = false;
-
-let fetchPromise: Promise<void> | null = null;
-
-// ============================================================
-// Snapshot
-// ============================================================
-
-// IMPORTANT:
-// useSyncExternalStore requires a cached snapshot.
-// Do NOT return { invoices, loading, error } directly
-// from getSnapshot(), because that creates a new object
-// every time.
-
-let snapshot: {
-  invoices: Invoice[];
-  loading: boolean;
-  error: string | null;
-} = {
-  invoices,
-  loading,
-  error,
+const isLoginPage = () => {
+  if (typeof window === 'undefined') return false;
+  return window.location.pathname === '/login' || window.location.pathname === '/';
 };
 
 // ============================================================
-// Notify Subscribers
+// useInvoices
 // ============================================================
 
-const emitChange = () => {
-  // Update the cached snapshot only when store data changes.
-  snapshot = {
+export const useInvoices = () => {
+  const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
+  const hasFetched = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchAllInvoices = useCallback(async () => {
+    console.log('🔄 fetchAllInvoices STARTED');
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token || isLoginPage()) {
+      console.log('⚠️ No token or login page');
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await invoiceService.getAllInvoices();
+      console.log('✅ Invoices fetched:', data?.length || 0);
+
+      if (isMounted.current) {
+        setInvoices(data || []);
+        setLoading(false);
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch invoices';
+      console.error('❌ Error:', errorMessage);
+
+      if (isMounted.current) {
+        setError(errorMessage);
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  const createInvoice = useCallback(async (data: InvoiceRequest): Promise<Invoice> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const newInvoice = await invoiceService.createInvoice(data);
+      if (isMounted.current) {
+        setInvoices((prev) => [...prev, newInvoice]);
+      }
+      return newInvoice;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to create invoice';
+      if (isMounted.current) setError(errorMessage);
+      throw err;
+    } finally {
+      if (isMounted.current) setLoading(false);
+    }
+  }, []);
+
+  const updateInvoice = useCallback(async (id: string, data: InvoiceRequest): Promise<Invoice> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      const updated = await invoiceService.updateInvoice(id, data);
+      if (isMounted.current) {
+        setInvoices((prev) => prev.map((inv) => (inv.id === id ? updated : inv)));
+      }
+      return updated;
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to update invoice';
+      if (isMounted.current) setError(errorMessage);
+      throw err;
+    } finally {
+      if (isMounted.current) setLoading(false);
+    }
+  }, []);
+
+  const deleteInvoice = useCallback(async (id: string): Promise<void> => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      await invoiceService.deleteInvoice(id);
+      if (isMounted.current) {
+        setInvoices((prev) => prev.filter((inv) => inv.id !== id));
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to delete invoice';
+      if (isMounted.current) setError(errorMessage);
+      throw err;
+    } finally {
+      if (isMounted.current) setLoading(false);
+    }
+  }, []);
+
+  const getPatientInvoices = useCallback(async (patientId: string): Promise<Invoice[]> => {
+    return await invoiceService.getPatientInvoices(patientId);
+  }, []);
+
+  // ✅ Single useEffect - uses timerRef for deferred setState
+  useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    console.log('📋 useInvoices - Initial mount');
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token || isLoginPage()) {
+      // ✅ Use setTimeout to defer setState (React 19 compliant)
+      timerRef.current = setTimeout(() => {
+        if (isMounted.current) setLoading(false);
+      }, 0);
+      return;
+    }
+
+    // ✅ Call fetch in setTimeout to avoid synchronous setState in effect
+    timerRef.current = setTimeout(() => {
+      if (isMounted.current) fetchAllInvoices();
+    }, 0);
+
+    return () => {
+      isMounted.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [fetchAllInvoices]);
+
+  return {
     invoices,
     loading,
     error,
-  };
-
-  listeners.forEach((listener) => {
-    listener();
-  });
-};
-
-// ============================================================
-// Subscribe
-// ============================================================
-
-const subscribe = (listener: Listener) => {
-  listeners = [...listeners, listener];
-
-  return () => {
-    listeners = listeners.filter(
-      (existingListener) =>
-        existingListener !== listener
-    );
+    fetchAllInvoices,
+    createInvoice,
+    updateInvoice,
+    deleteInvoice,
+    getPatientInvoices,
   };
 };
 
 // ============================================================
-// Get Snapshot
+// useBillingItems
 // ============================================================
 
-const getSnapshot = () => {
-  return snapshot;
-};
+export const useBillingItems = () => {
+  const [items, setItems] = useState<BillingItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const isMounted = useRef(true);
+  const hasFetched = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-// ============================================================
-// Server Snapshot
-// ============================================================
-
-// Needed for Next.js SSR / hydration.
-
-const getServerSnapshot = () => {
-  return snapshot;
-};
-
-// ============================================================
-// Login Page Check
-// ============================================================
-
-const isLoginPage = () => {
-  if (typeof window === 'undefined') {
-    return false;
-  }
-
-  return (
-    window.location.pathname === '/login' ||
-    window.location.pathname === '/'
-  );
-};
-
-// ============================================================
-// Fetch Billing Data
-// ============================================================
-
-const fetchData = async (): Promise<void> => {
-  // Prevent duplicate requests.
-  if (fetchPromise) {
-    return fetchPromise;
-  }
-
-  fetchPromise = (async () => {
-    try {
-      // --------------------------------------------------------
-      // Check Browser
-      // --------------------------------------------------------
-
-      if (typeof window === 'undefined') {
-        return;
-      }
-
-      // --------------------------------------------------------
-      // Check Login Page
-      // --------------------------------------------------------
-
-      if (isLoginPage()) {
-        console.log(
-          '⏳ Billing Store: On login page'
-        );
-
-        loading = false;
-        error = null;
-
-        emitChange();
-
-        return;
-      }
-
-      // --------------------------------------------------------
-      // Check Token
-      // --------------------------------------------------------
-
-      const token =
-        localStorage.getItem(TOKEN_KEY);
-
-      if (!token) {
-        console.warn(
-          '⚠️ Billing Store: No authentication token found'
-        );
-
-        invoices = [];
-        loading = false;
-        error = null;
-
-        emitChange();
-
-        return;
-      }
-
-      // --------------------------------------------------------
-      // Start Loading
-      // --------------------------------------------------------
-
-      console.log(
-        '🚀 Billing Store: Fetching invoices...'
-      );
-
-      loading = true;
-      error = null;
-
-      emitChange();
-
-      // --------------------------------------------------------
-      // API Request
-      // --------------------------------------------------------
-
-      const data =
-        await invoiceService.getAllInvoices();
-
-      console.log(
-        '✅ Billing Store: Invoices received:',
-        data?.length || 0
-      );
-
-      // --------------------------------------------------------
-      // Save Data
-      // --------------------------------------------------------
-
-      invoices = data || [];
-
-      loading = false;
-      error = null;
-
-      emitChange();
-
-      console.log(
-        '✅ Billing Store: Loading completed'
-      );
-    } catch (err: unknown) {
-      console.error(
-        '❌ Billing Store: Failed to fetch invoices',
-        err
-      );
-
-      error =
-        err instanceof Error
-          ? err.message
-          : 'Failed to fetch invoices';
-
-      loading = false;
-
-      emitChange();
-    } finally {
-      fetchPromise = null;
+  const fetchAllItems = useCallback(async () => {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token || isLoginPage()) {
+      setLoading(false);
+      return;
     }
-  })();
 
-  return fetchPromise;
-};
+    setLoading(true);
+    setError(null);
 
-// ============================================================
-// Force Refresh
-// ============================================================
-
-const refreshData = async (): Promise<void> => {
-  console.log(
-    '🔄 Billing Store: Refreshing invoices...'
-  );
-
-  // Allow a new request.
-  initialized = false;
-
-  await fetchData();
-
-  initialized = true;
-};
-
-// ============================================================
-// Initialize Store
-// ============================================================
-
-const initializeStore = () => {
-  if (initialized) {
-    return;
-  }
-
-  initialized = true;
-
-  console.log(
-    '🔧 Billing Store: Initializing...'
-  );
-
-  void fetchData();
-};
-
-// ============================================================
-// Hook
-// ============================================================
-
-export const useBillingStore = () => {
-  const store = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot
-  );
-
-  // ----------------------------------------------------------
-  // Initialize external store
-  // ----------------------------------------------------------
-
-  useEffect(() => {
-    initializeStore();
+    try {
+      const data = await billingItemService.getAllBillingItems();
+      if (isMounted.current) {
+        setItems(data || []);
+        setLoading(false);
+      }
+    } catch (err: unknown) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch billing items';
+      if (isMounted.current) {
+        setError(errorMessage);
+        setLoading(false);
+      }
+    }
   }, []);
 
+  const createItem = useCallback(async (data: BillingItemRequest): Promise<BillingItem> => {
+    const newItem = await billingItemService.createBillingItem(data);
+    setItems((prev) => [...prev, newItem]);
+    return newItem;
+  }, []);
+
+  const updateItem = useCallback(async (id: string, data: BillingItemRequest): Promise<BillingItem> => {
+    const updated = await billingItemService.updateBillingItem(id, data);
+    setItems((prev) => prev.map((it) => (it.id === id ? updated : it)));
+    return updated;
+  }, []);
+
+  const deleteItem = useCallback(async (id: string): Promise<void> => {
+    await billingItemService.deleteBillingItem(id);
+    setItems((prev) => prev.filter((it) => it.id !== id));
+  }, []);
+
+  const getInvoiceItems = useCallback(async (invoiceId: string): Promise<BillingItem[]> => {
+    return await billingItemService.getInvoiceItems(invoiceId);
+  }, []);
+
+  // ✅ Single useEffect with setTimeout
+  useEffect(() => {
+    if (hasFetched.current) return;
+    hasFetched.current = true;
+
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (!token || isLoginPage()) {
+      timerRef.current = setTimeout(() => {
+        if (isMounted.current) setLoading(false);
+      }, 0);
+      return;
+    }
+
+    timerRef.current = setTimeout(() => {
+      if (isMounted.current) fetchAllItems();
+    }, 0);
+
+    return () => {
+      isMounted.current = false;
+      if (timerRef.current) clearTimeout(timerRef.current);
+    };
+  }, [fetchAllItems]);
+
   return {
-    ...store,
-
-    // --------------------------------------------------------
-    // Refresh
-    // --------------------------------------------------------
-
-    refreshData,
+    items,
+    loading,
+    error,
+    fetchAllItems,
+    createItem,
+    updateItem,
+    deleteItem,
+    getInvoiceItems,
   };
 };

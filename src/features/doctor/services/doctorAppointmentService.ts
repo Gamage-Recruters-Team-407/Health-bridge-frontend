@@ -11,15 +11,18 @@ export type DoctorAppointment = Appointment & {
 const getDoctorId = () => {
   const user = getStoredUser();
   if (!user) return "doc-002";
-  if (user.id.startsWith("doc-")) return user.id;
 
-  const email = user.email.trim().toLowerCase();
+  const userId = user.id ?? "";
+  if (userId.startsWith("doc-")) return userId;
+
+  const email = (user.email ?? "").trim().toLowerCase();
   if (email === "doctor@healthbridge.lk") return "doc-002";
 
-  const name = user.fullName.trim().toLowerCase();
-  if (name.includes("maya perera")) return "doc-002";
-  if (name.includes("robert chen")) return "doc-001";
-  return user.id;
+  const fullName = (user.fullName ?? "").trim().toLowerCase();
+  if (fullName.includes("maya perera")) return "doc-002";
+  if (fullName.includes("robert chen")) return "doc-001";
+
+  return userId || "doc-002";
 };
 
 const normalizeDecision = (appointment: DoctorAppointment): DoctorAppointment => ({
