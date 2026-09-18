@@ -6,7 +6,7 @@ import DashboardLayout from "@/app/dashboard/layout";
 import { ComplianceReportForm } from "@/components/hospital/billing/ComplianceReportForm";
 import { useHospital } from "@/context/HospitalContext";
 import { ComplianceReportRequest } from "@/types/hospital";
-import { ArrowLeft, Shield } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
 
 export default function CreateComplianceReportPage() {
@@ -18,39 +18,32 @@ export default function CreateComplianceReportPage() {
     setIsLoading(true);
     try {
       await createComplianceReport(data);
-      router.push('/hospital/billing/compliance');
-    } catch (error) {
-      console.error('Failed to create compliance report:', error);
+      // ✅ FIXED: Redirect to /hospital/compliance
+      router.push("/hospital/compliance");
+    } catch (err) {
+      console.error("Failed to create compliance report:", err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    router.push('/hospital/billing/compliance');
-  };
-
   return (
     <DashboardLayout pageTitle="Create Compliance Report">
       <div className="flex items-center gap-3 mb-6">
-        <Link
-          href="/hospital/billing/compliance"
-          className="p-2 hover:bg-slate-100 rounded-lg transition"
-        >
+        {/* ✅ FIXED: Back link */}
+        <Link href="/hospital/compliance" className="p-2 hover:bg-slate-100 rounded-lg">
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </Link>
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Create Compliance Report</h1>
-          <p className="text-sm text-slate-500 mt-1">
-            Generate a new regulatory or operational compliance report
-          </p>
+          <p className="text-sm text-slate-500 mt-1">Generate a new compliance report</p>
         </div>
       </div>
 
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <ComplianceReportForm
           onSubmit={handleSubmit}
-          onCancel={handleCancel}
+          onCancel={() => router.push("/hospital/compliance")}
           isLoading={isLoading || complianceLoading}
         />
       </div>

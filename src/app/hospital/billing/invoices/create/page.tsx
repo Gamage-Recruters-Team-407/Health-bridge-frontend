@@ -18,25 +18,18 @@ export default function CreateInvoicePage() {
     setIsLoading(true);
     try {
       await createInvoice(data);
-      router.push('/hospital/billing');
+      router.push("/hospital/billing");
     } catch (error) {
-      console.error('Failed to create invoice:', error);
+      console.error("Failed to create invoice:", error);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    router.push('/hospital/billing');
-  };
-
   return (
     <DashboardLayout pageTitle="Create Invoice">
       <div className="flex items-center gap-3 mb-6">
-        <Link
-          href="/hospital/billing"
-          className="p-2 hover:bg-slate-100 rounded-lg transition"
-        >
+        <Link href="/hospital/billing" className="p-2 hover:bg-slate-100 rounded-lg">
           <ArrowLeft className="w-5 h-5 text-slate-500" />
         </Link>
         <div>
@@ -48,7 +41,7 @@ export default function CreateInvoicePage() {
       <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6">
         <InvoiceForm
           onSubmit={handleSubmit}
-          onCancel={handleCancel}
+          onCancel={() => router.push("/hospital/billing")}
           isLoading={isLoading || invoicesLoading}
         />
       </div>

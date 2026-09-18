@@ -50,6 +50,7 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Hospital ID */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Hospital ID <span className="text-red-500">*</span>
@@ -64,6 +65,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Item Code */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Item Code <span className="text-red-500">*</span>
@@ -78,6 +81,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Item Name */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Item Name <span className="text-red-500">*</span>
@@ -92,6 +97,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Category */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Category <span className="text-red-500">*</span>
@@ -106,6 +113,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Quantity */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Quantity <span className="text-red-500">*</span>
@@ -117,9 +126,12 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             onChange={handleChange}
             required
             min="0"
+            placeholder="0"
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Reorder Level */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Reorder Level <span className="text-red-500">*</span>
@@ -131,9 +143,12 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             onChange={handleChange}
             required
             min="0"
+            placeholder="0"
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Unit */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
             Unit <span className="text-red-500">*</span>
@@ -148,6 +163,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Supplier */}
         <div>
           <label className="block text-sm font-medium text-slate-700">Supplier</label>
           <input
@@ -159,6 +176,8 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* Expiry Date */}
         <div>
           <label className="block text-sm font-medium text-slate-700">Expiry Date</label>
           <input
@@ -169,21 +188,34 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
+
+        {/* ✅ Unit Cost - LKR (Rs.) */}
         <div>
           <label className="block text-sm font-medium text-slate-700">
-            Unit Cost <span className="text-red-500">*</span>
+            Unit Cost (Rs.) <span className="text-red-500">*</span>
           </label>
-          <input
-            type="number"
-            name="unitCost"
-            value={formData.unitCost}
-            onChange={handleChange}
-            required
-            min="0"
-            step="0.01"
-            className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
-          />
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium pointer-events-none">
+              Rs.
+            </span>
+            <input
+              type="number"
+              name="unitCost"
+              value={formData.unitCost}
+              onChange={handleChange}
+              required
+              min="0"
+              step="0.01"
+              placeholder="0.00"
+              className="block w-full rounded-xl border border-slate-200 pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+            />
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Enter price in Sri Lankan Rupees (LKR)
+          </p>
         </div>
+
+        {/* Location */}
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-slate-700">Location</label>
           <input
