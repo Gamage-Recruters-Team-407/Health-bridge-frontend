@@ -3,7 +3,12 @@ import { Prescription, CreatePrescriptionDTO } from "@/types/prescription";
 
 export const prescriptionService = {
   getAllPrescriptions: async (): Promise<Prescription[]> => {
-    return await api.get<Prescription[]>("/prescriptions");
+    // ✅ FIXED: api.get දැනටමත් Prescription[] return කරන නිසා .data ඕනේ නෑ
+    return await api.get<Prescription[]>("/prescriptions"); 
+  },
+
+  getPrescriptionsByDoctorId: async (doctorId: string): Promise<Prescription[]> => {
+    return await api.get<Prescription[]>(`/prescriptions/doctor/${doctorId}`);
   },
 
   getPrescriptionById: async (id: string): Promise<Prescription> => {
@@ -24,10 +29,6 @@ export const prescriptionService = {
     });
   },
 
-  // =========================================================================
-  // DEVELOPER 03 (PATIENT MANAGEMENT) - DO NOT MODIFY OR DELETE
-  // This endpoint is required for the Patient Portal (My Prescriptions page).
-  // =========================================================================
   getPatientPrescriptions: async (patientId: string): Promise<Prescription[]> => {
     return await api.get<Prescription[]>(`/prescriptions/patient/${patientId}`);
   },
