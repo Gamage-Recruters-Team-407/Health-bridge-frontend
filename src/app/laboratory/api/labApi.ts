@@ -11,12 +11,32 @@ function authHeaders(): HeadersInit {
     };
 }
 
+interface ApiEnvelope<T> {
+    success: boolean;
+    data: T;
+    message?: string;
+    statusCode?: number;
+    timestamp?: string;
+}
+
 async function handleResponse<T>(res: Response): Promise<T> {
     if (!res.ok) {
         const text = await res.text().catch(() => "");
         throw new Error(`API Error ${res.status}: ${text || res.statusText}`);
     }
-    return res.json();
+    const json = await res.json();
+
+    // Unwrap the standard ApiResponse envelope: { success, data, message, statusCode }
+    if (json && typeof json === "object" && "success" in json && "data" in json) {
+        const envelope = json as ApiEnvelope<T>;
+        if (!envelope.success) {
+            throw new Error(envelope.message || "Request failed");
+        }
+        return envelope.data;
+    }
+
+    // Fallback: response is already the raw data (not wrapped)
+    return json as T;
 }
 
 export async function createTestOrder(data: Partial<LabTest>): Promise<LabTest> {

@@ -31,11 +31,31 @@ export default function TestOrdersPage() {
 
     useEffect(() => { loadOrders(); }, []);
 
+    // const handleSubmit = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     try {
+    //         await createTestOrder({
+    //             ...form,
+    //             requestedTests: form.requestedTests.split(",").map((t) => t.trim()).filter(Boolean),
+    //         });
+    //         setMessage("Test order created successfully.");
+    //         setForm({ ...form, patientId: "", requestedTests: "", clinicalNotes: "" });
+    //         setShowForm(false);
+    //         loadOrders();
+    //     } catch (e) {
+    //         setMessage(e instanceof Error ? e.message : "Failed to create order");
+    //     }
+    // };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await createTestOrder({
                 ...form,
+                patientId: form.patientId.trim(),
+                doctorId: form.doctorId.trim(),
+                hospitalId: form.hospitalId.trim(),
+                clinicalNotes: form.clinicalNotes.trim(),
                 requestedTests: form.requestedTests.split(",").map((t) => t.trim()).filter(Boolean),
             });
             setMessage("Test order created successfully.");
