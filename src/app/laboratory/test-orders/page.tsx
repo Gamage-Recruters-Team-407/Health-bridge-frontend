@@ -4,13 +4,14 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout";
 import { createTestOrder, getAllTestOrders } from "../api/labApi";
 import { LabTest, TestPriority } from "../types";
-import { Plus } from "lucide-react";
+import { Plus, Copy, Check } from "lucide-react";
 
 export default function TestOrdersPage() {
     const [orders, setOrders] = useState<LabTest[]>([]);
     const [loading, setLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [showForm, setShowForm] = useState(false);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
     const [form, setForm] = useState({
         patientId: "", doctorId: "", hospitalId: "", requestedTests: "",
@@ -30,11 +31,31 @@ export default function TestOrdersPage() {
 
     useEffect(() => { loadOrders(); }, []);
 
+    // const handleSubmit = async (e: React.FormEvent) => {
+    //     e.preventDefault();
+    //     try {
+    //         await createTestOrder({
+    //             ...form,
+    //             requestedTests: form.requestedTests.split(",").map((t) => t.trim()).filter(Boolean),
+    //         });
+    //         setMessage("Test order created successfully.");
+    //         setForm({ ...form, patientId: "", requestedTests: "", clinicalNotes: "" });
+    //         setShowForm(false);
+    //         loadOrders();
+    //     } catch (e) {
+    //         setMessage(e instanceof Error ? e.message : "Failed to create order");
+    //     }
+    // };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             await createTestOrder({
                 ...form,
+                patientId: form.patientId.trim(),
+                doctorId: form.doctorId.trim(),
+                hospitalId: form.hospitalId.trim(),
+                clinicalNotes: form.clinicalNotes.trim(),
                 requestedTests: form.requestedTests.split(",").map((t) => t.trim()).filter(Boolean),
             });
             setMessage("Test order created successfully.");
@@ -44,6 +65,12 @@ export default function TestOrdersPage() {
         } catch (e) {
             setMessage(e instanceof Error ? e.message : "Failed to create order");
         }
+    };
+
+    const handleCopyId = (id: string) => {
+        navigator.clipboard.writeText(id);
+        setCopiedId(id);
+        setTimeout(() => setCopiedId(null), 1500);
     };
 
     const priorityColor = (p: string) =>
@@ -94,10 +121,11 @@ export default function TestOrdersPage() {
 
             {message && <p className="text-sm text-emerald-600">{message}</p>}
 
-            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+            <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead>
                     <tr className="border-b border-slate-100 text-slate-500 text-left bg-slate-50">
+                        <th className="px-6 py-3 font-medium">Order ID</th>
                         <th className="px-6 py-3 font-medium">Order No</th>
                         <th className="px-6 py-3 font-medium">Patient</th>
                         <th className="px-6 py-3 font-medium">Tests</th>
@@ -108,6 +136,23 @@ export default function TestOrdersPage() {
                     <tbody className="divide-y divide-slate-100">
                     {orders.map((o) => (
                         <tr key={o.id}>
+                            <td className="px-6 py-3">
+                                <button
+                                    onClick={() => handleCopyId(o.id)}
+                                    className="flex items-center gap-1.5 font-mono text-xs bg-slate-100 hover:bg-slate-200 px-2 py-1 rounded-md text-slate-600 whitespace-nowrap"
+                                    title="Click to copy full ID"
+                                >
+                                    {copiedId === o.id ? (
+                                        <>
+                                            <Check size={12} className="text-emerald-600" /> Copied!
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Copy size={12} /> {o.id}
+                                        </>
+                                    )}
+                                </button>
+                            </td>
                             <td className="px-6 py-3">{o.testOrderNumber || o.id.slice(-6)}</td>
                             <td className="px-6 py-3">{o.patientId}</td>
                             <td className="px-6 py-3 text-slate-500">{o.requestedTests.join(", ")}</td>
