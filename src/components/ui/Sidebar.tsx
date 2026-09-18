@@ -142,15 +142,29 @@ const getNavGroups = (role: string): NavGroup[] => {
   }
 
   // Pharmacist
+  // if (roleUpper === "PHARMACIST") {
+  //   return [
+  //     {
+  //       groupTitle: "Pharmacy",
+  //       items: [
+  //         { title: "Dashboard", href: "/pharmacist/dashboard", icon: LayoutDashboard },
+  //         { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+  //         { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
+  //         { title: "Sales", href: "/pharmacy/sales", icon: TrendingUp },
+  //       ],
+  //     },
+  //   ];
+  // }
+  // Pharmacist
   if (roleUpper === "PHARMACIST") {
     return [
       {
         groupTitle: "Pharmacy",
         items: [
-          { title: "Dashboard", href: "/pharmacist/dashboard", icon: LayoutDashboard },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
+          { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: FileText },
           { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
-          { title: "Sales", href: "/pharmacy/sales", icon: TrendingUp },
+          { title: "Sales", href: "/pharmacy/orders", icon: TrendingUp },
         ],
       },
     ];

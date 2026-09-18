@@ -6,7 +6,6 @@ import Link from "next/link";
 import { getAllMedicines, getLowStockAlerts } from "@/services/pharmacyService";
 import type { InventoryItem } from "@/types/pharmacy";
 
-// TODO: replace with the logged-in pharmacist's actual pharmacyId (from auth/session context)
 const CURRENT_PHARMACY_ID = "REPLACE_WITH_LOGGED_IN_PHARMACY_ID";
 
 export default function PharmacyDashboardPage() {
