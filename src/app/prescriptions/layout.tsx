@@ -1,7 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import Sidebar from "@/components/sidebar/Sidebar";
+import Sidebar from "@/components/ui/Sidebar";
 import { useAuth } from "@/hooks/useAuth";
 
 export default function PrescriptionsLayout({ 

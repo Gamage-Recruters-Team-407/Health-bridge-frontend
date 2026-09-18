@@ -2,41 +2,57 @@
 
 import Link from "next/link";
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { prescriptionService } from "@/services/prescriptionService";
 import PrescriptionForm from "@/components/prescription/PrescriptionForm";
 
 export default function EditPrescriptionPage() {
   const params = useParams();
+  const router = useRouter();
   const id = params.id as string;
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialData, setInitialData] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setTimeout(() => {
-      setInitialData({
-        patientName: "Ava Thompson",
-        patientPhone: "+94 77 123 4567",
-        notes: "Take medicines after meals. Avoid alcohol.",
-        items: [
-          { medicineId: "med1", medicineName: "Lisinopril", dosage: "10mg", frequency: "Once daily", duration: "30 days", quantity: 30, instructions: "Morning" },
-        ],
-      });
-    }, 500);
+    const fetchData = async () => {
+      try {
+        const data = await prescriptionService.getPrescriptionById(id);
+        setInitialData({
+          patientName: data.patientName,
+          patientPhone: data.patientPhone,
+          notes: data.notes || "",
+          items: data.items,
+        });
+      } catch (error) {
+        console.error("Error fetching prescription:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchData();
   }, [id]);
 
   const handleSubmit = async (data: any) => {
     setIsSubmitting(true);
     try {
-      // await prescriptionService.updatePrescription(id, data);
+      await prescriptionService.updatePrescription(id, {
+        notes: data.notes,
+        items: data.items,
+      });
       alert("Prescription updated successfully!");
+      router.push(`/prescriptions/${id}`);
     } catch (error) {
       console.error(error);
+      alert("Failed to update prescription.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  if (!initialData) return <div className="p-10 text-center">Loading prescription data...</div>;
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center bg-[#f7f9fc]"><p className="text-sm text-slate-500">Loading prescription data...</p></div>;
+  }
 
   return (
     <main className="min-h-screen w-full overflow-x-hidden bg-[#f7f9fc]">
