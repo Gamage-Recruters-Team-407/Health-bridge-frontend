@@ -17,6 +17,7 @@ import CreateTicketModal from "@/components/support/CreateTicketModal";
 import ChatBubble from "@/components/support/ChatBubble";
 import ReplyComposer from "@/components/support/ReplyComposer";
 import { PlusIcon } from "@/components/support/icons";
+import Navbar from "@/components/ui/Navbar";
 
 function formatListDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "numeric" });
@@ -165,10 +166,15 @@ setSelectedId((current) =>
   }, [tickets, query]);
 
   return (
+      <div className="min-h-screen bg-slate-50">
+      {/* Navbar spans full width, on top */}
+      <Navbar />
     <div
       className="flex h-screen bg-white text-[#242424]"
       style={{ fontFamily: "'Segoe UI', Roboto, system-ui, sans-serif" }}
     >
+
+  
       {/* Left: message list pane */}
       <div className="flex w-[380px] shrink-0 flex-col border-r border-[#E1DFDD] bg-white">
         <div className="flex items-center justify-between border-b border-[#E1DFDD] px-4 pt-3">
@@ -374,7 +380,7 @@ setSelectedId((current) =>
         )}
       </div>
 
-      <CreateTicketModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreate} />
+    </div>
     </div>
   );
 }

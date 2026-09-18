@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   getAllTickets,
   getTicketByIdForAdmin,
@@ -376,6 +377,12 @@ export default function AdminTicketsPage() {
               </a>
             </div>
           )}
+          <Link
+  href="/support/admin/document"
+  className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
+>
+  Support Documents
+</Link>
 
           <div className="border-t border-[#E1DFDD] pt-4">
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#616161]">Patient feedback</h3>
