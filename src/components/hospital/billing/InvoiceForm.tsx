@@ -54,12 +54,10 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       return;
     }
 
-    // ✅ Prepare data for backend
     const submitData: InvoiceRequest = {
       patientId: formData.patientId.trim(),
       patientName: formData.patientName.trim(),
       hospitalId: formData.hospitalId.trim(),
-      // Backend expects ISO string for dates
       issueDate: formData.issueDate ? new Date(formData.issueDate).toISOString() : new Date().toISOString(),
       dueDate: formData.dueDate ? new Date(formData.dueDate).toISOString() : undefined,
       discount: Number(formData.discount) || 0,
@@ -86,7 +84,6 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
       [name]: value,
     }));
     
-    // Clear error for this field
     if (errors[name]) {
       setErrors((prev) => ({ ...prev, [name]: '' }));
     }
@@ -113,8 +110,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             value={formData.patientId}
             onChange={handleChange}
             placeholder="PAT-001"
-            className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-              errors.patientId ? 'border-red-500 border-2' : 'border-gray-300'
+            className={`mt-1 block w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+              errors.patientId ? 'border-red-500 border-2' : 'border-slate-200'
             }`}
           />
           {errors.patientId && (
@@ -133,8 +130,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             value={formData.patientName}
             onChange={handleChange}
             placeholder="John Doe"
-            className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-              errors.patientName ? 'border-red-500 border-2' : 'border-gray-300'
+            className={`mt-1 block w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+              errors.patientName ? 'border-red-500 border-2' : 'border-slate-200'
             }`}
           />
           {errors.patientName && (
@@ -153,8 +150,8 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             value={formData.hospitalId}
             onChange={handleChange}
             placeholder="HOSP-001"
-            className={`mt-1 block w-full rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 ${
-              errors.hospitalId ? 'border-red-500 border-2' : 'border-gray-300'
+            className={`mt-1 block w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
+              errors.hospitalId ? 'border-red-500 border-2' : 'border-slate-200'
             }`}
           />
           {errors.hospitalId && (
@@ -170,7 +167,7 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             name="issueDate"
             value={formData.issueDate ? new Date(formData.issueDate).toISOString().slice(0, 16) : ''}
             onChange={(e) => handleDateChange('issueDate', e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
 
@@ -182,50 +179,77 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             name="dueDate"
             value={formData.dueDate ? new Date(formData.dueDate).toISOString().slice(0, 16) : ''}
             onChange={(e) => handleDateChange('dueDate', e.target.value)}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
 
-        {/* Discount */}
+        {/* ✅ Discount - LKR */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Discount ($)</label>
-          <input
-            type="number"
-            name="discount"
-            value={formData.discount}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          />
+          <label className="block text-sm font-medium text-gray-700">
+            Discount (Rs.)
+          </label>
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium pointer-events-none">
+              Rs.
+            </span>
+            <input
+              type="number"
+              name="discount"
+              value={formData.discount}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              className="block w-full rounded-xl border border-slate-200 pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+            />
+          </div>
         </div>
 
-        {/* Tax */}
+        {/* ✅ Tax - LKR */}
         <div>
-          <label className="block text-sm font-medium text-gray-700">Tax ($)</label>
-          <input
-            type="number"
-            name="tax"
-            value={formData.tax}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          />
+          <label className="block text-sm font-medium text-gray-700">
+            Tax (Rs.)
+          </label>
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium pointer-events-none">
+              Rs.
+            </span>
+            <input
+              type="number"
+              name="tax"
+              value={formData.tax}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              className="block w-full rounded-xl border border-slate-200 pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+            />
+          </div>
         </div>
 
-        {/* Paid Amount */}
+        {/* ✅ Paid Amount - LKR */}
         <div className="md:col-span-2">
-          <label className="block text-sm font-medium text-gray-700">Paid Amount ($)</label>
-          <input
-            type="number"
-            name="paidAmount"
-            value={formData.paidAmount}
-            onChange={handleChange}
-            step="0.01"
-            min="0"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
-          />
+          <label className="block text-sm font-medium text-gray-700">
+            Paid Amount (Rs.)
+          </label>
+          <div className="relative mt-1">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-sm font-medium pointer-events-none">
+              Rs.
+            </span>
+            <input
+              type="number"
+              name="paidAmount"
+              value={formData.paidAmount}
+              onChange={handleChange}
+              step="0.01"
+              min="0"
+              placeholder="0.00"
+              className="block w-full rounded-xl border border-slate-200 pl-12 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+            />
+          </div>
+          <p className="text-xs text-slate-400 mt-1">
+            Enter amount in Sri Lankan Rupees (LKR)
+          </p>
         </div>
 
         {/* Notes */}
@@ -237,23 +261,23 @@ export const InvoiceForm: React.FC<InvoiceFormProps> = ({
             onChange={handleChange}
             rows={3}
             placeholder="Additional notes about the invoice..."
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            className="mt-1 block w-full rounded-xl border border-slate-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
           />
         </div>
       </div>
 
-      <div className="flex justify-end space-x-3 pt-4 border-t">
+      <div className="flex justify-end space-x-3 pt-4 border-t border-slate-100">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          className="px-4 py-2.5 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 hover:bg-slate-50 transition"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isLoading}
-          className="px-4 py-2 bg-blue-600 text-white rounded-md text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
+          className="px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 disabled:opacity-50 flex items-center gap-2"
         >
           {isLoading ? (
             <>
