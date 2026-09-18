@@ -5,13 +5,16 @@ import { useState, useEffect } from "react";
 import { prescriptionService } from "@/services/prescriptionService";
 import { Prescription } from "@/types/prescription";
 import { useAuth } from "@/hooks/useAuth";
-import { FileText, Download, Eye, Search, Plus } from "lucide-react";
+import { FileText, Download, Eye, Search, Plus, ChevronLeft, ChevronRight } from "lucide-react";
+
+const ITEMS_PER_PAGE = 5;
 
 export default function PrescriptionsPage() {
   const { user } = useAuth();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     fetchPrescriptions();
@@ -38,10 +41,41 @@ export default function PrescriptionsPage() {
     }
   };
 
-  const filtered = prescriptions.filter((p) => 
+  // 1. මුලින්ම Search එකට ගැලපෙන data ටික filter කරගන්නවා
+  const filteredPrescriptions = prescriptions.filter((p) => 
     p.patientName.toLowerCase().includes(search.toLowerCase()) || 
     p.prescriptionNumber.toLowerCase().includes(search.toLowerCase())
   );
+
+  // 2. Filter කරපු data ටිකෙන් පිටුවකට ඕනේ ප්‍රමාණය (5) කපාගන්නවා
+  const indexOfLastItem = currentPage * ITEMS_PER_PAGE;
+  const indexOfFirstItem = indexOfLastItem - ITEMS_PER_PAGE;
+  const currentItems = filteredPrescriptions.slice(indexOfFirstItem, indexOfLastItem);
+
+  // 3. මුළු පිටු ගණන calculate කරනවා
+  const totalPages = Math.ceil(filteredPrescriptions.length / ITEMS_PER_PAGE);
+
+  // Page එක මාරු කරන functions
+  const handleNextPage = () => {
+    if (currentPage < totalPages) {
+      setCurrentPage((prev) => prev + 1);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (currentPage > 1) {
+      setCurrentPage((prev) => prev - 1);
+    }
+  };
+
+  const handlePageChange = (pageNumber: number) => {
+    setCurrentPage(pageNumber);
+  };
+
+  // Search එක වෙනස් වුනාම පළවෙනි පිටුවට යන්න
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [search]);
 
   if (loading) {
     return (
@@ -70,7 +104,7 @@ export default function PrescriptionsPage() {
           <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
-            placeholder="Search prescriptions..."
+            placeholder="Search by patient name or Rx number..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-lg border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none focus:border-blue-600 focus:ring-2 focus:ring-blue-100"
@@ -89,7 +123,7 @@ export default function PrescriptionsPage() {
 
       {/* Prescriptions List */}
       <div className="space-y-4">
-        {filtered.length === 0 ? (
+        {currentItems.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-200 bg-white p-10 text-center">
             <FileText className="mx-auto h-12 w-12 text-slate-300" />
             <h3 className="mt-4 text-sm font-semibold text-slate-900">No prescriptions found</h3>
@@ -100,7 +134,7 @@ export default function PrescriptionsPage() {
             </p>
           </div>
         ) : (
-          filtered.map((prescription) => (
+          currentItems.map((prescription) => (
             <div
               key={prescription.id}
               className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm hover:shadow-md transition-shadow"
@@ -153,6 +187,55 @@ export default function PrescriptionsPage() {
           ))
         )}
       </div>
+
+      {/* Pagination Controls */}
+      {totalPages > 1 && (
+        <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-6">
+          <p className="text-xs text-slate-500">
+            Showing <span className="font-semibold text-slate-900">{indexOfFirstItem + 1}</span> to{" "}
+            <span className="font-semibold text-slate-900">
+              {Math.min(indexOfLastItem, filteredPrescriptions.length)}
+            </span>{" "}
+            of <span className="font-semibold text-slate-900">{filteredPrescriptions.length}</span> results
+          </p>
+          
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handlePrevPage}
+              disabled={currentPage === 1}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            >
+              <ChevronLeft className="w-4 h-4" />
+              Previous
+            </button>
+
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNumber) => (
+                <button
+                  key={pageNumber}
+                  onClick={() => handlePageChange(pageNumber)}
+                  className={`flex h-8 w-8 items-center justify-center rounded-lg text-xs font-semibold transition-colors ${
+                    currentPage === pageNumber
+                      ? "bg-blue-600 text-white"
+                      : "bg-white text-slate-700 hover:bg-slate-50 border border-slate-200"
+                  }`}
+                >
+                  {pageNumber}
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={handleNextPage}
+              disabled={currentPage === totalPages}
+              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            >
+              Next
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
