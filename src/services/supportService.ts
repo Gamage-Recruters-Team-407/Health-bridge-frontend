@@ -38,6 +38,27 @@ async function request<T>(
   return res.json();
 }
 
+function normalizeTicketFeedback(ticket: Ticket): Ticket {
+  const raw = ticket as Ticket & {
+    supportFeedback?: Ticket["feedback"];
+    rating?: number | null;
+    comment?: string | null;
+    feedbackSubmittedAt?: string | null;
+  };
+
+  const feedback = raw.feedback ?? raw.supportFeedback ?? (
+    raw.feedbackRating != null || raw.rating != null
+      ? {
+          rating: raw.feedbackRating ?? raw.rating ?? 0,
+          comment: raw.feedbackComment ?? raw.comment ?? null,
+          createdAt: raw.feedbackCreatedAt ?? raw.feedbackSubmittedAt ?? undefined,
+        }
+      : null
+  );
+
+  return { ...ticket, feedback };
+}
+
 // ---------- User endpoints ----------
 
 export function createTicket(
@@ -69,7 +90,7 @@ export function getMyTickets() {
 }
 
 export function getMyTicketById(id: string) {
-  return request<Ticket>(`/api/tickets/${id}`);
+  return request<Ticket>(`/api/tickets/${id}`).then(normalizeTicketFeedback);
 }
 
 export function replyAsUser(
@@ -93,6 +114,20 @@ export function replyAsUser(
   });
 }
 
+export function submitTicketFeedback(
+  ticketId: string,
+  rating: number,
+  comment: string
+) {
+  return request<Ticket>(`/api/tickets/${ticketId}/feedback`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ rating, comment }),
+  }).then(normalizeTicketFeedback);
+}
+
 // ---------- Admin endpoints ----------
 
 export function getAllTickets() {
@@ -100,7 +135,7 @@ export function getAllTickets() {
 }
 
 export function getTicketByIdForAdmin(id: string) {
-  return request<Ticket>(`/api/admin/tickets/${id}`);
+  return request<Ticket>(`/api/admin/tickets/${id}`).then(normalizeTicketFeedback);
 }
 
 export function updateTicketStatus(

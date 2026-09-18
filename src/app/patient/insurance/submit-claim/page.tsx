@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import Input from "@/components/ui/Input";
 import Button from "@/components/ui/Button";
@@ -31,35 +30,35 @@ export default function SubmitClaimPage() {
         setPolicies(active);
         if (active.length > 0) setPolicyId(active[0].id);
       })
-      .catch(() => toast.error("Failed to load your policies"))
+      .catch(() => toast.error("Error", "Failed to load your policies"))
       .finally(() => setLoadingPolicies(false));
   }, []);
 
   const handleSubmit = async () => {
     if (!policyId) {
-      toast.error("Select a policy");
+      toast.error("Validation Error", "Select a policy");
       return;
     }
     if (!treatmentDescription.trim()) {
-      toast.error("Description is required");
+      toast.error("Validation Error", "Description is required");
       return;
     }
     if (claimAmount <= 0) {
-      toast.error("Enter a valid amount");
+      toast.error("Validation Error", "Enter a valid amount");
       return;
     }
     if (files.length === 0) {
-      toast.error("At least one supporting document is required");
+      toast.error("Validation Error", "At least one supporting document is required");
       return;
     }
 
     setSubmitting(true);
     try {
       await insuranceService.submitClaim({ policyId, treatmentDescription, claimAmount }, files);
-      toast.success("Claim submitted");
+      toast.success("Success", "Claim submitted successfully");
       router.push("/patient/insurance");
     } catch {
-      toast.error("Failed to submit claim");
+      toast.error("Error", "Failed to submit claim");
     } finally {
       setSubmitting(false);
     }
@@ -69,14 +68,12 @@ export default function SubmitClaimPage() {
 
   if (policies.length === 0) {
     return (
-      <DashboardLayout pageTitle="Submit New Claim" userRole="PATIENT">
-        <p className="text-slate-500">You have no active policy to claim against.</p>
-      </DashboardLayout>
+      <p className="text-slate-500">You have no active policy to claim against.</p>
     );
   }
 
   return (
-    <DashboardLayout pageTitle="Submit New Claim" userRole="PATIENT">
+    <div className="space-y-6">
       <Card className="max-w-2xl">
         <CardHeader>
           <CardTitle>Claim Details</CardTitle>
@@ -140,6 +137,6 @@ export default function SubmitClaimPage() {
           </div>
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </div>
   );
 }

@@ -2,26 +2,31 @@
 
 import React from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
   Calendar,
-  UserCheck,
   FileText,
   FileSpreadsheet,
   FlaskConical,
   Pill,
   CreditCard,
-  AlertTriangle,
   Bell,
   ChevronLeft,
   ChevronRight,
   LogOut,
   TestTube2,
   X,
+  ShieldAlert,
+  Settings,
+  TrendingUp,
+  DollarSign,
+  ClipboardCheck,
+  Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { clearAuthData } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 
 export interface SidebarProps {
@@ -46,51 +51,158 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const navGroups: NavGroup[] = [
-  {
-    groupTitle: "Core Modules",
-    items: [
-      { title: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-      { title: "Patients", href: "/patients", icon: Users },
-      { title: "Appointments", href: "/appointments", icon: Calendar, badge: "3 New", badgeVariant: "primary" },
-      { title: "Doctors", href: "/doctors", icon: UserCheck },
-    ],
-  },
-  {
-    groupTitle: "Clinical Services",
-    items: [
-      { title: "Prescriptions", href: "/prescriptions", icon: FileText },
-      { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
-      { title: "Laboratory", href: "/laboratory", icon: FlaskConical },
-      { title: "Pharmacy", href: "/pharmacy", icon: Pill },
-    ],
-  },
-  {
-    groupTitle: "Operations & Admin",
-    items: [
-      { title: "Payments", href: "/payments", icon: CreditCard },
-      { title: "Emergency Response", href: "/emergency", icon: AlertTriangle, badge: "Live", badgeVariant: "danger" },
-      { title: "Notifications", href: "/notifications", icon: Bell },
-      { title: "Dev20 Test Bench", href: "/dev20-test", icon: TestTube2, badge: "Dev UI", badgeVariant: "purple" },
-    ],
-  },
-  {
-    groupTitle: "Patient Services",
-    items: [
-      { title: "Emergency SOS", href: "/patient/sos", icon: AlertTriangle, badge: "SOS", badgeVariant: "danger" },
-    ],
-  },
-];
+const getNavGroups = (role: string): NavGroup[] => {
+  const roleUpper = role?.toUpperCase() || "PATIENT";
+
+  function roleLower(r: string): string {
+    return r?.toLowerCase() || "patient";
+  }
+
+  // Admin & Super Admin
+  if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
+    return [
+      {
+        groupTitle: "Overview",
+        items: [
+          { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+          { title: "Analytics", href: "/analytics", icon: TrendingUp },
+        ],
+      },
+      {
+        groupTitle: "Hospital Management",
+        items: [
+          { title: "Billing", href: "/hospital/billing", icon: DollarSign },
+          { title: "Inventory", href: "/hospital/inventory", icon: Pill },
+          // ✅ FIXED: Compliance moved outside billing
+          { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
+          { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
+        ],
+      },
+      {
+        groupTitle: "Clinical Records",
+        items: [
+          { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+        ],
+      },
+      {
+        groupTitle: "System Admin",
+        items: [
+          { title: "Users", href: "/admin/users", icon: Users },
+          { title: "Settings", href: "/admin/settings", icon: Settings },
+        ],
+      },
+    ];
+  }
+
+  // Doctor
+  if (roleUpper === "DOCTOR") {
+    return [
+      {
+        groupTitle: "Clinical",
+        items: [
+          { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
+          { title: "Appointments", href: "/appointments", icon: Calendar },
+          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
+          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+        ],
+      },
+    ];
+  }
+
+  // Patient
+  if (roleUpper === "PATIENT") {
+    return [
+      {
+        groupTitle: "My Health",
+        items: [
+          { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
+          { title: "Family Members", href: "/patient/family", icon: Users },
+          { title: "Health Metrics", href: "/patient/health-metrics", icon: TrendingUp },
+          { title: "Medications", href: "/patient/medications", icon: Pill },
+          { title: "Appointments", href: "/appointments", icon: Calendar },
+          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
+          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Insurance", href: "/patient/insurance", icon: ShieldAlert },
+          { title: "Payments", href: "/payments", icon: CreditCard },
+          { title: "Reminders", href: "/patient/reminders", icon: Bell },
+          { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
+        ],
+      },
+    ];
+  }
+
+  // Pharmacist
+  if (roleUpper === "PHARMACIST") {
+    return [
+      {
+        groupTitle: "Pharmacy",
+        items: [
+          { title: "Dashboard", href: "/pharmacist/dashboard", icon: LayoutDashboard },
+          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
+          { title: "Sales", href: "/pharmacy/sales", icon: TrendingUp },
+        ],
+      },
+    ];
+  }
+
+  // Lab Officer
+  if (roleUpper === "LAB_OFFICER") {
+    return [
+      {
+        groupTitle: "Laboratory",
+        items: [
+          { title: "Dashboard", href: "/laboratory/dashboard", icon: LayoutDashboard },
+          { title: "Test Orders", href: "/laboratory/test-orders", icon: ClipboardCheck },
+          { title: "Samples", href: "/laboratory/samples", icon: TestTube2 },
+          { title: "Processing", href: "/laboratory/processing", icon: FlaskConical },
+          { title: "Results", href: "/laboratory/results", icon: FileText },
+          { title: "Reports", href: "/laboratory/reports", icon: FileSpreadsheet },
+        ],
+      },
+    ];
+  }
+
+  // Insurance Officer
+  if (roleUpper === "INSURANCE_OFFICER") {
+    return [
+      {
+        groupTitle: "Insurance Operations",
+        items: [
+          { title: "Dashboard", href: "/insurance-officer/dashboard", icon: LayoutDashboard },
+          { title: "Claims", href: "/insurance-officer/claims", icon: FileText },
+          { title: "Policies", href: "/insurance-officer/policies", icon: ShieldAlert },
+          { title: "Reports", href: "/insurance-officer/reports", icon: FileSpreadsheet },
+        ],
+      },
+    ];
+  }
+
+  // Default
+  return [
+    {
+      groupTitle: "Core Modules",
+      items: [
+        { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+        { title: "Appointments", href: "/appointments", icon: Calendar },
+      ],
+    },
+  ];
+};
 
 export const Sidebar: React.FC<SidebarProps> = ({
   collapsed = false,
   onToggleCollapse,
   mobileOpen = false,
   onCloseMobile,
-  userRole = "System Admin",
-  userName = "Dr. Anura Jayasinghe",
+  userRole = "PATIENT",
+  userName = "User",
 }) => {
   const pathname = usePathname();
+  const router = useRouter();
+  const navGroups = getNavGroups(userRole);
 
   const sidebarContent = (
     <div
@@ -110,7 +222,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <div className="flex flex-col truncate">
               <span className="font-bold text-base text-[#0A2540] tracking-tight leading-none">
-                Health<span className="text-blue-400">Bridge</span>
+                Health<span className="text-blue-600">Bridge</span>
               </span>
               <span className="text-[10px] text-slate-500 font-medium tracking-wider uppercase mt-1">
                 Healthcare Suite
@@ -119,21 +231,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
         </Link>
 
-        {/* Mobile Close Button */}
         {onCloseMobile && (
           <button
             onClick={onCloseMobile}
-            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-[#0052CC] hover:bg-[#EBF3FF]"
+            className="md:hidden p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50"
           >
             <X className="w-5 h-5" />
           </button>
         )}
 
-        {/* Desktop Collapse Toggle */}
         {onToggleCollapse && (
           <button
             onClick={onToggleCollapse}
-            className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-[#0052CC] hover:bg-[#EBF3FF] transition-colors"
+            className="hidden md:flex p-1.5 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
             title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
           >
             {collapsed ? <ChevronRight className="w-5 h-5" /> : <ChevronLeft className="w-5 h-5" />}
@@ -141,7 +251,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         )}
       </div>
 
-      {/* Navigation Group Items */}
+      {/* Navigation */}
       <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6 scrollbar-thin scrollbar-thumb-slate-200">
         {navGroups.map((group, groupIdx) => (
           <div key={groupIdx} className="space-y-1">
@@ -153,7 +263,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
             {group.items.map((item) => {
               const Icon = item.icon;
-              const isActive = pathname === item.href || (item.href !== "/" && pathname?.startsWith(item.href));
+              const isActive =
+                pathname === item.href ||
+                (item.href !== "/" && pathname?.startsWith(item.href + "/"));
 
               return (
                 <Link
@@ -164,14 +276,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     "flex items-center gap-3 px-3 py-2.5 rounded-xl font-medium text-sm transition-all duration-150 group relative",
                     isActive
                       ? "bg-blue-600 text-white font-semibold shadow-md shadow-blue-600/30"
-                      : "text-slate-500 hover:text-[#0052CC] hover:bg-[#EBF3FF]"
+                      : "text-slate-500 hover:text-blue-600 hover:bg-blue-50"
                   )}
                   title={collapsed ? item.title : undefined}
                 >
                   <Icon
                     className={cn(
                       "w-5 h-5 shrink-0 transition-transform duration-150 group-hover:scale-105",
-                      isActive ? "text-white" : "text-slate-400 group-hover:text-[#0052CC]"
+                      isActive ? "text-white" : "text-slate-400 group-hover:text-blue-600"
                     )}
                   />
 
@@ -187,7 +299,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     </Badge>
                   )}
 
-                  {/* Tooltip badge for collapsed state */}
                   {collapsed && (
                     <div className="absolute left-full ml-3 px-2.5 py-1 bg-[#0A2540] text-white text-xs rounded-lg whitespace-nowrap opacity-0 pointer-events-none group-hover:opacity-100 transition-opacity z-50 shadow-xl border border-slate-700">
                       {item.title}
@@ -200,7 +311,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         ))}
       </div>
 
-      {/* User Profile & Footer Section */}
+      {/* User Profile */}
       <div className="p-3 border-t border-slate-100 bg-[#F8FAFC]">
         <div
           className={cn(
@@ -210,7 +321,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         >
           <div className="relative shrink-0">
             <div className="w-9 h-9 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center font-bold text-white text-sm shadow-md">
-              {userName.charAt(0)}
+              {userName.charAt(0).toUpperCase()}
             </div>
             <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
           </div>
@@ -218,13 +329,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!collapsed && (
             <div className="flex flex-col min-w-0 flex-1">
               <span className="text-xs font-semibold text-[#0A2540] truncate">{userName}</span>
-              <span className="text-[10px] text-blue-400 font-medium truncate">{userRole}</span>
+              <span className="text-[10px] text-blue-600 font-medium truncate">{userRole}</span>
             </div>
           )}
 
           {!collapsed && (
             <button
-              onClick={() => alert("Logging out...")}
+              onClick={() => {
+                clearAuthData();
+                router.push("/login");
+              }}
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
               title="Logout"
             >
@@ -238,20 +352,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <>
-      {/* Desktop Permanent / Collapsible Sidebar */}
       <aside className="hidden md:block h-screen sticky top-0 z-30 shrink-0">
         {sidebarContent}
       </aside>
 
-      {/* Mobile Slide-out Drawer */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 md:hidden flex">
-          {/* Backdrop Overlay */}
           <div
             className="fixed inset-0 bg-slate-950/70 backdrop-blur-sm transition-opacity"
             onClick={onCloseMobile}
           />
-          {/* Drawer Content */}
           <div className="relative z-10 h-full">{sidebarContent}</div>
         </div>
       )}

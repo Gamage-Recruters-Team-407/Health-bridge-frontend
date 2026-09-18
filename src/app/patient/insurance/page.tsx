@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import DashboardLayout from "@/components/layout/DashboardLayout";
 import { StatCard, Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import {
   Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableEmpty,
@@ -35,7 +34,7 @@ export default function PatientInsurancePage() {
         setPolicies(p);
         setClaims(c);
       })
-      .catch(() => toast.error("Failed to load insurance data"))
+      .catch(() => toast.error("Error", "Failed to load insurance data"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -45,14 +44,14 @@ export default function PatientInsurancePage() {
   const remaining = activePolicy ? activePolicy.coverageAmount - activePolicy.coverageUsed : 0;
 
   return (
-    <DashboardLayout pageTitle="My Insurance" userRole="PATIENT">
-      <div className="flex justify-end mb-4">
+    <div className="space-y-6">
+      <div className="flex justify-end">
         <Button onClick={() => router.push("/patient/insurance/submit-claim")}>
           Submit New Claim
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Policy Status"
           value={activePolicy ? activePolicy.status : "No active policy"}
@@ -79,11 +78,12 @@ export default function PatientInsurancePage() {
                 <TableHead>Amount</TableHead>
                 <TableHead>Status</TableHead>
                 <TableHead>Submitted</TableHead>
+                <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {claims.length === 0 ? (
-                <TableEmpty colSpan={4} message="No claims submitted yet" />
+                <TableEmpty colSpan={5} message="No claims submitted yet" />
               ) : (
                 claims.map(c => (
                   <TableRow key={c.id}>
@@ -93,6 +93,15 @@ export default function PatientInsurancePage() {
                       <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
                     </TableCell>
                     <TableCell>{new Date(c.submittedAt).toLocaleDateString()}</TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
+                      >
+                        Track
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))
               )}
@@ -100,6 +109,6 @@ export default function PatientInsurancePage() {
           </Table>
         </CardContent>
       </Card>
-    </DashboardLayout>
+    </div>
   );
 }

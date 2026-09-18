@@ -31,7 +31,7 @@ export interface InsuranceClaim {
 }
 
 export interface ClaimDecisionRequest {
-  status: 'APPROVED' | 'REJECTED';
+  approve: boolean;
   approvedAmount?: number;
   rejectionReason?: string;
 }

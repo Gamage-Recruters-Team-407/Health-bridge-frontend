@@ -68,13 +68,13 @@ export default function ReplyComposer({
           }}
           placeholder={placeholder}
           rows={1}
-          className="min-h-[42px] max-h-32 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-teal-500 focus:ring-1 focus:ring-teal-500"
+          className="min-h-[42px] max-h-32 flex-1 resize-none rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-[#0052CC] focus:ring-1 focus:ring-[#0052CC]"
         />
         <button
           type="button"
           onClick={handleSend}
           disabled={sending || (!message.trim() && !image)}
-          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-teal-600 text-white transition hover:bg-teal-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
+          className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#0052CC] text-white transition hover:bg-[#0052CC]-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
         >
           <SendIcon className="h-4 w-4" />
         </button>

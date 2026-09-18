@@ -1,6 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
+import Link from "next/link";
 import {
   Check,
   ArrowRight,
@@ -11,7 +12,6 @@ import {
   Clock,
   AlertTriangle,
 } from "lucide-react";
-import { LoadingPage } from "./LoadingPage";
 
 export interface WelcomePageProps {
   onBookAppointment?: () => void;
@@ -22,22 +22,6 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
   onBookAppointment,
   onContinueGuest,
 }) => {
-  const [showLoadingDemo, setShowLoadingDemo] = useState(false);
-
-  if (showLoadingDemo) {
-    return (
-      <div className="relative">
-        <button
-          onClick={() => setShowLoadingDemo(false)}
-          className="fixed top-4 right-4 z-50 px-4 py-2 bg-slate-900 text-white text-xs font-semibold rounded-xl shadow-2xl hover:bg-slate-800 transition-all border border-slate-700"
-        >
-          ← Back to Welcome Page
-        </button>
-        <LoadingPage />
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-[#0052CC] selection:text-white flex flex-col">
       {/* Top Header / Navigation */}
@@ -53,13 +37,19 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
           </span>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setShowLoadingDemo(true)}
-            className="px-3.5 py-2 text-xs font-semibold text-[#0052CC] bg-[#EBF3FF] hover:bg-blue-100 rounded-xl transition-colors"
+        <div className="flex items-center gap-4">
+          <Link
+            href="/login"
+            className="text-sm font-semibold text-[#0052CC] hover:text-[#0047B3] transition-colors"
           >
-            Demo Loading Screen
-          </button>
+            Login
+          </Link>
+          <Link
+            href="/register"
+            className="px-5 py-2.5 rounded-xl bg-[#0052CC] hover:bg-[#0047B3] text-white text-sm font-semibold shadow-md shadow-blue-500/20 transition-all"
+          >
+            Register
+          </Link>
         </div>
       </header>
 
@@ -112,26 +102,24 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
 
             {/* Action Buttons */}
             <div className="flex items-center gap-6 pt-2">
-              <button
+              <Link
+                href="/login"
                 onClick={() => {
                   if (onContinueGuest) onContinueGuest();
-                  else setShowLoadingDemo(true);
                 }}
                 className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#0052CC] hover:text-[#0047B3] transition-colors group"
               >
                 <span>Continue as Guest</span>
                 <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              </Link>
 
-              <button
-                onClick={() => {
-                  if (onBookAppointment) onBookAppointment();
-                  else alert("Redirecting to Appointment Booking...");
-                }}
+              <Link
+                href="/appointments/search-doctor"
+                onClick={onBookAppointment}
                 className="px-6 py-3.5 rounded-xl bg-[#0052CC] hover:bg-[#0047B3] text-white font-semibold text-sm shadow-md shadow-blue-500/20 transition-all"
               >
                 Book an Appointment
-              </button>
+              </Link>
             </div>
           </div>
         </div>
