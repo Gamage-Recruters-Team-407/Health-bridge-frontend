@@ -70,3 +70,13 @@ export async function getPatientHistory(patientId: string): Promise<LabResult[]>
     const res = await fetch(`${BASE_URL}/results/patient/${patientId}/history`, { headers: authHeaders(), cache: "no-store" });
     return handleResponse<LabResult[]>(res);
 }
+
+export async function getAllSamples(): Promise<LabSample[]> {
+    const res = await fetch(`${BASE_URL}/samples`, { headers: authHeaders(), cache: "no-store" });
+    return handleResponse<LabSample[]>(res);
+}
+
+export async function getAllResults(): Promise<LabResult[]> {
+    const res = await fetch(`${BASE_URL}/results`, { headers: authHeaders(), cache: "no-store" });
+    return handleResponse<LabResult[]>(res);
+}
