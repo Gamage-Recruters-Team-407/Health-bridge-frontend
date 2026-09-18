@@ -265,16 +265,62 @@ const delay = async () => {
   await new Promise((resolve) => window.setTimeout(resolve, 120));
 };
 
+const normalizeAppointmentsResponse = (data: unknown): Appointment[] => {
+  if (Array.isArray(data)) {
+    return data as Appointment[];
+  }
+
+  if (
+    data &&
+    typeof data === "object" &&
+    "appointments" in data &&
+    Array.isArray(data.appointments)
+  ) {
+    return data.appointments as Appointment[];
+  }
+
+  if (
+    data &&
+    typeof data === "object" &&
+    "data" in data &&
+    Array.isArray(data.data)
+  ) {
+    return data.data as Appointment[];
+  }
+
+  throw new Error("Invalid appointments response from the server.");
+};
+
+const normalizeAppointmentResponse = (data: unknown): Appointment => {
+  if (
+    data &&
+    typeof data === "object" &&
+    "data" in data &&
+    data.data &&
+    typeof data.data === "object"
+  ) {
+    return data.data as Appointment;
+  }
+
+  if (data && typeof data === "object" && "id" in data) {
+    return data as Appointment;
+  }
+
+  throw new Error("Invalid appointment response from the server.");
+};
+
 export const appointmentService = {
   async getAppointments(filters?: AppointmentFilters): Promise<Appointment[]> {
     const query = new URLSearchParams({ patientId: getPatientId() });
     if (filters?.status && filters.status !== "ALL") query.set("status", filters.status);
-    const appointments = await apiRequest<Appointment[]>(`/appointments?${query}`);
+    const response = await apiRequest<unknown>(`/appointments?${query}`);
+    const appointments = normalizeAppointmentsResponse(response);
     return applyFilters(appointments, filters);
   },
 
   async getAppointmentById(id: string): Promise<Appointment> {
-    return apiRequest<Appointment>(`/appointments/${encodeURIComponent(id)}`);
+    const response = await apiRequest<unknown>(`/appointments/${encodeURIComponent(id)}`);
+    return normalizeAppointmentResponse(response);
   },
 
   async getSummary(): Promise<AppointmentSummary> {
@@ -346,7 +392,7 @@ export const appointmentService = {
     const doctor = doctors.find((item) => item.id === values.doctorId)!;
     const appointments = await this.getAppointments();
     validateBooking(appointments, values);
-    return apiRequest<Appointment>("/appointments", {
+    const response = await apiRequest<unknown>("/appointments", {
       method: "POST",
       body: JSON.stringify({
         patientId: getPatientId(),
@@ -360,6 +406,7 @@ export const appointmentService = {
         reason: values.reason.trim(),
       }),
     });
+    return normalizeAppointmentResponse(response);
   },
 
   async rescheduleAppointment(
@@ -368,17 +415,19 @@ export const appointmentService = {
   ): Promise<Appointment> {
     const appointments = await this.getAppointments();
     validateBooking(appointments, values, appointmentId);
-    return apiRequest<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}`, {
+    const response = await apiRequest<unknown>(`/appointments/${encodeURIComponent(appointmentId)}`, {
       method: "PUT",
       body: JSON.stringify({ patientId: getPatientId(), doctorId: values.doctorId, appointmentDate: values.appointmentDate, appointmentTime: values.appointmentTime, reason: values.reason.trim() }),
     });
+    return normalizeAppointmentResponse(response);
   },
 
   async cancelAppointment({
     appointmentId,
     reason,
   }: CancelAppointmentInput): Promise<Appointment> {
-    return apiRequest<Appointment>(`/appointments/${encodeURIComponent(appointmentId)}/cancel?reason=${encodeURIComponent(reason || "")}`, { method: "PATCH" });
+    const response = await apiRequest<unknown>(`/appointments/${encodeURIComponent(appointmentId)}/cancel?reason=${encodeURIComponent(reason || "")}`, { method: "PATCH" });
+    return normalizeAppointmentResponse(response);
   },
 };
 
