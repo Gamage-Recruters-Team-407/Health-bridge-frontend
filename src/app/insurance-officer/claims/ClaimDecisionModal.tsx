@@ -22,21 +22,25 @@ export default function ClaimDecisionModal({ claim, onClose, onDecided }: ClaimD
 
   const submit = async (status: "APPROVED" | "REJECTED") => {
     if (status === "REJECTED" && !rejectionReason.trim()) {
-      toast.error("Error","Rejection reason is required");
+      toast.error("Validation Error", "Rejection reason is required");
+      return;
+    }
+    if (status === "APPROVED" && (!approvedAmount || approvedAmount <= 0)) {
+      toast.error("Validation Error", "Approved amount must be greater than zero");
       return;
     }
 
     setSubmitting(true);
     try {
       await insuranceService.decideClaim(claim.id, {
-        status,
+        approve: status === "APPROVED",
         approvedAmount: status === "APPROVED" ? approvedAmount : undefined,
         rejectionReason: status === "REJECTED" ? rejectionReason : undefined,
       });
-      toast.success("Success",`Claim ${status.toLowerCase()}`);
+      toast.success("Success", `Claim ${status.toLowerCase()}`);
       onDecided();
     } catch {
-      toast.error("Error","Failed to submit decision");
+      toast.error("Error", "Failed to submit decision");
     } finally {
       setSubmitting(false);
     }

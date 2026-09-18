@@ -34,7 +34,7 @@ export default function ClaimDetailsPage() {
     insuranceService
       .getClaimById(id)
       .then(setClaim)
-      .catch(() => toast.error("Error","Failed to load claim"))
+      .catch(() => toast.error("Error", "Failed to load claim"))
       .finally(() => setLoading(false));
   };
 

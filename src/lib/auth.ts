@@ -2,9 +2,16 @@ import { ROUTES } from "@/constants/routes";
 
 export interface AuthUser {
   id: string;
-  fullName: string;
-  email: string;
-  role: "PATIENT" | "ADMIN" | "SUPER_ADMIN" | "DOCTOR" | "PHARMACIST" | "INSURANCE_OFFICER" | "LAB_OFFICER";
+  fullName?: string;
+  email?: string;
+  role:
+      | "PATIENT"
+      | "ADMIN"
+      | "SUPER_ADMIN"
+      | "DOCTOR"
+      | "PHARMACIST"
+      | "INSURANCE_OFFICER"
+      | "LAB_OFFICER";
 }
 
 const TOKEN_KEY = "healthbridge_token";
@@ -23,9 +30,14 @@ const setCookie = (name: string, value: string, maxAgeInSeconds = 60 * 60 * 24 *
 const clearCookie = (name: string) => {
   if (typeof document === "undefined") return;
 
-  document.cookie = `${name}=; path=/; max-age=0; SameSite=Lax`;
+  const isHttps = window.location.protocol === "https:";
+  const securePart = isHttps ? "; Secure" : "";
+  document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${securePart}`;
+  document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
 };
 
+/** Persists the token and user after a successful login/register/OAuth call. */
 export const saveAuthData = (token: string, user: AuthUser) => {
   if (typeof window !== "undefined") {
     localStorage.setItem(TOKEN_KEY, token);
@@ -73,6 +85,7 @@ export const clearAuthData = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    sessionStorage.clear();
     clearCookie(TOKEN_COOKIE);
     clearCookie(USER_COOKIE);
   }
@@ -82,6 +95,7 @@ export const isAuthenticated = (): boolean => {
   return !!getToken();
 };
 
+/** Where to send a user right after auth, based on their role. */
 export const getRoleRedirectPath = (role: string): string => {
   switch (role) {
     case "SUPER_ADMIN":
