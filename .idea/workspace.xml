@@ -5,30 +5,11 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3cab0e9f-9e0f-4444-b079-bec21acedba7" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/src/app/telemedicine/consultation-summary/[id]/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/app/telemedicine/consultation/[id]/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/app/telemedicine/history/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/app/telemedicine/video-room/[id]/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/app/telemedicine/waiting-room/page.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/api/telemedicineApi.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/components/CallControls.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/components/ChatPanel.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/components/VideoTile.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/components/WaitingRoomCard.tsx" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/hooks/useWebRTC.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/index.ts" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/src/features/telemedicine/types/index.ts" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package-lock.json" beforeDir="false" afterPath="$PROJECT_DIR$/package-lock.json" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/package.json" beforeDir="false" afterPath="$PROJECT_DIR$/package.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/appointments/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/appointments/[id]/page.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/sidebar/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/sidebar/Sidebar.tsx" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/components/ui/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/Sidebar.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/features/doctor/components/DoctorAppointmentManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/doctor/components/DoctorAppointmentManager.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/features/doctor/components/DoctorShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/doctor/components/DoctorShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hooks/useAuth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/useAuth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/src/lib/axios.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/axios.ts" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -54,7 +35,7 @@
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "SHARE_PROJECT_CONFIGURATION_FILES": "true",
-    "git-widget-placeholder": "Merging test",
+    "git-widget-placeholder": "feature/dev12-telemedicine",
     "kotlin-language-version-configured": "true",
     "last_opened_file_path": "D:/Gamage Work/Healthbridge/Health-bridge-frontend",
     "node.js.detected.package.eslint": "true",

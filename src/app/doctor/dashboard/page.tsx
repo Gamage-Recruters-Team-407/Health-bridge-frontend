@@ -3,7 +3,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { CalendarDays, CircleDollarSign, Clock3, Stethoscope, UserRound, UsersRound, PlaneTakeoff, ArrowRight, LogOut } from "lucide-react";
+import { CalendarDays, CircleDollarSign, Clock3, Stethoscope, UserRound, UsersRound, PlaneTakeoff, ArrowRight, LogOut, Video } from "lucide-react";
 import DoctorStatsCard from "@/features/doctor/components/DoctorStatsCard";
 import PageHeader from "@/features/doctor/components/PageHeader";
 import StatusBadge from "@/features/doctor/components/StatusBadge";
@@ -19,12 +19,12 @@ export default function DoctorDashboardPage() {
     let active = true;
 
     getDoctorProfile()
-      .then((profile) => {
-        if (active) setDoctor(profile);
-      })
-      .catch(() => {
-        if (active) setDoctor(mockDoctors[0]);
-      });
+        .then((profile) => {
+          if (active) setDoctor(profile);
+        })
+        .catch(() => {
+          if (active) setDoctor(mockDoctors[0]);
+        });
 
     return () => {
       active = false;
@@ -36,13 +36,13 @@ export default function DoctorDashboardPage() {
     <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"><DoctorStatsCard label="Today's appointments" value="12" detail="3 remaining this afternoon" icon={UsersRound} /><DoctorStatsCard label="Availability" value="Available" detail="Until 6:00 PM today" icon={Clock3} tone="blue" /><DoctorStatsCard label="Monthly earnings" value="LKR 186.5K" detail="12.4% above last month" icon={CircleDollarSign} tone="amber" /><DoctorStatsCard label="Patient rating" value="4.9 / 5" detail="From 248 verified reviews" icon={Stethoscope} tone="rose" /></section>
     <div className="grid gap-6 xl:grid-cols-[1.45fr_1fr]"><section className="rounded-lg border border-slate-200 bg-white shadow-sm"><div className="flex items-center justify-between border-b border-slate-100 px-5 py-4"><div><h2 className="font-bold">Upcoming schedule</h2><p className="mt-1 text-xs text-slate-500">Availability across the next working days</p></div><Link href="/doctor/schedule" className="text-sm font-semibold text-teal-700">View calendar</Link></div><div className="divide-y divide-slate-100">{schedule.map((slot) => <div key={slot.id} className="flex items-center justify-between gap-4 px-5 py-4"><div className="flex items-center gap-4"><div className="flex h-11 w-11 flex-col items-center justify-center rounded-md bg-slate-100"><span className="text-[10px] font-bold uppercase text-slate-500">{new Date(`${slot.date}T00:00:00`).toLocaleDateString("en", { month: "short" })}</span><span className="text-sm font-bold">{new Date(`${slot.date}T00:00:00`).getDate()}</span></div><div><p className="text-sm font-semibold">Clinic availability</p><p className="mt-0.5 text-xs text-slate-500">{slot.startTime} - {slot.endTime}</p></div></div><StatusBadge status={slot.status} /></div>)}</div></section>
       <div className="space-y-6"><section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold">Profile summary</h2><div className="mt-5 flex items-center gap-4">{ }<img src={doctor.profileImage} alt={doctor.fullName} className="h-16 w-16 rounded-md object-cover" /><div><p className="font-bold">{doctor.fullName}</p><p className="text-sm text-teal-700">{doctor.specialization}</p><p className="mt-1 text-xs text-slate-500">{doctor.qualifications.join(" · ")}</p></div></div><div className="mt-5 grid grid-cols-2 gap-3 border-t border-slate-100 pt-4 text-sm"><div><p className="text-xs text-slate-500">Experience</p><p className="font-semibold">{doctor.experience} years</p></div><div><p className="text-xs text-slate-500">Consultation</p><p className="font-semibold">LKR {doctor.consultationFee.toLocaleString()}</p></div></div><button
-        type="button"
-        onClick={() => authService.logout()}
-        className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100 hover:border-red-300"
+          type="button"
+          onClick={() => authService.logout()}
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-600 transition hover:bg-red-100 hover:border-red-300"
       >
         <LogOut className="h-4 w-4" />
         Logout
       </button></section>
-      <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold">Quick actions</h2><div className="mt-4 grid grid-cols-2 gap-3">{[{ href: "/doctor/profile", label: "Edit profile", icon: UserRound }, { href: "/doctor/schedule", label: "Add schedule", icon: CalendarDays }, { href: "/doctor/leave", label: "Apply leave", icon: PlaneTakeoff }, { href: "/doctor/earnings", label: "View earnings", icon: CircleDollarSign }].map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-h-20 flex-col justify-between rounded-md border border-slate-200 p-3 text-sm font-semibold hover:border-teal-300 hover:bg-teal-50"><Icon className="h-5 w-5 text-teal-600" /><span className="flex items-center justify-between">{label}<ArrowRight className="h-3.5 w-3.5" /></span></Link>)}</div></section></div></div>
+        <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm"><h2 className="font-bold">Quick actions</h2><div className="mt-4 grid grid-cols-2 gap-3">{[{ href: "/doctor/profile", label: "Edit profile", icon: UserRound }, { href: "/telemedicine/history", label: "Telemedicine", icon: Video }, { href: "/doctor/schedule", label: "Add schedule", icon: CalendarDays }, { href: "/doctor/leave", label: "Apply leave", icon: PlaneTakeoff }, { href: "/doctor/earnings", label: "View earnings", icon: CircleDollarSign }].map(({ href, label, icon: Icon }) => <Link key={href} href={href} className="flex min-h-20 flex-col justify-between rounded-md border border-slate-200 p-3 text-sm font-semibold hover:border-teal-300 hover:bg-teal-50"><Icon className="h-5 w-5 text-teal-600" /><span className="flex items-center justify-between">{label}<ArrowRight className="h-3.5 w-3.5" /></span></Link>)}</div></section></div></div>
     <section className="mt-6 rounded-lg bg-teal-700 p-6 text-white"><div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><p className="text-sm text-teal-100">Consultation income this month</p><p className="mt-1 text-3xl font-bold">LKR {mockEarnings.consultationIncome.toLocaleString()}</p></div><div className="sm:text-right"><p className="text-sm text-teal-100">Total consultations</p><p className="mt-1 text-xl font-bold">31 completed</p></div></div></section></>;
 }
