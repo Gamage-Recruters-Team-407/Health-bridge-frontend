@@ -1,6 +1,6 @@
 "use client";
 
-import { QRCodeSVG } from "qrcode.react"; // ✅ මෙතන වෙනස් කරන්න ඕනේ
+import { QRCodeSVG } from "qrcode.react";
 
 interface QRCodeDisplayProps {
   value: string;
@@ -11,7 +11,7 @@ export default function QRCodeDisplay({ value, size = 128 }: QRCodeDisplayProps)
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="rounded-xl border border-slate-100 bg-white p-3 shadow-sm">
-        <QRCodeSVG // ✅ මෙතනත් <QRCode> වෙනුවට <QRCodeSVG> දෙන්න
+        <QRCodeSVG
           value={value}
           size={size}
           level="H"
