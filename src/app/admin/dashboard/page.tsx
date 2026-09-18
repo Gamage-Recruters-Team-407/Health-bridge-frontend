@@ -49,7 +49,7 @@ export default function AdminDashboardPage() {
 
     if (isMounted.current) {
       setIsAuthenticated(true);
-      setUserName(user.fullName);
+      setUserName(user.fullName ?? "Admin");
       setLoading(false);
     }
 

@@ -3,7 +3,6 @@
 import { useState } from "react";
 import MedicineSelector from "./MedicineSelector";
 
-// Mock Medicines (Backend එකෙන් ගන්නවා නම් මේක props එකක් විදියට යවන්න)
 const MOCK_MEDICINES = [
   { id: "med1", value: "med1", label: "Lisinopril (Antihypertensive)", interactions: ["Potassium", "Ibuprofen"] },
   { id: "med2", value: "med2", label: "Metformin (Antidiabetic)", interactions: ["Alcohol"] },
@@ -97,9 +96,9 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-6">
       {interactions.length > 0 && (
-        <section className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
           <h2 className="text-sm font-bold text-rose-900">⚠️ Drug Interactions Detected</h2>
           <div className="mt-3 space-y-2">
             {interactions.map((int, idx) => (
@@ -109,12 +108,13 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
               </div>
             ))}
           </div>
-        </section>
+        </div>
       )}
 
-      <div className="grid grid-cols-1 gap-5 lg:grid-cols-[minmax(0,1fr)_350px]">
-        <section className="space-y-5">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_350px]">
+        <div className="space-y-6">
+          {/* Add Medicine */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-slate-950">Add Medicine</h2>
             <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="sm:col-span-2">
@@ -157,12 +157,17 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
                 <input type="text" value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g., Take after meals" className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-700 outline-none focus:border-blue-400" />
               </div>
             </div>
-            <button onClick={handleAddMedicine} className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700">+ Add Medicine</button>
-          </section>
+            <button onClick={handleAddMedicine} className="mt-4 w-full rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700">
+              + Add Medicine
+            </button>
+          </div>
 
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          {/* Added Medicines */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-slate-950">Added Medicines ({items.length})</h2>
-            {items.length === 0 ? <p className="mt-3 text-xs text-slate-500">No medicines added yet.</p> : (
+            {items.length === 0 ? (
+              <p className="mt-3 text-xs text-slate-500">No medicines added yet.</p>
+            ) : (
               <div className="mt-3 space-y-2">
                 {items.map((item, index) => (
                   <div key={index} className="flex items-center justify-between rounded-xl bg-slate-50 p-3">
@@ -170,16 +175,19 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
                       <p className="text-xs font-bold text-slate-900">{item.medicineName}</p>
                       <p className="text-[10px] text-slate-500">{item.dosage} • {item.frequency} • {item.duration}</p>
                     </div>
-                    <button onClick={() => setItems(items.filter((_, i) => i !== index))} className="text-xs font-semibold text-rose-600 hover:text-rose-700">Remove</button>
+                    <button onClick={() => setItems(items.filter((_, i) => i !== index))} className="text-xs font-semibold text-rose-600 hover:text-rose-700">
+                      Remove
+                    </button>
                   </div>
                 ))}
               </div>
             )}
-          </section>
-        </section>
+          </div>
+        </div>
 
-        <aside className="space-y-5">
-          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+        {/* Patient Info & Submit */}
+        <div className="space-y-6">
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
             <h2 className="text-sm font-bold text-slate-950">Patient Information</h2>
             <div className="mt-4 space-y-3">
               <div>
@@ -195,11 +203,11 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={4} className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-700 outline-none focus:border-blue-400" />
               </div>
             </div>
-          </section>
+          </div>
           <button onClick={handleSubmit} disabled={isSubmitting} className="w-full rounded-xl bg-emerald-600 px-4 py-3 text-xs font-bold text-white hover:bg-emerald-700 disabled:opacity-50">
             {isSubmitting ? "Saving..." : "Save Prescription"}
           </button>
-        </aside>
+        </div>
       </div>
     </div>
   );
