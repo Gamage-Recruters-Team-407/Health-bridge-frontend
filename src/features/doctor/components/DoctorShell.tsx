@@ -9,12 +9,13 @@ const navigation = [
   { href: "/doctor/dashboard", label: "Dashboard", description: "Overview and quick actions", keywords: "home appointments availability stats", icon: LayoutDashboard },
   { href: "/doctor/profile", label: "My profile", description: "Personal and professional details", keywords: "edit doctor information fee qualifications", icon: UserRound },
   { href: "/doctor/doctors", label: "Doctor directory", description: "Find doctors and specialists", keywords: "search specialist directory cards", icon: Stethoscope },
-  { href: "/medical-records",label: "Medical Records",description: "View patient EHR and clinical history",keywords: "ehr medical records patient diagnosis treatment consultation documents", icon: FileSpreadsheet},
+  { href: "/medical-records", label: "Medical Records", description: "View patient EHR and clinical history", keywords: "ehr medical records patient diagnosis treatment consultation documents", icon: FileSpreadsheet },
   { href: "/doctor/schedule", label: "Schedule", description: "Manage weekly availability", keywords: "calendar time slots hours available", icon: CalendarDays },
-  { href: "/doctor/appointments",label: "Appointments",description: "View and manage booked appointments",keywords: "appointments accept reject complete patients",icon: CalendarDays,},
+  { href: "/doctor/appointments", label: "Appointments", description: "View and manage booked appointments", keywords: "appointments accept reject complete patients", icon: CalendarDays },
   { href: "/telemedicine/history", label: "Telemedicine", description: "Video consultation history", keywords: "video call telehealth consultation history", icon: Video },
   { href: "/doctor/leave", label: "Leave", description: "Apply and track leave", keywords: "time off annual sick emergency history", icon: PlaneTakeoff },
   { href: "/doctor/earnings", label: "Earnings", description: "Revenue and payment history", keywords: "income money payments chart consultation", icon: CircleDollarSign },
+  { href: "/prescriptions", label: "Prescription", description: "Create and track prescriptions", keywords: "medicine prescription treatment plan drugs", icon: FileText },
 ];
 
 const initialNotifications = [

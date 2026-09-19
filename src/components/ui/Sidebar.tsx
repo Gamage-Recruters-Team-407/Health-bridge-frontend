@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -101,10 +102,15 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "Appointments", href: "/appointments", icon: Calendar },
-          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "My profile", href: "/doctor/profile", icon: User },
+          { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Schedule", href: "/doctor/schedule", icon: Calendar },
+          { title: "Appointments", href: "/doctor/appointments", icon: Calendar },
+          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
+          { title: "Leave", href: "/doctor/leave", icon: ClipboardCheck },
+          { title: "Earnings", href: "/doctor/earnings", icon: DollarSign },
+          { title: "Prescription", href: "/prescriptions", icon: FileText },
         ],
       },
     ];
