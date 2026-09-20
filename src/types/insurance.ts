@@ -9,6 +9,7 @@ export interface InsurancePolicy {
   policyType: string;
   coverageAmount: number;
   coverageUsed: number;
+  coverageRemaining?: number;
   startDate: string;
   endDate: string;
   status: PolicyStatus;
