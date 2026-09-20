@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -101,10 +102,15 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "Appointments", href: "/appointments", icon: Calendar },
-          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "My profile", href: "/doctor/profile", icon: User },
+          { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Schedule", href: "/doctor/schedule", icon: Calendar },
+          { title: "Appointments", href: "/doctor/appointments", icon: Calendar },
+          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
+          { title: "Leave", href: "/doctor/leave", icon: ClipboardCheck },
+          { title: "Earnings", href: "/doctor/earnings", icon: DollarSign },
+          { title: "Prescription", href: "/prescriptions", icon: FileText },
         ],
       },
     ];
@@ -124,6 +130,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Insurance", href: "/patient/insurance", icon: ShieldAlert },
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
@@ -159,6 +166,21 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Processing", href: "/laboratory/processing", icon: FlaskConical },
           { title: "Results", href: "/laboratory/results", icon: FileText },
           { title: "Reports", href: "/laboratory/reports", icon: FileSpreadsheet },
+        ],
+      },
+    ];
+  }
+
+  // Insurance Officer
+  if (roleUpper === "INSURANCE_OFFICER") {
+    return [
+      {
+        groupTitle: "Insurance Operations",
+        items: [
+          { title: "Dashboard", href: "/insurance-officer/dashboard", icon: LayoutDashboard },
+          { title: "Claims", href: "/insurance-officer/claims", icon: FileText },
+          { title: "Policies", href: "/insurance-officer/policies", icon: ShieldAlert },
+          { title: "Reports", href: "/insurance-officer/reports", icon: FileSpreadsheet },
         ],
       },
     ];
