@@ -125,7 +125,6 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
           { title: "Family Members", href: "/patient/family", icon: Users },
           { title: "Health Metrics", href: "/patient/health-metrics", icon: TrendingUp },
-          { title: "Medications", href: "/patient/medications", icon: Pill },
           { title: "Appointments", href: "/appointments", icon: Calendar },
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
