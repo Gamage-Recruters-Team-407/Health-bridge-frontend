@@ -26,7 +26,7 @@ import {
   Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { clearAuthData } from "@/lib/auth";
+import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 
 export interface SidebarProps {
@@ -210,7 +210,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       >
         {/* Brand Header */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
-          <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
+          <Link href={getRoleRedirectPath(userRole)} className="flex items-center gap-3 overflow-hidden">
             <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-500/20">
               <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
                 <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm1 14h-2v-3H8v-2h3V7h2v3h3v2h-3v3z" />
