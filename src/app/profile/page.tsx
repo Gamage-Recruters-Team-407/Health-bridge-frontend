@@ -15,8 +15,18 @@ interface UserProfile {
   gender?: string | null;
   address?: string | null;
   bloodGroup?: string | null;
+  emergencyContact?: string | null;
   role?: string;
 }
+
+const formatRole = (role?: string) => {
+  if (!role) return "";
+  return role
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+};
 
 export default function ProfilePage() {
   const [user, setUser] = useState<UserProfile | null>(null);
@@ -77,6 +87,11 @@ export default function ProfilePage() {
             <h2 className="mt-4 text-xl font-semibold text-gray-800">
               {user.fullName}
             </h2>
+            {user.role && (
+              <span className="mt-1 text-sm text-blue-600 font-medium bg-blue-50 px-3 py-0.5 rounded-full">
+                {formatRole(user.role)}
+              </span>
+            )}
           </div>
 
           <div className="space-y-4">
@@ -118,6 +133,13 @@ export default function ProfilePage() {
               </div>
             )}
 
+            <div className="flex justify-between border-b pb-3 gap-6">
+              <span className="text-gray-500 shrink-0">Emergency Contact</span>
+              <span className="text-gray-800 font-medium text-right">
+                {user.emergencyContact || "Not set"}
+              </span>
+            </div>
+
             {user.address && (
               <div className="flex justify-between border-b pb-3 gap-6">
                 <span className="text-gray-500 shrink-0">Address</span>
@@ -131,14 +153,14 @@ export default function ProfilePage() {
           <div className="mt-8 flex gap-4">
             <a
               href="/profile/edit"
-              className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition"
-            >
+              className="flex-1 text-center bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition">
+            
               Edit Profile
             </a>
-            <a
-              href="/profile/settings"
-              className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
-            >
+            
+             <a href="/profile/settings" 
+              className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition">
+            
               Account Settings
             </a>
           </div>

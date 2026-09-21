@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import { InsuranceClaim, InsurancePolicy, ClaimDecisionRequest } from "@/types/insurance";
+import { InsuranceClaim, InsurancePolicy, ClaimDecisionRequest, InsuranceReportSummary } from "@/types/insurance";
 
 const BASE = "/insurance";
 
@@ -57,6 +57,14 @@ export const insuranceService = {
   },
   verifyPolicy: async (policyNumber: string): Promise<InsurancePolicy> => {
     const res: any = await api.get(`${BASE}/policies/verify/${policyNumber}`);
+    return res?.data ?? res;
+  },
+  getReportSummary: async (startDate?: string, endDate?: string): Promise<InsuranceReportSummary> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res: any = await api.get(`${BASE}/reports/summary${qs}`);
     return res?.data ?? res;
   },
   getDocumentUrl: (fileId: string) => {

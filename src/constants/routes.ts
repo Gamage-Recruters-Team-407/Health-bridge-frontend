@@ -14,7 +14,7 @@ export const ROUTES = {
     superAdmin: "/super-admin/dashboard",
     pharmacist: "/pharmacist/dashboard",
     insuranceOfficer: "/insurance-officer/dashboard",
-    labOfficer: "/lab-officer/dashboard",
+    labOfficer: "/laboratory/dashboard",
   },
   appointments: {
     searchDoctor: "/appointments/search-doctor",

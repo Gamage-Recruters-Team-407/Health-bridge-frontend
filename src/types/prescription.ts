@@ -6,15 +6,23 @@ export interface Prescription {
   patientPhone: string;
   doctorId: string;
   doctorName: string;
-  date: string;
-  status: "active" | "completed" | "cancelled";
+  
+  // ✅ Backend එකෙන් එන්නේ Uppercase නිසා මේක වෙනස් කළා
+  status: "ACTIVE" | "COMPLETED" | "CANCELLED"; 
+  
   items: PrescriptionItem[];
   notes?: string;
+  diagnosis?: string;
   validUntil: string;
+  
+  // ✅ අඩුවෙලා තිබුණු fields එකතු කළා
+  qrCodeData?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
 
 export interface PrescriptionItem {
-  id: string;
+  id?: string;
   medicineId: string;
   medicineName: string;
   dosage: string;
@@ -24,24 +32,14 @@ export interface PrescriptionItem {
   instructions: string;
 }
 
-export interface Medicine {
-  id: string;
-  name: string;
-  category: string;
-  interactions: string[];
-}
-
 export interface CreatePrescriptionDTO {
+  patientId: string;
   patientName: string;
   patientPhone: string;
-  notes: string;
+  doctorId: string;
+  doctorName: string;
   items: PrescriptionItem[];
+  notes?: string;
+  diagnosis?: string;
   validDays: number;
-}
-
-export interface DrugInteraction {
-  medicine1: string;
-  medicine2: string;
-  severity: "mild" | "moderate" | "severe";
-  description: string;
 }
