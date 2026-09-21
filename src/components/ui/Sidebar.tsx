@@ -179,6 +179,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Dashboard", href: "/insurance-officer/dashboard", icon: LayoutDashboard },
           { title: "Claims", href: "/insurance-officer/claims", icon: FileText },
           { title: "Policies", href: "/insurance-officer/policies", icon: ShieldAlert },
+          { title: "Fraud Detection", href: "/fraud-detection", icon: ShieldAlert },
           { title: "Reports", href: "/insurance-officer/reports", icon: FileSpreadsheet },
         ],
       },
