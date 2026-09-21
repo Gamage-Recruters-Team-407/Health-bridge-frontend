@@ -19,6 +19,8 @@ export interface InsuranceClaim {
   id: string;
   claimNumber: string;
   policyId: string;
+  policyNumber?: string;
+  providerName?: string;
   patientId: string;
   treatmentDescription: string;
   claimAmount: number;
