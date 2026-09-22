@@ -25,6 +25,7 @@ import {
   DollarSign,
   ClipboardCheck,
   Video,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -90,6 +91,7 @@ const getNavGroups = (role: string): NavGroup[] => {
         items: [
           { title: "Users", href: "/admin/users", icon: Users },
           { title: "Settings", href: "/admin/settings", icon: Settings },
+          { title: "Support", href: "/support/admin", icon: LifeBuoy },
         ],
       },
     ];
