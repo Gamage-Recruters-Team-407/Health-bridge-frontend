@@ -9,9 +9,11 @@ interface AppointmentCardProps {
 }
 
 const statusStyles = {
+  BOOKED: "bg-blue-50 text-blue-700 border-blue-200",
   UPCOMING: "bg-emerald-50 text-emerald-700 border-emerald-200",
   COMPLETED: "bg-slate-100 text-slate-700 border-slate-200",
   CANCELLED: "bg-rose-50 text-rose-700 border-rose-200",
+  NO_SHOW: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
 const formatDate = (date: string) =>
@@ -33,7 +35,7 @@ export default function AppointmentCard({
   appointment,
   onCancel,
 }: AppointmentCardProps) {
-  const isUpcoming = appointment.status === "UPCOMING";
+  const isUpcoming = appointment.status === "UPCOMING" || appointment.status === "BOOKED";
 
   return (
     <article className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
