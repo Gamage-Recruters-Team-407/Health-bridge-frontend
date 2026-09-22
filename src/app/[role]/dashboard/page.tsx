@@ -36,7 +36,7 @@ export default function RoleDashboardPage() {
     const roleSlug = params.role as string;
     const expectedRole = SLUG_TO_ROLE[roleSlug];
 
-    if (!expectedRole || storedUser.role !== expectedRole) {
+    if (storedUser.role === "LAB_OFFICER" || !expectedRole || storedUser.role !== expectedRole) {
       // Redirect to the correct dashboard for their actual role
       router.push(getRoleRedirectPath(storedUser.role));
       return;

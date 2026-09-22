@@ -124,6 +124,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Insurance", href: "/patient/insurance", icon: ShieldAlert },
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
@@ -159,6 +160,21 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Processing", href: "/laboratory/processing", icon: FlaskConical },
           { title: "Results", href: "/laboratory/results", icon: FileText },
           { title: "Reports", href: "/laboratory/reports", icon: FileSpreadsheet },
+        ],
+      },
+    ];
+  }
+
+  // Insurance Officer
+  if (roleUpper === "INSURANCE_OFFICER") {
+    return [
+      {
+        groupTitle: "Insurance Operations",
+        items: [
+          { title: "Dashboard", href: "/insurance-officer/dashboard", icon: LayoutDashboard },
+          { title: "Claims", href: "/insurance-officer/claims", icon: FileText },
+          { title: "Policies", href: "/insurance-officer/policies", icon: ShieldAlert },
+          { title: "Reports", href: "/insurance-officer/reports", icon: FileSpreadsheet },
         ],
       },
     ];
