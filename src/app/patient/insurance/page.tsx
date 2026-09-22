@@ -167,8 +167,8 @@ export default function PatientInsurancePage() {
       "Provider",
       "Service Description",
       "Date Submitted",
-      "Claimed Amount ($)",
-      "Approved Amount ($)",
+      "Claimed Amount (Rs.)",
+      "Approved Amount (Rs.)",
       "Status",
     ];
 
@@ -310,7 +310,7 @@ export default function PatientInsurancePage() {
         />
         <StatCard
           title="Amount Reimbursed"
-          value={`$${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`Rs. ${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle="Total paid back"
           icon={<DollarSign className="w-5 h-5 text-indigo-600" />}
         />
@@ -371,10 +371,10 @@ export default function PatientInsurancePage() {
                   Coverage Used
                 </span>
                 <p className="text-sm font-extrabold text-slate-900">
-                  ${(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Rs. {(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  of ${(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit
+                  of Rs. {(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit
                 </p>
               </div>
 
@@ -383,7 +383,7 @@ export default function PatientInsurancePage() {
                   Remaining Balance
                 </span>
                 <p className="text-sm font-extrabold text-blue-600">
-                  ${remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Rs. {remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-[11px] text-slate-500">Remaining this year</p>
               </div>
@@ -503,7 +503,7 @@ export default function PatientInsurancePage() {
 
                         {/* Amount */}
                         <TableCell className="text-xs font-bold text-slate-900">
-                          ${c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          Rs. {c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </TableCell>
 
                         {/* Status */}

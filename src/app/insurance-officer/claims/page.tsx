@@ -268,7 +268,7 @@ export default function ClaimsListPage() {
           />
           <StatCard
             title="Approved Payouts"
-            value={`$${metrics.totalApprovedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`Rs. ${metrics.totalApprovedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.approved} claims settled`}
             icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
           />
@@ -451,11 +451,11 @@ export default function ClaimsListPage() {
                         <TableCell>
                           <div className="space-y-0.5 text-xs">
                             <span className="font-bold text-slate-900">
-                              ${c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              Rs. {c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                             {c.approvedAmount !== undefined && (c.status === "APPROVED" || c.status === "PAID") && (
                               <p className="text-[10px] font-semibold text-emerald-600">
-                                Approved: ${c.approvedAmount.toFixed(2)}
+                                Approved: Rs. {c.approvedAmount.toFixed(2)}
                               </p>
                             )}
                           </div>

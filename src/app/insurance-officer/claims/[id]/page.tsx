@@ -353,7 +353,7 @@ export default function ClaimDetailsPage() {
                   Submitted: <strong className="text-slate-800">{submittedDateStr}</strong>
                 </p>
                 <p className="text-slate-500">
-                  Amount: <strong className="text-slate-900 text-sm">${(claim.claimAmount || 0).toFixed(2)}</strong>
+                  Amount: <strong className="text-slate-900 text-sm">Rs. ${(claim.claimAmount || 0).toFixed(2)}</strong>
                 </p>
                 <p className="text-slate-500 flex items-center gap-1.5">
                   Status:{" "}
@@ -397,7 +397,7 @@ export default function ClaimDetailsPage() {
                       <td className="py-3 px-4 font-medium text-slate-800">{item.description}</td>
                       <td className="py-3 px-4 font-mono text-slate-500">{item.code}</td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        ${item.amount.toFixed(2)}
+                        Rs. {item.amount.toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -406,7 +406,7 @@ export default function ClaimDetailsPage() {
                       Total Requested Claim
                     </td>
                     <td className="py-3 px-4 text-right text-blue-600 font-extrabold text-sm">
-                      ${(claim.claimAmount || 0).toFixed(2)}
+                      Rs. ${(claim.claimAmount || 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
@@ -492,7 +492,7 @@ export default function ClaimDetailsPage() {
                     <p className="text-slate-400 text-[11px]">{reviewedDateStr} · {reviewedTimeStr}</p>
                     {claim.status === "APPROVED" && claim.approvedAmount !== undefined && (
                       <p className="text-emerald-600 font-semibold text-[11px]">
-                        Settlement authorized: ${claim.approvedAmount.toFixed(2)}
+                        Settlement authorized: Rs. {claim.approvedAmount.toFixed(2)}
                       </p>
                     )}
                     {claim.status === "REJECTED" && claim.rejectionReason && (

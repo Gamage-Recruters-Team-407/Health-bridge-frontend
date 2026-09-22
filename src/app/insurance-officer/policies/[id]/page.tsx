@@ -251,19 +251,19 @@ export default function PolicyDetailsPage() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           <StatCard
             title="Total Coverage Limit"
-            value={`$${policy.coverageAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+            value={`Rs. ${policy.coverageAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
             subtitle="Maximum underwritten limit"
             icon={<Shield className="w-5 h-5 text-blue-600" />}
           />
           <StatCard
             title="Coverage Utilized"
-            value={`$${(policy.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+            value={`Rs. ${(policy.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
             subtitle={`${usedPercent}% of total limit consumed`}
             icon={<DollarSign className="w-5 h-5 text-amber-600" />}
           />
           <StatCard
             title="Remaining Balance"
-            value={`$${remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
+            value={`Rs. ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}`}
             subtitle={remaining <= 0 ? "Coverage pool exhausted" : "Available for claims"}
             icon={<ShieldCheck className="w-5 h-5 text-emerald-600" />}
           />
@@ -299,11 +299,11 @@ export default function PolicyDetailsPage() {
               />
             </div>
             <div className="flex justify-between items-center text-xs text-slate-500 pt-1">
-              <span>$0.00</span>
+              <span>Rs. 0.00</span>
               <span>
-                Remaining: <strong>${remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
+                Remaining: <strong>Rs. {remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}</strong>
               </span>
-              <span>${policy.coverageAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
+              <span>Rs. {policy.coverageAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}</span>
             </div>
           </div>
         </Card>
@@ -376,7 +376,7 @@ export default function PolicyDetailsPage() {
                 Associated Claims History
               </CardTitle>
               <p className="text-xs text-slate-500 mt-0.5">
-                Claims filed against this policy contract. Total settled: ${totalClaimsApprovedAmount.toFixed(2)}
+                Claims filed against this policy contract. Total settled: Rs. {totalClaimsApprovedAmount.toFixed(2)}
               </p>
             </div>
             <Badge variant="primary" className="text-xs">
@@ -423,10 +423,10 @@ export default function PolicyDetailsPage() {
                         {c.treatmentDescription}
                       </TableCell>
                       <TableCell className="font-semibold text-xs text-slate-900">
-                        ${c.claimAmount?.toFixed(2)}
+                        Rs. {c.claimAmount?.toFixed(2)}
                       </TableCell>
                       <TableCell className="font-bold text-xs text-emerald-600">
-                        {c.approvedAmount !== undefined ? `$${c.approvedAmount.toFixed(2)}` : "—"}
+                        {c.approvedAmount !== undefined ? `Rs. ${c.approvedAmount.toFixed(2)}` : "—"}
                       </TableCell>
                       <TableCell className="text-xs text-slate-500">
                         {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : "—"}

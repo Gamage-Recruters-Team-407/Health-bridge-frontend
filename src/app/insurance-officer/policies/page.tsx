@@ -282,13 +282,13 @@ export default function PolicyDirectoryPage() {
           />
           <StatCard
             title="Total Coverage Pool"
-            value={`$${metrics.totalCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`Rs. ${metrics.totalCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle="Underwritten liability limit"
             icon={<DollarSign className="w-5 h-5 text-indigo-600" />}
           />
           <StatCard
             title="Utilized Coverage"
-            value={`$${metrics.totalUsed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`Rs. ${metrics.totalUsed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.utilizationRate}% overall pool utilization`}
             icon={<ShieldAlert className="w-5 h-5 text-amber-600" />}
           />
@@ -341,15 +341,15 @@ export default function PolicyDirectoryPage() {
               </div>
               <div className="flex items-center gap-4 text-slate-600">
                 <span>
-                  Limit: <strong className="text-slate-900">${quickSearchResult.coverageAmount?.toFixed(2)}</strong>
+                  Limit: <strong className="text-slate-900">Rs. {quickSearchResult.coverageAmount?.toFixed(2)}</strong>
                 </span>
                 <span>
-                  Used: <strong className="text-amber-600">${quickSearchResult.coverageUsed?.toFixed(2)}</strong>
+                  Used: <strong className="text-amber-600">Rs. {quickSearchResult.coverageUsed?.toFixed(2)}</strong>
                 </span>
                 <span>
                   Remaining:{" "}
                   <strong className="text-emerald-600">
-                    ${(quickSearchResult.coverageAmount - quickSearchResult.coverageUsed).toFixed(2)}
+                    Rs. {(quickSearchResult.coverageAmount - quickSearchResult.coverageUsed).toFixed(2)}
                   </strong>
                 </span>
                 <Button
@@ -510,7 +510,7 @@ export default function PolicyDirectoryPage() {
                           <div className="space-y-1 text-xs">
                             <div className="flex justify-between items-center text-[11px]">
                               <span className="font-semibold text-slate-700">
-                                ${(p.coverageUsed || 0).toLocaleString()} / ${p.coverageAmount?.toLocaleString()}
+                                Rs. {(p.coverageUsed || 0).toLocaleString()} / Rs. {p.coverageAmount?.toLocaleString()}
                               </span>
                               <span
                                 className={`font-bold ${
@@ -537,7 +537,7 @@ export default function PolicyDirectoryPage() {
                               />
                             </div>
                             <p className="text-[10px] text-slate-400">
-                              Remaining: ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              Remaining: Rs. {remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                         </TableCell>

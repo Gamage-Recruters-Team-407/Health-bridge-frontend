@@ -304,7 +304,7 @@ export default function PatientClaimTrackingPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Claimed Amount"
-          value={`$${(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`Rs. ${(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle="Submitted by you"
           icon={<DollarSign className="w-5 h-5 text-blue-600" />}
         />
@@ -312,7 +312,7 @@ export default function PatientClaimTrackingPage() {
           title="Approved Settlement"
           value={
             claim.approvedAmount !== undefined
-              ? `$${claim.approvedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+              ? `Rs. ${claim.approvedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : "Pending Review"
           }
           subtitle={
@@ -358,7 +358,7 @@ export default function PatientClaimTrackingPage() {
                       <td className="py-3 px-4 font-medium text-slate-800">{item.description}</td>
                       <td className="py-3 px-4 font-mono text-slate-500">{item.code}</td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        ${item.amount.toFixed(2)}
+                        Rs. {item.amount.toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -367,7 +367,7 @@ export default function PatientClaimTrackingPage() {
                       Total Requested Amount
                     </td>
                     <td className="py-3 px-4 text-right text-blue-600 font-extrabold text-sm">
-                      ${(claim.claimAmount || 0).toFixed(2)}
+                      Rs. {(claim.claimAmount || 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
