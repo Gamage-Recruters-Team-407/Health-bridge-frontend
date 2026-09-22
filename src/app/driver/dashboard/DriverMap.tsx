@@ -60,11 +60,15 @@ function MapUpdater({ center }: { center: [number, number] }) {
 interface DriverMapProps {
   driverLat: number;
   driverLng: number;
-  patientLat: number;
-  patientLng: number;
+  patientLat?: number | null;
+  patientLng?: number | null;
 }
 
 export default function DriverMap({ driverLat, driverLng, patientLat, patientLng }: DriverMapProps) {
+  // Add slight offset if coordinates are identical to prevent overlap hiding one marker
+  const isOverlap = patientLat != null && patientLng != null && Math.abs(driverLat - patientLat) < 0.0001 && Math.abs(driverLng - patientLng) < 0.0001;
+  const renderDriverLng = isOverlap ? driverLng + 0.0002 : driverLng;
+
   return (
     <div style={{ height: '300px', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #E2E8F0', zIndex: 0 }}>
       <MapContainer 
@@ -80,14 +84,16 @@ export default function DriverMap({ driverLat, driverLng, patientLat, patientLng
         <MapUpdater center={[driverLat, driverLng]} />
         
         {/* Driver Marker */}
-        <Marker position={[driverLat, driverLng]} icon={getAmbulanceIcon()}>
+        <Marker position={[driverLat, renderDriverLng]} icon={getAmbulanceIcon()}>
           <Popup>You are here</Popup>
         </Marker>
 
         {/* Patient Marker */}
-        <Marker position={[patientLat, patientLng]} icon={redIcon}>
-          <Popup><strong>John Doe</strong><br/>Emergency Location</Popup>
-        </Marker>
+        {patientLat != null && patientLng != null && (
+          <Marker position={[patientLat, patientLng]} icon={redIcon}>
+            <Popup><strong>Emergency Location</strong></Popup>
+          </Marker>
+        )}
       </MapContainer>
     </div>
   );
