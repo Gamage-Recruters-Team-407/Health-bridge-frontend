@@ -15,6 +15,7 @@ import {
 } from "@/utils/validators";
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB, matches backend limit
+const EMERGENCY_CONTACT_MAX_LENGTH = 100;
 
 const BLOOD_GROUPS = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
 
@@ -25,6 +26,7 @@ type FormData = {
   gender: string;
   bloodGroup: string;
   address: string;
+  emergencyContact: string;
 };
 
 type FormErrors = Partial<Record<keyof FormData, string>>;
@@ -40,6 +42,7 @@ export default function EditProfilePage() {
     gender: "",
     bloodGroup: "",
     address: "",
+    emergencyContact: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [touched, setTouched] = useState<Partial<Record<keyof FormData, boolean>>>({});
@@ -62,6 +65,7 @@ export default function EditProfilePage() {
           gender: data.gender || "",
           bloodGroup: data.bloodGroup || "",
           address: data.address || "",
+          emergencyContact: data.emergencyContact || "",
         });
         setPicture(data.picture || "");
         setRole(data.role || "");
@@ -70,7 +74,6 @@ export default function EditProfilePage() {
       .finally(() => setLoading(false));
   }, []);
 
-  // Runs the correct validator for a single field, returns "" if valid
   const validateField = (name: keyof FormData, value: string): string => {
     switch (name) {
       case "fullName":
@@ -85,6 +88,10 @@ export default function EditProfilePage() {
         return validateBloodGroup(value, role === "PATIENT");
       case "address":
         return validateAddress(value);
+      case "emergencyContact":
+        return value.length > EMERGENCY_CONTACT_MAX_LENGTH
+          ? `Must be under ${EMERGENCY_CONTACT_MAX_LENGTH} characters`
+          : "";
       default:
         return "";
     }
@@ -97,11 +104,11 @@ export default function EditProfilePage() {
       dateOfBirth: validateField("dateOfBirth", data.dateOfBirth),
       gender: validateField("gender", data.gender),
       address: validateField("address", data.address),
+      emergencyContact: validateField("emergencyContact", data.emergencyContact),
     };
     if (role === "PATIENT") {
       nextErrors.bloodGroup = validateField("bloodGroup", data.bloodGroup);
     }
-    // Drop empty-string entries so only real errors remain
     Object.keys(nextErrors).forEach((key) => {
       if (!nextErrors[key as keyof FormData]) delete nextErrors[key as keyof FormData];
     });
@@ -204,6 +211,7 @@ export default function EditProfilePage() {
       gender: true,
       bloodGroup: true,
       address: true,
+      emergencyContact: true,
     });
 
     if (Object.keys(nextErrors).length > 0) {
@@ -219,6 +227,7 @@ export default function EditProfilePage() {
         dateOfBirth: formData.dateOfBirth,
         gender: formData.gender,
         address: formData.address.trim(),
+        emergencyContact: formData.emergencyContact.trim(),
         ...(role === "PATIENT" ? { bloodGroup: formData.bloodGroup } : {}),
       });
       router.push("/profile");
@@ -258,7 +267,6 @@ export default function EditProfilePage() {
 
           {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
 
-          {/* Profile Picture */}
           <div className="flex flex-col items-center mb-8">
             <div className="relative">
               <button
@@ -428,6 +436,25 @@ export default function EditProfilePage() {
 
             <div>
               <label className="block text-sm text-gray-500 mb-1">
+                Emergency Contact
+              </label>
+              <input
+                type="text"
+                name="emergencyContact"
+                placeholder="Name and phone number"
+                value={formData.emergencyContact}
+                onChange={handleChange}
+                onBlur={handleBlur}
+                maxLength={EMERGENCY_CONTACT_MAX_LENGTH}
+                className={inputClass("emergencyContact")}
+              />
+              {errors.emergencyContact && (
+                <p className="text-red-500 text-xs mt-1">{errors.emergencyContact}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm text-gray-500 mb-1">
                 Address
               </label>
               <textarea
@@ -460,10 +487,7 @@ export default function EditProfilePage() {
               >
                 {saving ? "Saving..." : "Save Changes"}
               </button>
-              <a
-                href="/profile"
-                className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
-              >
+              <a href="/profile" className="flex-1 text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition">
                 Cancel
               </a>
             </div>

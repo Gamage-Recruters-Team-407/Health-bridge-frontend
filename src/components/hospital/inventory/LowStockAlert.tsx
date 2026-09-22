@@ -4,6 +4,14 @@ import React from "react";
 import { HospitalInventory } from "@/types/hospital";
 import { AlertTriangle, Package } from "lucide-react";
 
+// ✅ Currency formatter for LKR
+const formatLKR = (amount: number) => {
+  return `Rs. ${amount.toLocaleString('en-LK', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  })}`;
+};
+
 interface LowStockAlertProps {
   items: HospitalInventory[];
 }
@@ -46,6 +54,10 @@ export const LowStockAlert: React.FC<LowStockAlertProps> = ({ items }) => {
               <p className="text-sm font-medium text-slate-900">{item.itemName}</p>
               <p className="text-xs text-slate-500">
                 Code: {item.itemCode} • Location: {item.location}
+              </p>
+              {/* ✅ LKR Unit Cost */}
+              <p className="text-xs text-slate-500 mt-0.5">
+                Unit Cost: {formatLKR(item.unitCost)}
               </p>
             </div>
             <div className="text-right">

@@ -1,13 +1,14 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { HospitalProvider, useHospital } from "@/context/HospitalContext";
+import { useHospital } from "@/context/HospitalContext";
 import { InvoiceCard } from "@/components/hospital/billing/InvoiceCard";
 import { Plus, FileText, RefreshCw } from "lucide-react";
 import DashboardLayout from "@/app/dashboard/layout";
+import { formatLKR } from "@/lib/currency";
 
-function BillingContent() {
+export default function BillingPage() {
   const {
     invoices,
     invoicesLoading,
@@ -16,67 +17,49 @@ function BillingContent() {
     fetchAllInvoices,
   } = useHospital();
 
-  const [retryCount, setRetryCount] = useState(0);
-
-  // ✅ Debug logging
-  useEffect(() => {
-    console.log('📊 BillingContent - State:', {
-      invoicesLength: invoices.length,
-      loading: invoicesLoading,
-      error: invoicesError,
-    });
-  }, [invoices, invoicesLoading, invoicesError]);
-
-  // ✅ Fetch on mount
-  useEffect(() => {
-    console.log('🔄 BillingContent - Fetching invoices...');
-    fetchAllInvoices();
-  }, [fetchAllInvoices, retryCount]);
-
-  // ✅ Manual refresh
   const handleRefresh = () => {
     console.log('🔄 Manual refresh triggered');
-    setRetryCount(prev => prev + 1);
+    fetchAllInvoices();
   };
 
-  // ✅ Loading state
-  if (invoicesLoading) {
+  if (invoicesLoading && invoices.length === 0) {
     return (
-      <div className="flex flex-col justify-center items-center h-64">
-        <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-        <p className="mt-4 text-slate-500 font-medium">Loading invoices...</p>
-        <p className="text-sm text-slate-400 mt-1">Please wait while we fetch your data</p>
-        <button 
-          onClick={handleRefresh}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Refresh
-        </button>
-      </div>
+      <DashboardLayout pageTitle="Billing Management">
+        <div className="flex flex-col justify-center items-center h-64">
+          <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
+          <p className="mt-4 text-slate-500 font-medium">Loading invoices...</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Refresh
+          </button>
+        </div>
+      </DashboardLayout>
     );
   }
 
-  // ✅ Error state
-  if (invoicesError) {
+  if (invoicesError && invoices.length === 0) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
-        <p className="font-medium text-red-700">❌ Error loading invoices</p>
-        <p className="text-sm text-red-600 mt-1">{invoicesError}</p>
-        <button 
-          onClick={handleRefresh}
-          className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition"
-        >
-          <RefreshCw className="w-4 h-4" />
-          Retry
-        </button>
-      </div>
+      <DashboardLayout pageTitle="Billing Management">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <p className="font-medium text-red-700">❌ Error loading invoices</p>
+          <p className="text-sm text-red-600 mt-1">{invoicesError}</p>
+          <button
+            onClick={handleRefresh}
+            className="mt-4 inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-xl transition"
+          >
+            <RefreshCw className="w-4 h-4" />
+            Retry
+          </button>
+        </div>
+      </DashboardLayout>
     );
   }
 
-  // ✅ Render content
   return (
-    <>
+    <DashboardLayout pageTitle="Billing Management">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -106,7 +89,7 @@ function BillingContent() {
         </div>
       </div>
 
-      {/* Stats Summary */}
+      {/* Stats Summary - ✅ LKR */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Invoices</p>
@@ -115,19 +98,20 @@ function BillingContent() {
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Paid</p>
           <p className="text-2xl font-bold text-emerald-600 mt-1">
-            {invoices.filter(i => i.paymentStatus === "PAID").length}
+            {invoices.filter((i) => i.paymentStatus === "PAID").length}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Unpaid</p>
           <p className="text-2xl font-bold text-red-600 mt-1">
-            {invoices.filter(i => i.paymentStatus === "UNPAID").length}
+            {invoices.filter((i) => i.paymentStatus === "UNPAID").length}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Revenue</p>
+          {/* ✅ LKR */}
           <p className="text-2xl font-bold text-blue-600 mt-1">
-            ${invoices.reduce((sum, i) => sum + (i.total || 0), 0).toFixed(2)}
+            {formatLKR(invoices.reduce((sum, i) => sum + (i.total || 0), 0))}
           </p>
         </div>
       </div>
@@ -168,16 +152,6 @@ function BillingContent() {
           ))}
         </div>
       )}
-    </>
-  );
-}
-
-export default function BillingPage() {
-  return (
-    <DashboardLayout pageTitle="Billing Management">
-      <HospitalProvider>
-        <BillingContent />
-      </HospitalProvider>
     </DashboardLayout>
   );
 }
