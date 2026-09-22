@@ -25,6 +25,7 @@ import {
   DollarSign,
   ClipboardCheck,
   Video,
+  LifeBuoy,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -90,6 +91,7 @@ const getNavGroups = (role: string): NavGroup[] => {
         items: [
           { title: "Users", href: "/admin/users", icon: Users },
           { title: "Settings", href: "/admin/settings", icon: Settings },
+          { title: "Support", href: "/support/admin", icon: LifeBuoy },
         ],
       },
     ];
@@ -322,7 +324,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div
           className={cn(
             "flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-200 transition-all",
-            collapsed && "justify-center p-1.5"
+            collapsed && "flex-col justify-center p-1.5 gap-2"
           )}
         >
           <div className="relative shrink-0">
@@ -339,18 +341,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {!collapsed && (
-            <button
-              onClick={() => {
-                clearAuthData();
-                router.push("/login");
-              }}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              clearAuthData();
+              window.location.href = "/login";
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
