@@ -2,7 +2,27 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import {
+  FileText,
+  Search,
+  CheckCircle2,
+  Clock,
+  AlertTriangle,
+  XCircle,
+  Building2,
+  User,
+  Calendar,
+  DollarSign,
+  Filter,
+  ArrowUpRight,
+  RefreshCw,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+} from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
+import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
 import {
   Table,
   TableHeader,
@@ -16,7 +36,6 @@ import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Loader from "@/components/ui/Loader";
-import { useToast } from "@/components/ui/Toast";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, ClaimStatus } from "@/types/insurance";
 import ClaimDecisionModal from "./ClaimDecisionModal";
@@ -30,94 +49,536 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 };
 
 export default function ClaimsListPage() {
-  const [claims, setClaims] = useState<InsuranceClaim[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState("");
-  const [activeClaim, setActiveClaim] = useState<InsuranceClaim | null>(null);
-  const toast = useToast();
   const router = useRouter();
 
-  const loadClaims = () => {
-    setLoading(true);
-    insuranceService
-      .getAllClaims()
-      .then(setClaims)
-      .catch(() => toast.error("Error", "Failed to load claims"))
-      .finally(() => setLoading(false));
+  const [claims, setClaims] = useState<InsuranceClaim[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Search, Filter, and Pagination State
+  const [searchQuery, setSearchQuery] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [providerFilter, setProviderFilter] = useState<string>("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 10;
+
+  // Decision Modal State
+  const [selectedClaim, setSelectedClaim] = useState<InsuranceClaim | null>(null);
+  const [decisionMode, setDecisionMode] = useState<"APPROVE" | "REJECT" | "REVIEW">("REVIEW");
+
+  // Feedback notifications
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
+  const showSuccess = (msg: string) => {
+    setSuccessMessage(msg);
+    setTimeout(() => setSuccessMessage(null), 4000);
   };
 
-  useEffect(loadClaims, []);
+  const showError = (msg: string) => {
+    setErrorMessage(msg);
+    setTimeout(() => setErrorMessage(null), 4000);
+  };
 
-  const filtered = useMemo(
-    () =>
-      claims.filter(
-        c =>
-          c.claimNumber.toLowerCase().includes(search.toLowerCase()) ||
-          c.patientId.toLowerCase().includes(search.toLowerCase())
-      ),
-    [claims, search]
-  );
+  const loadClaims = async () => {
+    setLoading(true);
+    try {
+      const data = await insuranceService.getAllClaims();
+      setClaims(data);
+      setErrorMessage(null);
+    } catch {
+      showError("Failed to load claims from server.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  if (loading) return <Loader />;
+  useEffect(() => {
+    loadClaims();
+  }, []);
+
+  // Unique providers from claims
+  const uniqueProviders = useMemo(() => {
+    const set = new Set<string>();
+    claims.forEach((c) => {
+      if (c.providerName) set.add(c.providerName);
+    });
+    return Array.from(set).sort();
+  }, [claims]);
+
+  // Filtered claims
+  const filteredClaims = useMemo(() => {
+    return claims.filter((c) => {
+      const q = searchQuery.toLowerCase();
+      const matchesSearch =
+        !q ||
+        c.claimNumber.toLowerCase().includes(q) ||
+        c.patientId.toLowerCase().includes(q) ||
+        (c.treatmentDescription && c.treatmentDescription.toLowerCase().includes(q)) ||
+        (c.providerName && c.providerName.toLowerCase().includes(q)) ||
+        (c.policyNumber && c.policyNumber.toLowerCase().includes(q));
+
+      let matchesStatus = true;
+      if (statusFilter === "PENDING") {
+        matchesStatus = c.status === "SUBMITTED" || c.status === "UNDER_REVIEW";
+      } else if (statusFilter !== "ALL") {
+        matchesStatus = c.status === statusFilter;
+      }
+
+      const matchesProvider =
+        providerFilter === "ALL" || c.providerName === providerFilter;
+
+      return matchesSearch && matchesStatus && matchesProvider;
+    });
+  }, [claims, searchQuery, statusFilter, providerFilter]);
+
+  // Paginated claims
+  const totalPages = Math.ceil(filteredClaims.length / pageSize) || 1;
+  const paginatedClaims = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredClaims.slice(start, start + pageSize);
+  }, [filteredClaims, currentPage, pageSize]);
+
+  // Live Metrics
+  const metrics = useMemo(() => {
+    const total = claims.length;
+    const pending = claims.filter(
+      (c) => c.status === "SUBMITTED" || c.status === "UNDER_REVIEW"
+    ).length;
+    const approved = claims.filter((c) => c.status === "APPROVED" || c.status === "PAID").length;
+    const rejected = claims.filter((c) => c.status === "REJECTED").length;
+    const totalApprovedPayout = claims
+      .filter((c) => c.status === "APPROVED" || c.status === "PAID")
+      .reduce((acc, c) => acc + (c.approvedAmount || 0), 0);
+    const rejectionRate = total > 0 ? ((rejected / total) * 100).toFixed(1) : "0.0";
+
+    return {
+      total,
+      pending,
+      approved,
+      rejected,
+      totalApprovedPayout,
+      rejectionRate,
+    };
+  }, [claims]);
+
+  const openDecisionModal = (claim: InsuranceClaim, mode: "APPROVE" | "REJECT" | "REVIEW") => {
+    setSelectedClaim(claim);
+    setDecisionMode(mode);
+  };
+
+  const handleDecisionComplete = () => {
+    setSelectedClaim(null);
+    showSuccess("Claim decision saved successfully.");
+    loadClaims();
+  };
 
   return (
-    <DashboardLayout pageTitle="Claims" userRole="INSURANCE_OFFICER">
-      <div className="mb-4">
-        <Input
-          placeholder="Search by claim ID or patient..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+    <DashboardLayout pageTitle="Insurance Claims" userRole="INSURANCE_OFFICER">
+      <div className="space-y-6">
+        {/* Header & Breadcrumb */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-600 mb-1">
+              <span>Insurance</span>
+              <span>/</span>
+              <span className="text-slate-400">Claims</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#0A2540] tracking-tight">
+              Insurance Claims
+            </h1>
+            <p className="text-sm text-slate-500 mt-1">
+              Search, filter, and manage insurance claims submitted for adjudication.
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={loadClaims}
+              className="gap-1.5 text-slate-600"
+            >
+              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
+              <span>Refresh</span>
+            </Button>
+          </div>
+        </div>
+
+        {/* Tab Sub-Navigation (Matching Suite Design) */}
+        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
+          <Link
+            href="/insurance-officer/dashboard"
+            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
+          >
+            Dashboard
+          </Link>
+          <Link
+            href="/insurance-officer/claims"
+            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
+          >
+            Claims
+          </Link>
+          <Link
+            href="/insurance-officer/policies"
+            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
+          >
+            Policies
+          </Link>
+          <Link
+            href="/fraud-detection"
+            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
+          >
+            Fraud Detection
+          </Link>
+          <Link
+            href="/insurance-officer/reports"
+            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
+          >
+            Reports
+          </Link>
+        </div>
+
+        {/* Feedback Banners */}
+        {successMessage && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />
+            <span>{successMessage}</span>
+          </div>
+        )}
+        {errorMessage && (
+          <div className="p-3 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
+            <AlertTriangle className="w-4 h-4 text-red-600 flex-shrink-0" />
+            <span>{errorMessage}</span>
+          </div>
+        )}
+
+        {/* Live Metric KPI Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatCard
+            title="Total Claims"
+            value={metrics.total.toString()}
+            subtitle="All claims in system"
+            icon={<FileText className="w-5 h-5 text-blue-600" />}
+          />
+          <StatCard
+            title="Pending Review"
+            value={metrics.pending.toString()}
+            subtitle="Requires officer adjudication"
+            icon={<Clock className="w-5 h-5 text-amber-600" />}
+          />
+          <StatCard
+            title="Approved Payouts"
+            value={`$${metrics.totalApprovedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            subtitle={`${metrics.approved} claims settled`}
+            icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
+          />
+          <StatCard
+            title="Rejection Rate"
+            value={`${metrics.rejectionRate}%`}
+            subtitle={`${metrics.rejected} claims rejected`}
+            icon={<XCircle className="w-5 h-5 text-rose-600" />}
+          />
+        </div>
+
+        {/* Search & Filter Controls (Figma Design Pattern) */}
+        <Card className="p-4 bg-white">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+            {/* Search Input */}
+            <div className="relative flex-1 max-w-md">
+              <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search claims by ID, patient, provider, treatment..."
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
+              />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              {/* Status Filter Chips */}
+              <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl text-xs font-semibold">
+                {[
+                  { id: "ALL", label: "All" },
+                  { id: "PENDING", label: "Pending" },
+                  { id: "APPROVED", label: "Approved" },
+                  { id: "REJECTED", label: "Rejected" },
+                  { id: "PAID", label: "Paid" },
+                ].map((s) => (
+                  <button
+                    key={s.id}
+                    onClick={() => {
+                      setStatusFilter(s.id);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 rounded-lg transition-all ${
+                      statusFilter === s.id
+                        ? "bg-white text-blue-600 shadow-sm font-bold"
+                        : "text-slate-600 hover:text-slate-900"
+                    }`}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* Provider Dropdown */}
+              {uniqueProviders.length > 0 && (
+                <select
+                  value={providerFilter}
+                  onChange={(e) => {
+                    setProviderFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-blue-500"
+                >
+                  <option value="ALL">All Providers</option>
+                  {uniqueProviders.map((prov) => (
+                    <option key={prov} value={prov}>
+                      {prov}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Claims Table (Matching Figma Design) */}
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-base font-bold text-[#0A2540]">
+                Insurance Claims Directory
+              </CardTitle>
+              <Badge variant="primary" className="text-xs">
+                {filteredClaims.length} {filteredClaims.length === 1 ? "Claim" : "Claims"}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {loading ? (
+              <div className="p-12 flex justify-center">
+                <Loader />
+              </div>
+            ) : filteredClaims.length === 0 ? (
+              <Table>
+                <TableBody>
+                  <TableEmpty
+                    colSpan={7}
+                    message="No claims found"
+                    description={
+                      searchQuery || statusFilter !== "ALL" || providerFilter !== "ALL"
+                        ? "No claims match the specified filter criteria."
+                        : "No insurance claims are currently recorded in the database."
+                    }
+                  />
+                </TableBody>
+              </Table>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Claim ID</TableHead>
+                    <TableHead>Patient Name / ID</TableHead>
+                    <TableHead>Insurance Provider</TableHead>
+                    <TableHead>Date</TableHead>
+                    <TableHead>Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedClaims.map((c) => {
+                    const isPending = c.status === "SUBMITTED" || c.status === "UNDER_REVIEW";
+
+                    return (
+                      <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                        {/* Claim ID */}
+                        <TableCell>
+                          <Link
+                            href={`/insurance-officer/claims/${c.id}`}
+                            className="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 group"
+                          >
+                            <FileText className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
+                            <span>{c.claimNumber}</span>
+                          </Link>
+                        </TableCell>
+
+                        {/* Patient */}
+                        <TableCell>
+                          <div className="flex items-center gap-1.5 text-xs text-slate-700">
+                            <User className="w-3.5 h-3.5 text-slate-400" />
+                            <span className="font-mono font-medium">{c.patientId}</span>
+                          </div>
+                        </TableCell>
+
+                        {/* Provider & Policy */}
+                        <TableCell>
+                          <div className="space-y-0.5 text-xs">
+                            <div className="flex items-center gap-1 font-semibold text-slate-900">
+                              <Building2 className="w-3 h-3 text-slate-400" />
+                              <span>{c.providerName || "Standard Provider"}</span>
+                            </div>
+                            {c.policyNumber && (
+                              <span className="text-[11px] text-slate-500 font-mono">
+                                #{c.policyNumber}
+                              </span>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Date */}
+                        <TableCell>
+                          <div className="flex items-center gap-1 text-xs text-slate-600">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span>
+                              {c.submittedAt
+                                ? new Date(c.submittedAt).toLocaleDateString("en-GB", {
+                                    day: "2-digit",
+                                    month: "short",
+                                    year: "numeric",
+                                  })
+                                : "—"}
+                            </span>
+                          </div>
+                        </TableCell>
+
+                        {/* Amount */}
+                        <TableCell>
+                          <div className="space-y-0.5 text-xs">
+                            <span className="font-bold text-slate-900">
+                              ${c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </span>
+                            {c.approvedAmount !== undefined && (c.status === "APPROVED" || c.status === "PAID") && (
+                              <p className="text-[10px] font-semibold text-emerald-600">
+                                Approved: ${c.approvedAmount.toFixed(2)}
+                              </p>
+                            )}
+                          </div>
+                        </TableCell>
+
+                        {/* Status */}
+                        <TableCell>
+                          <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
+                        </TableCell>
+
+                        {/* Actions (Matching Figma: Approve / Reject quick buttons + Review link) */}
+                        <TableCell className="text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            {isPending ? (
+                              <>
+                                <button
+                                  type="button"
+                                  onClick={() => openDecisionModal(c, "APPROVE")}
+                                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                                >
+                                  Approve
+                                </button>
+                                <button
+                                  type="button"
+                                  onClick={() => openDecisionModal(c, "REJECT")}
+                                  className="px-3 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition-colors"
+                                >
+                                  Reject
+                                </button>
+                              </>
+                            ) : (
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
+                                className="h-7 text-xs px-2.5 gap-1"
+                              >
+                                <span>View</span>
+                                <ArrowUpRight className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+
+            {/* Pagination Controls (Matching Figma Design) */}
+            {filteredClaims.length > 0 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                <div>
+                  Showing{" "}
+                  <span className="font-semibold text-[#0A2540]">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-[#0A2540]">
+                    {Math.min(currentPage * pageSize, filteredClaims.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-[#0A2540]">
+                    {filteredClaims.length}
+                  </span>{" "}
+                  claims
+                </div>
+
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1)
+                    .slice(
+                      Math.max(0, currentPage - 3),
+                      Math.min(totalPages, currentPage + 2)
+                    )
+                    .map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
+                          currentPage === pageNum
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "text-slate-600 hover:bg-slate-100"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Adjudication Decision Modal */}
+        {selectedClaim && (
+          <ClaimDecisionModal
+            claim={selectedClaim}
+            initialMode={decisionMode}
+            onClose={() => setSelectedClaim(null)}
+            onDecided={handleDecisionComplete}
+          />
+        )}
       </div>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Claim ID</TableHead>
-            <TableHead>Patient</TableHead>
-            <TableHead>Amount</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filtered.length === 0 ? (
-            <TableEmpty colSpan={5} message="No claims found" />
-          ) : (
-            filtered.map(c => (
-              <TableRow key={c.id}>
-                <TableCell>{c.claimNumber}</TableCell>
-                <TableCell>{c.patientId}</TableCell>
-                <TableCell>${c.claimAmount.toFixed(2)}</TableCell>
-                <TableCell>
-                  <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
-                </TableCell>
-                <TableCell>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}>
-                      View
-                    </Button>
-                    <Button size="sm" onClick={() => setActiveClaim(c)}>
-                      Review
-                    </Button>
-                  </div>
-                </TableCell>
-              </TableRow>
-            ))
-          )}
-        </TableBody>
-      </Table>
-
-      {activeClaim && (
-        <ClaimDecisionModal
-          claim={activeClaim}
-          onClose={() => setActiveClaim(null)}
-          onDecided={() => {
-            setActiveClaim(null);
-            loadClaims();
-          }}
-        />
-      )}
     </DashboardLayout>
   );
 }

@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -26,7 +27,7 @@ import {
   Video,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { clearAuthData } from "@/lib/auth";
+import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
 import { Badge } from "@/components/ui/Badge";
 
 export interface SidebarProps {
@@ -101,10 +102,15 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "Appointments", href: "/appointments", icon: Calendar },
-          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "My profile", href: "/doctor/profile", icon: User },
+          { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Schedule", href: "/doctor/schedule", icon: Calendar },
+          { title: "Appointments", href: "/doctor/appointments", icon: Calendar },
+          { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
+          { title: "Leave", href: "/doctor/leave", icon: ClipboardCheck },
+          { title: "Earnings", href: "/doctor/earnings", icon: DollarSign },
+          { title: "Prescription", href: "/prescriptions", icon: FileText },
         ],
       },
     ];
@@ -119,7 +125,6 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Dashboard", href: "/patient/dashboard", icon: LayoutDashboard },
           { title: "Family Members", href: "/patient/family", icon: Users },
           { title: "Health Metrics", href: "/patient/health-metrics", icon: TrendingUp },
-          { title: "Medications", href: "/patient/medications", icon: Pill },
           { title: "Appointments", href: "/appointments", icon: Calendar },
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
@@ -174,6 +179,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Dashboard", href: "/insurance-officer/dashboard", icon: LayoutDashboard },
           { title: "Claims", href: "/insurance-officer/claims", icon: FileText },
           { title: "Policies", href: "/insurance-officer/policies", icon: ShieldAlert },
+          { title: "Fraud Detection", href: "/fraud-detection", icon: ShieldAlert },
           { title: "Reports", href: "/insurance-officer/reports", icon: FileSpreadsheet },
         ],
       },
@@ -213,7 +219,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       {/* Brand Header */}
       <div className="h-16 px-4 flex items-center justify-between border-b border-slate-100">
-        <Link href="/dashboard" className="flex items-center gap-3 overflow-hidden">
+        <Link href={getRoleRedirectPath(userRole)} className="flex items-center gap-3 overflow-hidden">
           <div className="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center text-white shrink-0 shadow-lg shadow-blue-500/20">
             <svg className="w-6 h-6 fill-current" viewBox="0 0 24 24">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm1 14h-2v-3H8v-2h3V7h2v3h3v2h-3v3z" />
