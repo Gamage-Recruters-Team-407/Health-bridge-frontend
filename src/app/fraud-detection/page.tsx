@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FraudDetectionTabs from "@/components/fraud-detection/FraudDetectionTabs";
 
@@ -21,6 +24,13 @@ const riskLevels = [
   { label: "High Risk", value: "10%", width: "10%", color: "#ef1624" },
 ];
 
+const patientRiskScores = [
+  { patient: "Ava Thompson", score: 91, detail: "Duplicate billing and provider history" },
+  { patient: "Marcus Lee", score: 68, detail: "Unusual claim frequency" },
+  { patient: "Noah Patel", score: 24, detail: "Provider code mismatch" },
+  { patient: "Emily Carter", score: 88, detail: "Confirmed fraud signal" },
+];
+
 function RiskMarker({ risk }: { risk: string }) {
   const color = risk === "high" ? "#ef1624" : risk === "medium" ? "#ff9d00" : "#00b981";
   return <span aria-label={`${risk} risk`} className="block h-1.5 w-6 rounded-full" style={{ backgroundColor: color }} />;
@@ -32,6 +42,9 @@ function ReasonBadge({ risk, reason }: { risk: string; reason: string }) {
 }
 
 export default function FraudDetectionPage() {
+  const [selectedPatient, setSelectedPatient] = useState(patientRiskScores[0].patient);
+  const selectedRisk = patientRiskScores.find((item) => item.patient === selectedPatient) ?? patientRiskScores[0];
+
   return (
     <DashboardLayout pageTitle="Insurance" userRole="INSURANCE_OFFICER">
       <div className="min-h-screen bg-[#fbfcfd] px-4 py-6 text-[#16191d] sm:px-7 lg:px-10 lg:py-9">
@@ -62,7 +75,10 @@ export default function FraudDetectionPage() {
             <div className="overflow-x-auto rounded-xl border border-[#e3e6e9]"><table className="w-full min-w-[650px] border-collapse text-left"><thead className="bg-[#fbfcfd] text-[9px] uppercase tracking-[0.04em] text-[#6d7780]"><tr>{["Claim ID", "Patient name", "Provider", "Risk", "Flag reason", "Date"].map((heading) => <th key={heading} className="px-3 py-3 font-medium">{heading}</th>)}</tr></thead><tbody className="text-[11px] text-[#3b4249]">{claims.map((claim) => <tr key={claim.id} className="border-t border-[#e9ebed]"><td className="px-3 py-3 font-semibold text-[#2e353b]">{claim.id}</td><td className="px-3 py-3">{claim.patient}</td><td className="px-3 py-3">{claim.provider}</td><td className="px-3 py-3"><RiskMarker risk={claim.risk} /></td><td className="px-3 py-3"><ReasonBadge reason={claim.reason} risk={claim.risk} /></td><td className="whitespace-nowrap px-3 py-3 text-[#717a83]">{claim.date}</td></tr>)}</tbody></table></div>
           </article>
 
-          <article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 shadow-[0_2px_10px_rgba(26,36,44,0.02)] sm:p-6"><h2 className="text-sm font-semibold text-[#20252a]">Risk distribution</h2><p className="mt-1 text-[11px] text-[#9299a0]">Distribution of claims by risk level</p><div className="mt-6 space-y-5">{riskLevels.map((level) => <div key={level.label}><div className="mb-2 flex justify-between text-[11px] text-[#65707a]"><span>{level.label}</span><span className="font-medium text-[#343b42]">{level.value}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f0f1f2]"><div className="h-full rounded-full" style={{ width: level.width, backgroundColor: level.color }} /></div></div>)}</div><div className="mt-6 rounded-xl bg-[#fafafa] px-3 py-3 text-[10px] leading-[1.45] text-[#7b838b]">Claims with repeated billing patterns and mismatched provider codes are automatically escalated for manual review.</div></article>
+          <div className="space-y-4">
+            <article className="rounded-2xl border border-[#e7e9ec] bg-white p-4 shadow-[0_2px_10px_rgba(26,36,44,0.02)]"><div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold text-[#20252a]">Patient risk score</h2><p className="mt-1 text-[10px] text-[#9299a0]">Individual claim risk</p></div><select aria-label="Select patient for risk score" value={selectedPatient} onChange={(event) => setSelectedPatient(event.target.value)} className="max-w-[140px] rounded-lg border border-[#e4e7ea] bg-white px-2 py-1.5 text-[10px] font-medium text-[#414850]"><option value="Ava Thompson">Ava Thompson</option><option value="Marcus Lee">Marcus Lee</option><option value="Noah Patel">Noah Patel</option><option value="Emily Carter">Emily Carter</option></select></div><div className="mt-4 flex items-end justify-between gap-3"><p className="text-[36px] font-semibold leading-none tracking-[-0.05em] text-[#ef1624]">{selectedRisk.score}<span className="text-base text-[#9ca3a9]">/100</span></p><p className="max-w-[145px] text-right text-[10px] leading-4 text-[#7b838c]">{selectedRisk.detail}</p></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-[#f0f1f2]"><div className="h-full rounded-full bg-[#ef1624] transition-[width]" style={{ width: `${selectedRisk.score}%` }} /></div></article>
+            <article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 shadow-[0_2px_10px_rgba(26,36,44,0.02)] sm:p-6"><h2 className="text-sm font-semibold text-[#20252a]">Risk distribution</h2><p className="mt-1 text-[11px] text-[#9299a0]">Distribution of claims by risk level</p><div className="mt-6 space-y-5">{riskLevels.map((level) => <div key={level.label}><div className="mb-2 flex justify-between text-[11px] text-[#65707a]"><span>{level.label}</span><span className="font-medium text-[#343b42]">{level.value}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f0f1f2]"><div className="h-full rounded-full" style={{ width: level.width, backgroundColor: level.color }} /></div></div>)}</div><div className="mt-6 rounded-xl bg-[#fafafa] px-3 py-3 text-[10px] leading-[1.45] text-[#7b838b]">Claims with repeated billing patterns and mismatched provider codes are automatically escalated for manual review.</div></article>
+          </div>
         </section>
       </div>
       </div>
