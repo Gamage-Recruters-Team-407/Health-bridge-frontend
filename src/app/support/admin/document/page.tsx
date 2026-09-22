@@ -74,6 +74,10 @@ export default function SupportDocumentsPage() {
 
   const [panelOpen, setPanelOpen] = useState(false);
 
+  // State to manage the delete confirmation modal
+  const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+
   useEffect(() => {
     loadDocuments();
   }, []);
@@ -95,16 +99,19 @@ export default function SupportDocumentsPage() {
   const getDocumentsByCategory = (category: string) =>
     documents.filter((document) => document.category === category);
 
-  const handleDelete = async (id: string) => {
-    const confirmed = window.confirm("Are you sure you want to delete this document?");
-    if (!confirmed) return;
+  const confirmDelete = async () => {
+    if (!documentToDelete) return;
 
     try {
-      await deleteSupportDocument(id);
-      setDocuments((prev) => prev.filter((document) => document.id !== id));
+      setIsDeleting(true);
+      await deleteSupportDocument(documentToDelete);
+      setDocuments((prev) => prev.filter((document) => document.id !== documentToDelete));
+      setDocumentToDelete(null);
     } catch (err) {
       console.error("Failed to delete document:", err);
       alert("Failed to delete document.");
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -171,8 +178,6 @@ export default function SupportDocumentsPage() {
                         >
                           {/* Document details */}
                           <div className="min-w-0 flex-1">
-                            
-
                             <DocumentDescription text={document.description ?? ""} />
                           </div>
 
@@ -204,7 +209,7 @@ export default function SupportDocumentsPage() {
 
                             <button
                               type="button"
-                              onClick={() => handleDelete(document.id)}
+                              onClick={() => setDocumentToDelete(document.id)}
                               aria-label="Delete document"
                               title="Delete document"
                               className="flex h-10 w-10 items-center justify-center rounded-md bg-red-600 text-white transition hover:bg-red-700"
@@ -236,6 +241,36 @@ export default function SupportDocumentsPage() {
         onClose={() => setPanelOpen(false)}
         onCreated={handleCreated}
       />
+
+      {/* Custom Delete Confirmation Modal */}
+      {documentToDelete !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md rounded-xl bg-white p-6 shadow-xl transition-all">
+            <h3 className="text-lg font-bold text-gray-900">Delete Document</h3>
+            <p className="mt-2 text-sm text-gray-600">
+              Are you sure you want to delete this document? This action cannot be undone.
+            </p>
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDocumentToDelete(null)}
+                disabled={isDeleting}
+                className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition hover:bg-gray-50 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={isDeleting}
+                className="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {isDeleting ? "Deleting..." : "Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
