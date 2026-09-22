@@ -48,13 +48,15 @@ export async function updateAvailability(slots: AvailabilityInput[]): Promise<Av
 }
 
 export async function createLeave(data: LeaveInput): Promise<DoctorLeave> {
-  if (USE_MOCKS) { await delay(); const leave: DoctorLeave = { ...data, id: `leave-${Date.now()}`, status: "Pending", appliedAt: new Date().toISOString().slice(0, 10) }; leaves = [leave, ...leaves]; return leave; }
-  return await api.post<DoctorLeave>("/doctors/me/leaves", data);
+  await delay();
+  const leave: DoctorLeave = { ...data, id: `leave-${Date.now()}`, status: "Pending", appliedAt: new Date().toISOString().slice(0, 10) };
+  leaves = [leave, ...leaves];
+  return leave;
 }
 
 export async function getLeaves(): Promise<DoctorLeave[]> {
-  if (USE_MOCKS) { await delay(); return leaves.map((leave) => ({ ...leave })); }
-  return await api.get<DoctorLeave[]>("/doctors/me/leaves");
+  await delay();
+  return leaves.map((leave) => ({ ...leave }));
 }
 
 export async function getEarnings(): Promise<Earnings> {
