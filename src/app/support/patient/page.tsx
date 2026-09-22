@@ -266,39 +266,33 @@ setSelectedId((current) =>
 
         {selectedId && !loadingTicket && !ticketError && ticket && (
           <>
-            <div className="flex items-center justify-between border-b border-[#E1DFDD] px-6 py-3">
-              <h1 className="truncate text-base font-semibold text-[#242424]">{ticket.subject || "Untitled ticket"}</h1>
-              <StatusBadge status={ticket.status} />
+            <div className="border-b border-[#E1DFDD] px-6 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-1">
+  <p className="text-xs font-semibold uppercase tracking-wide text-[#0F6CBD]">
+    {ticket.category}
+  </p>
+
+  <span className="text-xs font-semibold text-[#424242]">:</span>
+
+  <h1 className="text-base font-semibold text-[#242424]">
+    {ticket.subject || "Untitled ticket"}
+  </h1>
+</div>
+                <StatusBadge status={ticket.status} />
+              </div>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#424242]">{ticket.description}</p>
+              {ticket.attachmentUrl && (
+                <a href={ticket.attachmentUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ticket.attachmentUrl} alt="Ticket attachment" className="max-h-10 rounded-md border border-[#E1DFDD]" />
+                </a>
+              )}
+              <p className="mt-2 text-xs text-[#616161]">Opened {new Date(ticket.createdAt).toLocaleString()}</p>
             </div>
 
-            <div className="flex items-center justify-between border-b border-[#E1DFDD] bg-[#FAF9F8] px-6 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-sm font-semibold text-[#0F6CBD]">
-                  {(ticket.userName || "Y").slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#242424]">{ticket.userName || "You"}</p>
-                  <p className="text-xs text-[#616161]">To: Support team</p>
-                </div>
-              </div>
-              <span className="text-xs text-[#616161]">{new Date(ticket.createdAt).toLocaleString()}</span>
-            </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="border-b border-[#EDEBE9] px-6 py-4">
-                <ChatBubble
-                  reply={{
-                    id: "original",
-                    senderId: ticket.userId,
-                    senderName: ticket.userName,
-                    senderRole: "USER",
-                    message: ticket.description,
-                    imageUrl: ticket.attachmentUrl,
-                    createdAt: ticket.createdAt,
-                  }}
-                  isOwn={true}
-                />
-              </div>
               {ticket.replies.map((r) => (
                 <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
                   <ChatBubble

@@ -93,7 +93,7 @@ export default function CreateTicketModal({
   };
 
   return (
-    <div className="rounded-2xl border border-slate-100 bg-white shadow-sm">
+   <div className="rounded-2xl border border-[#0F6CBD] bg-[#EAF4FF] shadow-sm">
 
       {/* Header */}
       <div className="border-b border-slate-100 px-6 py-5">
@@ -189,8 +189,8 @@ export default function CreateTicketModal({
             value={subject}
             onChange={(e) => setSubject(e.target.value)}
             placeholder="e.g. Unable to book an appointment"
-            className="w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0052cc] focus:ring-4 focus:ring-[#0052cc]/10"
-          />
+className="w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0052cc] focus:ring-4 focus:ring-[#0052cc]/10"
+  />
         </div>
 
         {/* Description */}
@@ -214,8 +214,7 @@ export default function CreateTicketModal({
             onChange={(e) => setDescription(e.target.value)}
             rows={4}
             placeholder="Describe the issue in detail…"
-            className="w-full resize-none rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0052cc] focus:ring-4 focus:ring-[#0052cc]/10"
-          />
+className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0052cc] focus:ring-4 focus:ring-[#0052cc]/10"          />
         </div>
 
         {/* Contact Number */}
@@ -249,7 +248,7 @@ export default function CreateTicketModal({
               value={contactNumber}
               onChange={(e) => setContactNumber(e.target.value)}
               placeholder="e.g. +1 555 123 4567"
-              className="w-full rounded-xl border border-slate-200 py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0052cc] focus:ring-4 focus:ring-[#0052cc]/10"
+              className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-3.5 text-sm text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-[#0052cc] focus:ring-4 focus:ring-[#0052cc]/10"
             />
 
           </div>
@@ -274,7 +273,7 @@ export default function CreateTicketModal({
           />
 
           {attachment ? (
-            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3.5 py-2.5">
+            <div className="flex items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white px-3.5 py-2.5">
 
               <div className="flex min-w-0 items-center gap-2.5">
 
@@ -319,11 +318,11 @@ export default function CreateTicketModal({
               onDragLeave={() => setDragActive(false)}
               onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
-              className={`flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed px-3.5 py-5 text-center transition ${
-                dragActive
-                  ? "border-[#0052cc] bg-[#0052cc]/5"
-                  : "border-slate-200 hover:border-[#0052cc]/50 hover:bg-slate-50"
-              }`}
+            className={`flex w-full cursor-pointer flex-col items-center gap-1.5 rounded-xl border-2 border-dashed bg-white px-3.5 py-5 text-center ${
+  dragActive
+    ? "border-[#0052cc] bg-[#0052cc]/5"
+    : "border-slate-200"
+}`}
             >
               <PaperclipIcon className="h-5 w-5 text-slate-400" />
 
