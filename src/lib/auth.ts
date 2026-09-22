@@ -105,11 +105,8 @@ export const getRoleRedirectPath = (role: string): string => {
     case "DOCTOR":
       return ROUTES.dashboard.doctor;
     case "PHARMACIST":
-<<<<<<< HEAD
       return "/pharmacy/dashboard";
-=======
-      return ROUTES.dashboard.pharmacist;
->>>>>>> 86968a85e262a531503ab17e9f003d686fa4e5e1
+      // return ROUTES.dashboard.pharmacist;
     case "INSURANCE_OFFICER":
       return ROUTES.dashboard.insuranceOfficer;
     case "LAB_OFFICER":

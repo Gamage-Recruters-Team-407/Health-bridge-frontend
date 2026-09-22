@@ -2,12 +2,11 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { getInventoryByPharmacy, getLowStockAlerts } from "@/services/pharmacyService";
+import { usePharmacyId } from "@/hooks/usePharmacyId";
 import type { InventoryItem } from "@/types/pharmacy";
 
-// TODO: replace with the logged-in pharmacist's actual pharmacyId (from auth/session context)
-const CURRENT_PHARMACY_ID = "REPLACE_WITH_LOGGED_IN_PHARMACY_ID";
-
 export default function LowStockAlertsPage() {
+    const { pharmacyId } = usePharmacyId();
     const [allInventory, setAllInventory] = useState<InventoryItem[]>([]);
     const [lowStock, setLowStock] = useState<InventoryItem[]>([]);
     const [loading, setLoading] = useState(true);
@@ -17,14 +16,15 @@ export default function LowStockAlertsPage() {
     const [statusFilter, setStatusFilter] = useState("ALL");
 
     useEffect(() => {
+        if (!pharmacyId) return;
         let cancelled = false;
 
         async function load() {
             try {
                 setLoading(true);
                 const [all, alerts] = await Promise.all([
-                    getInventoryByPharmacy(CURRENT_PHARMACY_ID),
-                    getLowStockAlerts(CURRENT_PHARMACY_ID),
+                    getInventoryByPharmacy(pharmacyId!),
+                    getLowStockAlerts(pharmacyId!),
                 ]);
                 if (!cancelled) {
                     setAllInventory(all);
@@ -41,7 +41,7 @@ export default function LowStockAlertsPage() {
         return () => {
             cancelled = true;
         };
-    }, []);
+    }, [pharmacyId]);
 
     const stats = useMemo(() => {
         const critical = lowStock.filter((i) => i.status === "LOW_STOCK" && i.quantity > 0).length;
@@ -104,7 +104,6 @@ export default function LowStockAlertsPage() {
                 </div>
             )}
 
-            {/* Banner */}
             {!loading && (stats.critical > 0 || stats.outOfStock > 0) && (
                 <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4">
                     <div>
@@ -126,7 +125,6 @@ export default function LowStockAlertsPage() {
                 </div>
             )}
 
-            {/* Stat cards */}
             <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 <StatCard label="Low Stock" value={loading ? "…" : stats.lowStock} sub="Below minimum stock level" tone="amber" icon="📦" />
                 <StatCard label="Critical Stock" value={loading ? "…" : stats.critical} sub="Immediate restocking required" tone="red" icon="❗" />
@@ -136,7 +134,6 @@ export default function LowStockAlertsPage() {
             </div>
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {/* Low stock table */}
                 <section className="rounded-xl bg-white p-5 shadow-sm lg:col-span-2">
                     <div className="mb-4 flex flex-col gap-2 sm:flex-row">
                         <input
@@ -212,7 +209,6 @@ export default function LowStockAlertsPage() {
                     </div>
                 </section>
 
-                {/* AI Stock Forecast + Critical Alerts — both API pending */}
                 <div className="space-y-4">
                     <section className="rounded-xl bg-blue-600 p-5 text-white shadow-sm">
                         <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">✨ AI Stock Forecast</h2>

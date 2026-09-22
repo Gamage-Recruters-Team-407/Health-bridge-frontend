@@ -3,9 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createMedicine, updateMedicine, addStock } from "@/services/pharmacyService";
+import { usePharmacyId } from "@/hooks/usePharmacyId";
 import type { Medicine, InventoryItem } from "@/types/pharmacy";
-
-const CURRENT_PHARMACY_ID = "REPLACE_WITH_LOGGED_IN_PHARMACY_ID";
 
 interface MedicineFormProps {
     mode: "add" | "edit";
@@ -14,6 +13,7 @@ interface MedicineFormProps {
 
 export default function MedicineForm({ mode, initialMedicine }: MedicineFormProps) {
     const router = useRouter();
+    const { pharmacyId } = usePharmacyId();
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
@@ -29,7 +29,6 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
     const [controlledDrug, setControlledDrug] = useState(initialMedicine?.controlledDrug ?? false);
     const [unitPrice, setUnitPrice] = useState(String(initialMedicine?.unitPrice ?? ""));
 
-    // ---- Inventory batch fields (real, only used on "add", separate API call) ----
     const [batchNumber, setBatchNumber] = useState("");
     const [purchasePrice, setPurchasePrice] = useState("");
     const [sellingPrice, setSellingPrice] = useState("");
@@ -68,10 +67,12 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
                 medicineId = created.id;
             }
 
-            // Only create an inventory batch on "add" mode, and only if batch info was filled in
             if (mode === "add" && medicineId && batchNumber && currentStock) {
+                if (!pharmacyId) {
+                    throw new Error("Pharmacy not identified yet — please wait a moment and try again.");
+                }
                 await addStock({
-                    pharmacyId: CURRENT_PHARMACY_ID,
+                    pharmacyId,
                     medicineId,
                     itemCode: medicineCode,
                     itemName: name,
@@ -96,13 +97,11 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
 
     async function handleDelete() {
         if (!initialMedicine || !confirm(`Delete ${initialMedicine.name}? This can't be undone.`)) return;
-        // TODO: wire to deleteMedicine(id) once confirmed with backend team
         alert("Delete endpoint not wired yet.");
     }
 
     return (
         <form onSubmit={handleSubmit}>
-            {/* Tabs */}
             <div className="mb-4 flex gap-6 border-b border-slate-200 text-sm font-medium">
                 <button
                     type="button"
@@ -122,7 +121,6 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
 
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
                 <div className="space-y-6 lg:col-span-2">
-                    {/* Medicine Details */}
                     <section className="rounded-xl bg-white p-5 shadow-sm">
                         <h2 className="text-base font-semibold text-slate-900">Medicine Details</h2>
                         <p className="mb-4 text-xs text-slate-400">Basic identification and descriptive information</p>
@@ -150,7 +148,6 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
                         </div>
                     </section>
 
-                    {/* Inventory & Pricing */}
                     <section className="rounded-xl bg-white p-5 shadow-sm">
                         <h2 className="text-base font-semibold text-slate-900">Inventory &amp; Pricing</h2>
                         <p className="mb-4 text-xs text-slate-400">
@@ -179,7 +176,6 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
                         </div>
                     </section>
 
-                    {/* Expiry & Batch Information */}
                     <section className="rounded-xl bg-white p-5 shadow-sm">
                         <h2 className="text-base font-semibold text-slate-900">Expiry &amp; Batch Information</h2>
                         <p className="mb-4 text-xs text-slate-400">Manufacture, expiry, and shelf-life details</p>
@@ -210,7 +206,6 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
                 </div>
 
                 <div className="space-y-6">
-                    {/* Safety & Controls */}
                     <section className="rounded-xl bg-white p-5 shadow-sm">
                         <h2 className="text-base font-semibold text-slate-900">Safety &amp; Controls</h2>
                         <p className="mb-4 text-xs text-slate-400">Regulatory and handling settings</p>
@@ -225,7 +220,6 @@ export default function MedicineForm({ mode, initialMedicine }: MedicineFormProp
                         </div>
                     </section>
 
-                    {/* Medicine Preview */}
                     <section className="rounded-xl bg-white p-5 text-center shadow-sm">
                         <h2 className="mb-1 text-left text-base font-semibold text-slate-900">Medicine Preview</h2>
                         <p className="mb-3 text-left text-xs text-slate-400">Package image or label preview</p>
