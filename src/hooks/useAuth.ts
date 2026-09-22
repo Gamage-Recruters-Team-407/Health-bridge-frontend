@@ -17,6 +17,7 @@ let snapshot: AuthSnapshot = {
   token: null,
   isAuthenticated: false,
 };
+const serverSnapshot: AuthSnapshot = snapshot;
 
 let listeners: (() => void)[] = [];
 
@@ -62,7 +63,7 @@ export const useAuth = () => {
   const router = useRouter();
 
   // ✅ Use useSyncExternalStore for reactive state
-  const state = useSyncExternalStore(subscribe, getSnapshot);
+  const state = useSyncExternalStore(subscribe, getSnapshot, () => serverSnapshot);
 
   const logout = useCallback(() => {
     clearAuthData();
