@@ -17,11 +17,17 @@ export default function TelemedicineHistoryPage() {
   useEffect(() => {
     if (!user) return;
 
+    if (user.role === "DOCTOR") {
+      const task = window.setTimeout(() => setLoading(false), 0);
+      return () => window.clearTimeout(task);
+    }
+
     const fetcher =
       user.role === "DOCTOR" ? telemedicineApi.getDoctorHistory : telemedicineApi.getPatientHistory;
 
     fetcher(user.id)
       .then(setItems)
+      .catch(() => setItems([]))
       .finally(() => setLoading(false));
   }, [user]);
 

@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
 import { useToast } from "@/components/ui/Toast";
 import { getNotifications } from "@/services/notificationService";
+import { clearAuthData } from "@/lib/auth";
 
 export interface NavbarProps {
   onToggleMobileSidebar?: () => void;
@@ -201,7 +202,8 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={() => {
                   setShowProfileMenu(false);
-                  info("Logged out", "You have been signed out.");
+                  clearAuthData();
+                  window.location.href = "/login";
                 }}
                 className="w-full flex items-center gap-2 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-xl transition-colors"
               >
