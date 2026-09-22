@@ -1,6 +1,6 @@
 import { useSyncExternalStore, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, getStoredUser, AuthUser, clearAuthData } from '@/lib/auth';
+import { getToken, getStoredUser, AuthUser, clearAuthData, AUTH_CHANGE_EVENT } from '@/lib/auth';
 
 interface AuthSnapshot {
   user: AuthUser | null;
@@ -38,7 +38,7 @@ const usersAreEqual = (a: AuthUser | null, b: AuthUser | null) => {
 
 // ✅ Recompute auth state, and only swap in a new snapshot object (which
 // triggers a re-render) when something actually changed.
-const updateAuth = () => {
+export const updateAuth = () => {
   const token = getToken();
   const userData = getStoredUser();
 
@@ -54,9 +54,19 @@ const updateAuth = () => {
   }
 };
 
-// ✅ Initialize auth state
+// ✅ Initialize auth state and listen for changes
 if (typeof window !== 'undefined') {
   updateAuth();
+
+  // Auto-refresh snapshot whenever auth data is saved or cleared (same tab)
+  window.addEventListener(AUTH_CHANGE_EVENT, updateAuth);
+
+  // Also catch changes from other tabs (e.g. logout in another tab)
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'healthbridge_token' || e.key === 'healthbridge_user' || e.key === null) {
+      updateAuth();
+    }
+  });
 }
 
 export const useAuth = () => {
@@ -67,8 +77,12 @@ export const useAuth = () => {
 
   const logout = useCallback(() => {
     clearAuthData();
-    updateAuth();
-    router.push('/login');
+    // updateAuth() is now called automatically via the AUTH_CHANGE_EVENT
+    if (typeof window !== 'undefined') {
+      window.location.href = '/login';
+    } else {
+      router.push('/login');
+    }
   }, [router]);
 
   return {

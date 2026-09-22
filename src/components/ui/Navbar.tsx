@@ -182,7 +182,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleLogout = () => {
     clearAuthData();
-    router.push("/login");
+    window.location.href = "/login";
   };
 
   const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
