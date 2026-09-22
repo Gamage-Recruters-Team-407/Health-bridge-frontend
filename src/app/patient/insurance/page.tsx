@@ -240,40 +240,6 @@ export default function PatientInsurancePage() {
         </div>
       </div>
 
-      {/* Tab Sub-Navigation (Matching Figma Design) */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-        <Link
-          href="/patient/dashboard"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          My Dashboard
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-        >
-          My Claims
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Coverage Details
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Billing
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Documents
-        </Link>
-      </div>
-
       {/* Feedback Banners */}
       {successMessage && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
