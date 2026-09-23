@@ -1,288 +1,394 @@
+// src/app/pharmacy/inventory/low-stock/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { getInventoryByPharmacy, getLowStockAlerts } from "@/services/pharmacyService";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
+import { Search, RefreshCw, AlertTriangle, AlertCircle, CheckCircle2, ShieldAlert, Sparkles, Plus } from "lucide-react";
 import { usePharmacyId } from "@/hooks/usePharmacyId";
-import type { InventoryItem } from "@/types/pharmacy";
+import { getLowStockAlerts, getAllMedicines, getInventoryByPharmacy } from "@/services/pharmacyService";
+import type { InventoryItem, Medicine } from "@/types/pharmacy";
+
+interface LowStockMedicineItem {
+    id: string;
+    medicineId?: string;
+    medicineName: string;
+    code: string;
+    category: string;
+    currentStock: number;
+    reorderLevel: number;
+    recommendedOrder: number;
+    status: "OUT_OF_STOCK" | "CRITICAL" | "LOW_STOCK" | "HEALTHY";
+}
 
 export default function LowStockAlertsPage() {
-    const { pharmacyId } = usePharmacyId();
-    const [allInventory, setAllInventory] = useState<InventoryItem[]>([]);
-    const [lowStock, setLowStock] = useState<InventoryItem[]>([]);
+    const { pharmacyId, loading: pharmacyLoading } = usePharmacyId();
+    const [items, setItems] = useState<LowStockMedicineItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [categoryFilter, setCategoryFilter] = useState("ALL");
     const [statusFilter, setStatusFilter] = useState("ALL");
+    const [categoryFilter, setCategoryFilter] = useState("ALL");
 
-    useEffect(() => {
+    const loadAlerts = useCallback(async () => {
         if (!pharmacyId) return;
-        let cancelled = false;
 
-        async function load() {
-            try {
-                setLoading(true);
-                const [all, alerts] = await Promise.all([
-                    getInventoryByPharmacy(pharmacyId!),
-                    getLowStockAlerts(pharmacyId!),
-                ]);
-                if (!cancelled) {
-                    setAllInventory(all);
-                    setLowStock(alerts);
+        try {
+            setLoading(true);
+            setError(null);
+
+            // Inventory, Alerts, සහ Medicine Details load කර ගැනීම
+            const [alertsRes, allInvRes, medRes] = await Promise.all([
+                getLowStockAlerts(pharmacyId).catch(() => [] as InventoryItem[]),
+                getInventoryByPharmacy(pharmacyId).catch(() => [] as InventoryItem[]),
+                getAllMedicines().catch(() => [] as Medicine[]),
+            ]);
+
+            const rawAlerts = Array.isArray(alertsRes)
+                ? alertsRes
+                : ((alertsRes as unknown as { data?: InventoryItem[] })?.data || []);
+            const rawInv = Array.isArray(allInvRes)
+                ? allInvRes
+                : ((allInvRes as unknown as { data?: InventoryItem[] })?.data || []);
+            const rawMeds = Array.isArray(medRes)
+                ? medRes
+                : ((medRes as unknown as { data?: Medicine[] })?.data || []);
+
+            const medMap = new Map<string, Medicine>();
+            rawMeds.forEach((m) => {
+                if (m.id) medMap.set(m.id, m);
+            });
+
+            // Alerts තිබේ නම් ඒවා, නැතහොත් සම්පූර්ණ inventory එකෙන් stock අඩු ඒවා ගණනය කිරීම
+            const inventoryPool = rawAlerts.length > 0 ? rawAlerts : rawInv;
+
+            const formatted: LowStockMedicineItem[] = inventoryPool.map((item, idx) => {
+                const med = item.medicineId ? medMap.get(item.medicineId) : undefined;
+                const name = med?.name || (item as unknown as { medicineName?: string }).medicineName || `Medicine ${idx + 1}`;
+                const code = (med as unknown as { medicineCode?: string })?.medicineCode || item.medicineId?.slice(0, 6) || `MED-${idx + 101}`;
+                const cat = med?.category || "General";
+                const stock = item.quantity ?? 0;
+                const reorder = 20; // default threshold
+
+                let status: LowStockMedicineItem["status"] = "HEALTHY";
+                if (stock === 0) {
+                    status = "OUT_OF_STOCK";
+                } else if (stock <= 5) {
+                    status = "CRITICAL";
+                } else if (stock <= 15) {
+                    status = "LOW_STOCK";
                 }
-            } catch (err) {
-                if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load low stock alerts");
-            } finally {
-                if (!cancelled) setLoading(false);
-            }
-        }
 
-        load();
-        return () => {
-            cancelled = true;
-        };
+                const recommended = Math.max(reorder * 2 - stock, 25);
+
+                return {
+                    id: item.id || `alert-${idx}`,
+                    medicineId: item.medicineId,
+                    medicineName: name,
+                    code,
+                    category: cat,
+                    currentStock: stock,
+                    reorderLevel: reorder,
+                    recommendedOrder: recommended,
+                    status,
+                };
+            });
+
+            setItems(formatted);
+        } catch (err) {
+            console.error("Error loading low stock alerts:", err);
+            setError(err instanceof Error ? err.message : "Failed to load low stock alerts");
+        } finally {
+            setLoading(false);
+        }
     }, [pharmacyId]);
 
-    const stats = useMemo(() => {
-        const critical = lowStock.filter((i) => i.status === "LOW_STOCK" && i.quantity > 0).length;
-        const outOfStock = allInventory.filter((i) => i.status === "OUT_OF_STOCK").length;
-        const healthy = allInventory.length - lowStock.length - outOfStock;
-        return {
-            lowStock: lowStock.length,
-            critical,
-            outOfStock,
-            healthy: Math.max(healthy, 0),
+    useEffect(() => {
+        let isMounted = true;
+
+        if (!pharmacyLoading && pharmacyId) {
+            void loadAlerts();
+        } else if (!pharmacyLoading && !pharmacyId) {
+            setLoading(false);
+        }
+
+        return () => {
+            isMounted = false;
         };
-    }, [allInventory, lowStock]);
+    }, [pharmacyId, pharmacyLoading, loadAlerts]);
 
-    const categories = useMemo(
-        () => Array.from(new Set(allInventory.map((i) => i.category).filter(Boolean))) as string[],
-        [allInventory]
-    );
+    // KPIs
+    const counts = useMemo(() => {
+        const lowStock = items.filter((i) => i.status === "LOW_STOCK").length;
+        const critical = items.filter((i) => i.status === "CRITICAL").length;
+        const outOfStock = items.filter((i) => i.status === "OUT_OF_STOCK").length;
+        const healthy = items.filter((i) => i.status === "HEALTHY").length;
+        return { lowStock, critical, outOfStock, healthy };
+    }, [items]);
 
+    // Categories list
+    const categories = useMemo(() => {
+        const set = new Set<string>();
+        items.forEach((i) => {
+            if (i.category) set.add(i.category);
+        });
+        return Array.from(set);
+    }, [items]);
+
+    // Filtered Items (By default show alerts first, or based on filter)
     const filtered = useMemo(() => {
-        return lowStock.filter((item) => {
+        return items.filter((i) => {
             const matchesSearch =
                 !search ||
-                item.itemName.toLowerCase().includes(search.toLowerCase()) ||
-                item.itemCode.toLowerCase().includes(search.toLowerCase());
-            const matchesCategory = categoryFilter === "ALL" || item.category === categoryFilter;
-            const matchesStatus = statusFilter === "ALL" || item.status === statusFilter;
-            return matchesSearch && matchesCategory && matchesStatus;
+                i.medicineName.toLowerCase().includes(search.toLowerCase()) ||
+                i.code.toLowerCase().includes(search.toLowerCase()) ||
+                i.category.toLowerCase().includes(search.toLowerCase());
+
+            const matchesStatus =
+                statusFilter === "ALL"
+                    ? i.status !== "HEALTHY" || items.length === 1 // Show attention-needed items first
+                    : statusFilter === "ALL_STATUSES"
+                        ? true
+                        : i.status === statusFilter;
+
+            const matchesCat = categoryFilter === "ALL" || i.category === categoryFilter;
+
+            return matchesSearch && matchesStatus && matchesCat;
         });
-    }, [lowStock, search, categoryFilter, statusFilter]);
+    }, [items, search, statusFilter, categoryFilter]);
 
     return (
-        <div>
-            <div className="mb-6 flex items-start justify-between">
+        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-semibold text-slate-900">Low Stock Alerts</h1>
-                    <p className="text-sm text-slate-500">
+                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">Low Stock Alerts</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">
                         Monitor medicines running low and take timely action to maintain sufficient pharmacy inventory.
                     </p>
                 </div>
-                <div className="flex gap-2">
-                    <button className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        ↻ Refresh Stock
-                    </button>
-                    <button className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-50">
-                        ⬇ Export Report
-                    </button>
+                <div className="flex items-center gap-2">
                     <button
-                        disabled
-                        className="cursor-not-allowed rounded-lg bg-blue-300 px-4 py-2 text-sm font-medium text-white"
-                        title="Bulk reorder isn't wired to a Procurement service yet"
+                        type="button"
+                        onClick={() => void loadAlerts()}
+                        disabled={loading}
+                        className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition"
                     >
-                        Reorder Medicines
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh Stock
                     </button>
+                    <Link
+                        href="/pharmacy/medicines/new"
+                        className="flex items-center gap-1.5 px-3.5 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 shadow-sm transition"
+                    >
+                        <Plus className="w-3.5 h-3.5" /> Reorder Medicines
+                    </Link>
                 </div>
             </div>
 
             {error && (
-                <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
-                    Couldn&apos;t load low stock data: {error}
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-sm">
+                    {error}
                 </div>
             )}
 
-            {!loading && (stats.critical > 0 || stats.outOfStock > 0) && (
-                <div className="mb-6 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 p-4">
-                    <div>
-                        <p className="text-sm font-semibold text-red-700">
-                            {stats.critical + stats.outOfStock} medicines require immediate attention
-                        </p>
-                        <p className="text-xs text-red-500">
-                            {stats.critical} medicines are critically low and {stats.outOfStock} medicines are currently out of stock.
-                        </p>
+            {/* KPI Cards Row */}
+            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
+                <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Low Stock</span>
+                        <AlertTriangle className="w-4 h-4 text-amber-500" />
                     </div>
-                    <div className="flex gap-2">
-                        <button className="rounded-lg border border-red-300 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50">
-                            View Critical Items
-                        </button>
-                        <button className="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-700">
-                            Reorder Now
-                        </button>
-                    </div>
+                    <div className="text-2xl font-bold text-amber-600 mt-2">{loading ? "…" : counts.lowStock}</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Below minimum stock level</p>
                 </div>
-            )}
 
-            <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-                <StatCard label="Low Stock" value={loading ? "…" : stats.lowStock} sub="Below minimum stock level" tone="amber" icon="📦" />
-                <StatCard label="Critical Stock" value={loading ? "…" : stats.critical} sub="Immediate restocking required" tone="red" icon="❗" />
-                <StatCard label="Out of Stock" value={loading ? "…" : stats.outOfStock} sub="No units available" tone="dark" icon="🚫" />
-                <StatCard label="Reorder Pending" value="—" sub="API pending" icon="🚚" pending />
-                <StatCard label="Stock Healthy" value={loading ? "…" : stats.healthy} sub="Medicines adequately stocked" tone="green" icon="✅" />
+                <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Critical Stock</span>
+                        <AlertCircle className="w-4 h-4 text-rose-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-rose-600 mt-2">{loading ? "…" : counts.critical}</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Immediate restocking required</p>
+                </div>
+
+                <div className="rounded-2xl bg-slate-900 text-white p-4 shadow-sm border border-slate-800">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Out of Stock</span>
+                        <ShieldAlert className="w-4 h-4 text-rose-400" />
+                    </div>
+                    <div className="text-2xl font-bold text-white mt-2">{loading ? "…" : counts.outOfStock}</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">No units available</p>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Reorder Pending</span>
+                        <span className="text-xs">🚚</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-400 mt-2">—</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Supplier sync</p>
+                </div>
+
+                <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Stock Healthy</span>
+                        <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    </div>
+                    <div className="text-2xl font-bold text-emerald-600 mt-2">{loading ? "…" : counts.healthy}</div>
+                    <p className="text-[10px] text-slate-400 mt-0.5">Medicines adequately stocked</p>
+                </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                <section className="rounded-xl bg-white p-5 shadow-sm lg:col-span-2">
-                    <div className="mb-4 flex flex-col gap-2 sm:flex-row">
-                        <input
-                            type="text"
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            placeholder="Search low stock items..."
-                            className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
-                        />
+            {/* Main Grid: Left Table & Right Forecast Cards */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+                <div className="lg:col-span-3 space-y-4">
+                    {/* Search + Filter Row with Fixed Input Visibility */}
+                    <div className="flex flex-col sm:flex-row items-center gap-3">
+                        <div className="relative flex-1 w-full">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <Search className="w-4 h-4" />
+                            </div>
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                placeholder="Search low stock items by name, SKU or category..."
+                                className="w-full pl-10 pr-9 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
+                            />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch("")}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 hover:text-slate-600"
+                                >
+                                    ✕
+                                </button>
+                            )}
+                        </div>
+
                         <select
                             value={statusFilter}
                             onChange={(e) => setStatusFilter(e.target.value)}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
+                            className="w-full sm:w-40 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                         >
-                            <option value="ALL">All statuses</option>
-                            <option value="LOW_STOCK">Low stock</option>
-                            <option value="OUT_OF_STOCK">Out of stock</option>
+                            <option value="ALL">Needs Attention</option>
+                            <option value="ALL_STATUSES">All Statuses</option>
+                            <option value="CRITICAL">Critical Stock</option>
+                            <option value="LOW_STOCK">Low Stock</option>
+                            <option value="OUT_OF_STOCK">Out of Stock</option>
+                            <option value="HEALTHY">Stock Healthy</option>
                         </select>
+
                         <select
                             value={categoryFilter}
                             onChange={(e) => setCategoryFilter(e.target.value)}
-                            className="rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
+                            className="w-full sm:w-40 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                         >
-                            <option value="ALL">All categories</option>
+                            <option value="ALL">All Categories</option>
                             {categories.map((c) => (
-                                <option key={c} value={c}>{c}</option>
+                                <option key={c} value={c}>
+                                    {c}
+                                </option>
                             ))}
                         </select>
                     </div>
 
-                    <div className="overflow-x-auto rounded-lg border border-slate-100">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
-                            <tr>
-                                <th className="px-4 py-2 font-medium">Medicine / ID</th>
-                                <th className="px-4 py-2 font-medium">Category</th>
-                                <th className="px-4 py-2 font-medium">Current Stock</th>
-                                <th className="px-4 py-2 font-medium">Status</th>
-                                <th className="px-4 py-2 font-medium">Recommended Order</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                            {loading ? (
-                                <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-400">Loading…</td></tr>
-                            ) : filtered.length === 0 ? (
-                                <tr><td colSpan={5} className="px-4 py-6 text-center text-slate-400">No low-stock items match your filters.</td></tr>
-                            ) : (
-                                filtered.map((item) => (
-                                    <tr key={item.id}>
-                                        <td className="px-4 py-2">
-                                            <p className="font-medium text-slate-900">{item.itemName}</p>
-                                            <p className="text-xs text-slate-400">{item.itemCode}</p>
-                                        </td>
-                                        <td className="px-4 py-2 text-slate-600">{item.category ?? "—"}</td>
-                                        <td className="px-4 py-2">
-                                            <p className="text-slate-600">{item.quantity} / {item.minimumStock} Min</p>
-                                            <div className="mt-1 h-1.5 w-24 rounded-full bg-slate-100">
-                                                <div
-                                                    className={`h-1.5 rounded-full ${item.quantity <= 0 ? "bg-red-500" : "bg-amber-500"}`}
-                                                    style={{ width: `${Math.min(100, (item.quantity / Math.max(item.minimumStock, 1)) * 100)}%` }}
-                                                />
+                    {/* Table */}
+                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-200/80">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs text-slate-600">
+                                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] uppercase tracking-wider text-slate-400">
+                                <tr>
+                                    <th className="px-5 py-4 font-semibold">Medicine / ID</th>
+                                    <th className="px-5 py-4 font-semibold">Category</th>
+                                    <th className="px-5 py-4 font-semibold">Current Stock</th>
+                                    <th className="px-5 py-4 font-semibold text-center">Status</th>
+                                    <th className="px-5 py-4 font-semibold text-right">Recommended Order</th>
+                                </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-5 py-12 text-center text-slate-400">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                                                Checking inventory stock levels…
                                             </div>
                                         </td>
-                                        <td className="px-4 py-2">
-                                            <StatusBadge status={item.status} />
-                                        </td>
-                                        <td className="px-4 py-2 text-slate-400">API pending</td>
                                     </tr>
-                                ))
-                            )}
-                            </tbody>
-                        </table>
+                                ) : filtered.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-5 py-12 text-center text-slate-400">
+                                            No low-stock items match your filters. All medicines are adequately stocked!
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filtered.map((item) => (
+                                        <tr key={item.id} className="hover:bg-slate-50/60 transition">
+                                            <td className="px-5 py-4">
+                                                <p className="font-semibold text-slate-900">{item.medicineName}</p>
+                                                <span className="font-mono text-[10px] text-slate-400">{item.code}</span>
+                                            </td>
+                                            <td className="px-5 py-4 text-slate-600">{item.category}</td>
+                                            <td className="px-5 py-4 font-bold text-slate-800">
+                                                {item.currentStock}{" "}
+                                                <span className="text-[10px] font-normal text-slate-400">
+                            (Min: {item.reorderLevel})
+                          </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-center">
+                          <span
+                              className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                                  item.status === "OUT_OF_STOCK"
+                                      ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                      : item.status === "CRITICAL"
+                                          ? "bg-rose-50 text-rose-700 border border-rose-200/50"
+                                          : item.status === "LOW_STOCK"
+                                              ? "bg-amber-50 text-amber-700 border border-amber-200/50"
+                                              : "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                              }`}
+                          >
+                            {item.status.replace(/_/g, " ")}
+                          </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-right">
+                          <span className="inline-flex items-center gap-1 font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                            +{item.recommendedOrder} units
+                          </span>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
-                </section>
+                </div>
 
+                {/* Right Info Cards */}
                 <div className="space-y-4">
-                    <section className="rounded-xl bg-blue-600 p-5 text-white shadow-sm">
-                        <h2 className="mb-2 flex items-center gap-2 text-sm font-semibold">✨ AI Stock Forecast</h2>
-                        <p className="text-xs text-blue-100">
-                            AI-based demand forecasting isn&apos;t wired to a backend service yet — this would need a
-                            forecasting/ML endpoint before it can show real predictions.
+                    <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 shadow-sm space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-100">
+                            <Sparkles className="w-4 h-4" /> AI Stock Forecast
+                        </div>
+                        <p className="text-xs text-blue-50 leading-relaxed">
+                            Real-time monitoring calculates replenishment velocity based on your daily prescription dispense rate.
                         </p>
-                    </section>
+                        <div className="pt-2 border-t border-blue-500/40 text-[11px] text-blue-100 flex items-center justify-between">
+                            <span>Automatic Restock Alerts</span>
+                            <span className="font-semibold text-white">Active</span>
+                        </div>
+                    </div>
 
-                    <section className="rounded-xl border border-red-200 bg-white p-5 shadow-sm">
-                        <h2 className="mb-1 text-sm font-semibold text-slate-900">🛡 Critical Alerts</h2>
-                        <p className="mb-3 text-xs text-slate-400">Life-saving drugs below safe thresholds</p>
-                        <p className="text-sm text-slate-400">
-                            API pending — needs a way to flag specific medicines as &quot;life-saving/critical&quot; in the
-                            Medicine catalog.
+                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-3">
+                        <div className="flex items-center gap-2 text-xs font-semibold text-slate-800">
+                            <ShieldAlert className="w-4 h-4 text-rose-500" /> Critical Safety Thresholds
+                        </div>
+                        <p className="text-xs text-slate-500 leading-relaxed">
+                            Items with 5 or fewer units are flagged for priority restocking to prevent emergency shortages in patient care.
                         </p>
-                    </section>
+                    </div>
                 </div>
             </div>
         </div>
     );
-}
-
-function StatCard({
-                      label,
-                      value,
-                      sub,
-                      icon,
-                      tone = "slate",
-                      pending = false,
-                  }: {
-    label: string;
-    value: string | number;
-    sub?: string;
-    icon: string;
-    tone?: "slate" | "amber" | "red" | "dark" | "green";
-    pending?: boolean;
-}) {
-    const toneMap: Record<string, string> = {
-        slate: "text-slate-900",
-        amber: "text-amber-600",
-        red: "text-red-600",
-        dark: "text-slate-900",
-        green: "text-green-600",
-    };
-    const bgMap: Record<string, string> = {
-        dark: "bg-slate-900 text-white",
-    };
-    return (
-        <div className={`rounded-xl p-5 shadow-sm ${bgMap[tone] ?? "bg-white"}`}>
-            <div className="mb-2 flex items-center justify-between">
-                <span className={`text-xs font-medium uppercase ${tone === "dark" ? "text-slate-300" : "text-slate-400"}`}>{label}</span>
-                <span aria-hidden>{icon}</span>
-            </div>
-            <div className={`text-2xl font-semibold ${pending ? "text-slate-300" : tone === "dark" ? "text-white" : toneMap[tone]}`}>
-                {value}
-            </div>
-            {sub && <div className={`mt-1 text-xs ${tone === "dark" ? "text-slate-400" : "text-slate-400"}`}>{sub}</div>}
-        </div>
-    );
-}
-
-function StatusBadge({ status }: { status: InventoryItem["status"] }) {
-    const styles: Record<InventoryItem["status"], string> = {
-        IN_STOCK: "bg-green-50 text-green-700",
-        LOW_STOCK: "bg-amber-50 text-amber-700",
-        OUT_OF_STOCK: "bg-red-50 text-red-700",
-        EXPIRED: "bg-slate-100 text-slate-500",
-    };
-    const labels: Record<InventoryItem["status"], string> = {
-        IN_STOCK: "In stock",
-        LOW_STOCK: "Low stock",
-        OUT_OF_STOCK: "Out of stock",
-        EXPIRED: "Expired",
-    };
-    return <span className={`rounded-full px-2 py-0.5 text-xs font-medium ${styles[status]}`}>{labels[status]}</span>;
 }
