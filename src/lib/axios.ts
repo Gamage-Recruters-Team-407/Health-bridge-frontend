@@ -12,6 +12,10 @@ interface ApiErrorPayload {
     errors?: Record<string, string> | Array<{ message?: string }>;
 }
 
+// ============================================================
+// ERROR MESSAGE EXTRACTOR
+// ============================================================
+
 export function getApiErrorMessage(error: unknown, fallback = "Something went wrong"): string {
     if (axios.isAxiosError<ApiErrorPayload>(error)) {
         const payload = error.response?.data;
@@ -28,6 +32,10 @@ export function getApiErrorMessage(error: unknown, fallback = "Something went wr
     return error instanceof Error ? error.message : fallback;
 }
 
+// ============================================================
+// API CLIENT
+// ============================================================
+
 class ApiClient {
     private client: AxiosInstance;
 
@@ -42,15 +50,22 @@ class ApiClient {
             timeout: 30000,
         });
 
+        // ============================================================
+        // REQUEST INTERCEPTOR
+        // ============================================================
         this.client.interceptors.request.use(
             (config) => {
-                const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+                const token = typeof window !== 'undefined'
+                    ? localStorage.getItem(TOKEN_KEY)
+                    : null;
+
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
                     console.log('🔑 Token added to request');
                 } else if (typeof window !== 'undefined') {
                     console.warn('⚠️ No token found');
                 }
+
                 console.log(`🚀 ${config.method?.toUpperCase()} ${config.baseURL}${config.url}`);
                 return config;
             },
@@ -60,6 +75,9 @@ class ApiClient {
             }
         );
 
+        // ============================================================
+        // RESPONSE INTERCEPTOR
+        // ============================================================
         this.client.interceptors.response.use(
             (response) => {
                 console.log(`✅ ${response.status} ${response.config.url}`);
@@ -77,10 +95,61 @@ class ApiClient {
                 return response;
             },
             (error) => {
-                console.error('❌ Response Error:', error);
+                const status = error.response?.status;
+                const url = error.config?.url;
+                const method = error.config?.method?.toUpperCase();
 
-                if (error.response?.status === 401) {
-                    console.error('🔐 401 Unauthorized - Token invalid or missing');
+                // ============================================================
+                // 500 - Internal Server Error
+                // ============================================================
+                if (status === 500) {
+                    console.error(`💥 500 Server Error: ${method} ${url}`);
+                    console.error('   Response:', error.response?.data);
+
+                    // ✅ Silent handling for optional endpoints
+                    const silentEndpoints = [
+                        '/hospitals',
+                        '/doctors',
+                        '/users?role=PATIENT',
+                    ];
+
+                    const isSilent = silentEndpoints.some((ep) =>
+                        url?.includes(ep)
+                    );
+
+                    if (isSilent) {
+                        console.warn(`   ⚠️ Silent 500 for optional endpoint: ${url}`);
+                    }
+                }
+
+                // ============================================================
+                // 404 - Not Found
+                // ============================================================
+                else if (status === 404) {
+                    console.warn(`🔍 404 Not Found: ${method} ${url}`);
+
+                    // ✅ Silent for optional endpoints
+                    const silentEndpoints = [
+                        '/hospitals',
+                        '/doctors',
+                        '/users?role=PATIENT',
+                    ];
+
+                    const isSilent = silentEndpoints.some((ep) =>
+                        url?.includes(ep)
+                    );
+
+                    if (isSilent) {
+                        console.warn(`   ⚠️ Endpoint missing: ${url}`);
+                    }
+                }
+
+                // ============================================================
+                // 401 - Unauthorized
+                // ============================================================
+                else if (status === 401) {
+                    console.error(`🔐 401 Unauthorized: ${method} ${url}`);
+
                     if (typeof window !== 'undefined') {
                         const isLoginPage = window.location.pathname === "/login";
                         if (!isLoginPage) {
@@ -88,14 +157,47 @@ class ApiClient {
                             window.location.href = '/login';
                         }
                     }
-                } else if (error.code === 'ERR_NETWORK') {
-                    console.error('🌐 Network error - Backend not reachable');
+                }
+
+                // ============================================================
+                // 403 - Forbidden
+                // ============================================================
+                else if (status === 403) {
+                    console.error(`🚫 403 Forbidden: ${method} ${url}`);
+                }
+
+                // ============================================================
+                // Network Error
+                // ============================================================
+                else if (error.code === 'ERR_NETWORK') {
+                    console.error(`🌐 Network Error: ${method} ${url} - Backend not reachable`);
+                    console.error(`   Check if backend is running at: ${API_BASE_URL}`);
+                }
+
+                // ============================================================
+                // Timeout
+                // ============================================================
+                else if (error.code === 'ECONNABORTED') {
+                    console.error(`⏰ Timeout: ${method} ${url} - Request took too long`);
+                }
+
+                // ============================================================
+                // Other Errors
+                // ============================================================
+                else {
+                    console.error(`❌ Response Error: ${method} ${url}`);
+                    console.error('   Status:', status);
+                    console.error('   Message:', error.message);
                 }
 
                 return Promise.reject(error);
             }
         );
     }
+
+    // ============================================================
+    // HTTP METHODS
+    // ============================================================
 
     public async get<T>(url: string, config?: AxiosRequestConfig): Promise<T> {
         const response: AxiosResponse<T> = await this.client.get(url, config);
@@ -122,6 +224,10 @@ class ApiClient {
         return response.data;
     }
 }
+
+// ============================================================
+// EXPORT
+// ============================================================
 
 const api = new ApiClient();
 export default api;

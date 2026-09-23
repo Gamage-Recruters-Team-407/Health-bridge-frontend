@@ -1,12 +1,6 @@
 export type BedStatus = 'Available' | 'Reserved' | 'Occupied' | 'Maintenance' | 'Cleaning';
 
-export type WardType =
-  | 'ICU'
-  | 'General Ward'
-  | 'Emergency Ward'
-  | 'Cardiology'
-  | 'Pediatrics'
-  | 'Maternity';
+export type WardType = string;
 
 export interface PatientInfo {
   id: string;
