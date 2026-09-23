@@ -26,6 +26,10 @@ import {
   ClipboardCheck,
   Video,
   LifeBuoy,
+  Building2,
+  Bed,
+  Wrench,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -62,6 +66,9 @@ const getNavGroups = (role: string): NavGroup[] => {
 
   // Admin & Super Admin
   if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
+    const isAdmin = roleUpper === "ADMIN";
+    const isSuperAdmin = roleUpper === "SUPER_ADMIN";
+
     return [
       {
         groupTitle: "Overview",
@@ -78,6 +85,13 @@ const getNavGroups = (role: string): NavGroup[] => {
           // ✅ FIXED: Compliance moved outside billing
           { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
+          ...(isAdmin
+            ? [
+                { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
+                { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
+                { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
+              ]
+            : []),
         ],
       },
       {
@@ -90,6 +104,9 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "System Admin",
         items: [
           { title: "Users", href: "/admin/users", icon: Users },
+          ...(isSuperAdmin
+            ? [{ title: "Staff Management", href: "/hospital-admin/staff-management", icon: UserCog }]
+            : []),
           { title: "Settings", href: "/admin/settings", icon: Settings },
           { title: "Support", href: "/support/admin", icon: LifeBuoy },
         ],
