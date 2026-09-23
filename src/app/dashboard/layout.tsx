@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/ui/Sidebar";
 import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "@/components/ui/Footer";
 import { ToastProvider } from "@/components/ui/Toast";
-import { getToken, getStoredUser, AuthUser } from "@/lib/auth";
+import { getToken, getStoredUser, AuthUser, AUTH_CHANGE_EVENT } from "@/lib/auth";
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -23,32 +23,41 @@ export default function DashboardLayout({
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const isMounted = useRef(true);
-  const hasChecked = useRef(false);
 
   useEffect(() => {
-    if (hasChecked.current) return;
-    hasChecked.current = true;
+    isMounted.current = true;
 
-    console.log('📋 DashboardLayout - Checking auth...');
+    const verifyAuth = () => {
+      const token = getToken();
+      const userData = getStoredUser();
 
-    const token = getToken();
-    const userData = getStoredUser();
+      if (!token || !userData) {
+        console.log('🔀 No auth - Redirecting to login...');
+        if (typeof window !== "undefined") {
+          window.location.href = "/login";
+        } else {
+          router.replace("/login");
+        }
+        return;
+      }
 
-    if (!token || !userData) {
-      console.log('🔀 No auth - Redirecting to login...');
-      router.replace("/login");
-      return;
-    }
+      if (isMounted.current) {
+        setUser(userData);
+        setLoading(false);
+      }
+    };
 
-    console.log('✅ Auth OK - User:', userData.fullName);
+    verifyAuth();
 
-    if (isMounted.current) {
-      setUser(userData);
-      setLoading(false);
+    if (typeof window !== "undefined") {
+      window.addEventListener(AUTH_CHANGE_EVENT, verifyAuth);
     }
 
     return () => {
       isMounted.current = false;
+      if (typeof window !== "undefined") {
+        window.removeEventListener(AUTH_CHANGE_EVENT, verifyAuth);
+      }
     };
   }, [router]);
 

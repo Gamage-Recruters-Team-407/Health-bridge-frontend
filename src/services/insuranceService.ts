@@ -1,5 +1,5 @@
 import api from "@/lib/axios";
-import { InsuranceClaim, InsurancePolicy, ClaimDecisionRequest } from "@/types/insurance";
+import { InsuranceClaim, InsurancePolicy, PolicyStatus, ClaimDecisionRequest, InsuranceReportSummary } from "@/types/insurance";
 
 const BASE = "/insurance";
 
@@ -27,6 +27,10 @@ export const insuranceService = {
   },
 
   // --- admin/insurer-facing ---
+  getAllPolicies: async (): Promise<InsurancePolicy[]> => {
+    const res: any = await api.get(`${BASE}/policies`);
+    return Array.isArray(res) ? res : (res?.data ?? []);
+  },
   getAllClaims: async (): Promise<InsuranceClaim[]> => {
     const res: any = await api.get(`${BASE}/claims`);
     return Array.isArray(res) ? res : (res?.data ?? []);
@@ -35,12 +39,20 @@ export const insuranceService = {
     const res: any = await api.get(`${BASE}/claims/${id}`);
     return res?.data ?? res;
   },
+  getClaimsByPolicyId: async (policyId: string): Promise<InsuranceClaim[]> => {
+    const res: any = await api.get(`${BASE}/policies/${policyId}/claims`);
+    return Array.isArray(res) ? res : (res?.data ?? []);
+  },
   decideClaim: async (id: string, decision: ClaimDecisionRequest): Promise<InsuranceClaim> => {
     const res: any = await api.patch(`${BASE}/claims/${id}/decision`, decision);
     return res?.data ?? res;
   },
   getPolicyById: async (id: string): Promise<InsurancePolicy> => {
     const res: any = await api.get(`${BASE}/policies/${id}`);
+    return res?.data ?? res;
+  },
+  updatePolicyStatus: async (id: string, status: PolicyStatus): Promise<InsurancePolicy> => {
+    const res: any = await api.patch(`${BASE}/policies/${id}/status?status=${status}`);
     return res?.data ?? res;
   },
   createPolicy: async (payload: {
@@ -57,6 +69,14 @@ export const insuranceService = {
   },
   verifyPolicy: async (policyNumber: string): Promise<InsurancePolicy> => {
     const res: any = await api.get(`${BASE}/policies/verify/${policyNumber}`);
+    return res?.data ?? res;
+  },
+  getReportSummary: async (startDate?: string, endDate?: string): Promise<InsuranceReportSummary> => {
+    const params = new URLSearchParams();
+    if (startDate) params.append("startDate", startDate);
+    if (endDate) params.append("endDate", endDate);
+    const qs = params.toString() ? `?${params.toString()}` : "";
+    const res: any = await api.get(`${BASE}/reports/summary${qs}`);
     return res?.data ?? res;
   },
   getDocumentUrl: (fileId: string) => {

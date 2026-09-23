@@ -11,6 +11,7 @@ import {
   FlaskConical,
   Clock,
   AlertTriangle,
+  MessageSquareText,
 } from "lucide-react";
 
 export interface WelcomePageProps {
@@ -219,6 +220,17 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
               <div>
                 <h4 className="font-bold text-sm text-[#0F172A]">Emergency Support</h4>
                 <p className="text-xs text-slate-500 mt-0.5">24/7 SOS assistance.</p>
+              </div>
+            </div>
+
+            {/* Card 7: Feedback */}
+            <div className="bg-white rounded-2xl border border-slate-100 border-l-4 border-l-[#0EA5E9] p-6 shadow-sm hover:shadow-md transition-all flex items-center gap-4">
+              <div className="w-11 h-11 rounded-2xl bg-[#F0F9FF] text-[#0284C7] flex items-center justify-center shrink-0">
+                <MessageSquareText className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-bold text-sm text-[#0F172A]">Feedback</h4>
+                <p className="text-xs text-slate-500 mt-0.5">Share your experience.</p>
               </div>
             </div>
           </div>

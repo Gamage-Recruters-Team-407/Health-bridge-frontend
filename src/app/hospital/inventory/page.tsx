@@ -2,13 +2,20 @@
 
 import React from "react";
 import Link from "next/link";
-import { HospitalProvider } from "@/context/HospitalContext";
 import { useHospital } from "@/context/HospitalContext";
 import { LowStockAlert } from "@/components/hospital/inventory/LowStockAlert";
-import { Plus, Package, Search, Edit, Trash2, Eye } from "lucide-react";
+import { Plus, Package, Edit, Trash2, Eye } from "lucide-react";
 import DashboardLayout from "@/app/dashboard/layout";
 
-function InventoryContent() {
+// ✅ Currency formatter for LKR
+const formatLKR = (amount: number) => {
+  return `Rs. ${amount.toLocaleString('en-LK', { 
+    minimumFractionDigits: 2, 
+    maximumFractionDigits: 2 
+  })}`;
+};
+
+export default function InventoryPage() {
   const {
     inventory,
     lowStockItems,
@@ -19,26 +26,29 @@ function InventoryContent() {
 
   if (inventoryLoading) {
     return (
-      <div className="flex justify-center items-center h-64">
-        <div className="text-center">
+      <DashboardLayout pageTitle="Inventory Management">
+        <div className="flex justify-center items-center h-64">
           <div className="w-10 h-10 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
-          <p className="mt-4 text-slate-500">Loading inventory...</p>
         </div>
-      </div>
+      </DashboardLayout>
     );
   }
 
   if (inventoryError) {
     return (
-      <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
-        <p className="font-medium">❌ Error loading inventory</p>
-        <p className="text-sm mt-1">{inventoryError}</p>
-      </div>
+      <DashboardLayout pageTitle="Inventory Management">
+        <div className="bg-red-50 border border-red-200 rounded-xl p-4 text-red-700">
+          <p className="font-medium">❌ Error loading inventory</p>
+          <p className="text-sm mt-1">{inventoryError}</p>
+        </div>
+      </DashboardLayout>
     );
   }
 
+  const totalValue = inventory.reduce((sum, i) => sum + (i.unitCost * i.quantity), 0);
+
   return (
-    <>
+    <DashboardLayout pageTitle="Inventory Management">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-slate-900">Hospital Inventory</h1>
@@ -67,8 +77,9 @@ function InventoryContent() {
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
           <p className="text-xs text-slate-500 font-medium uppercase tracking-wider">Total Value</p>
+          {/* ✅ LKR Currency */}
           <p className="text-2xl font-bold text-emerald-600 mt-1">
-            ${inventory.reduce((sum, i) => sum + (i.unitCost * i.quantity), 0).toFixed(2)}
+            {formatLKR(totalValue)}
           </p>
         </div>
         <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -103,7 +114,8 @@ function InventoryContent() {
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Item</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Quantity</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Unit</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Unit Cost</th>
+                  <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Value</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Location</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">Actions</th>
@@ -117,8 +129,17 @@ function InventoryContent() {
                       <div className="text-xs text-slate-500">{item.itemCode}</div>
                     </td>
                     <td className="px-4 py-3 text-slate-600">{item.category}</td>
-                    <td className="px-4 py-3 font-medium text-slate-900">{item.quantity}</td>
-                    <td className="px-4 py-3 text-slate-600">{item.unit}</td>
+                    <td className="px-4 py-3 font-medium text-slate-900">
+                      {item.quantity} {item.unit}
+                    </td>
+                    {/* ✅ LKR Unit Cost */}
+                    <td className="px-4 py-3 text-slate-600">
+                      {formatLKR(item.unitCost)}
+                    </td>
+                    {/* ✅ LKR Total Value */}
+                    <td className="px-4 py-3 font-semibold text-slate-900">
+                      {formatLKR(item.unitCost * item.quantity)}
+                    </td>
                     <td className="px-4 py-3 text-slate-600">{item.location}</td>
                     <td className="px-4 py-3">
                       {item.lowStock ? (
@@ -160,16 +181,6 @@ function InventoryContent() {
           </div>
         </div>
       )}
-    </>
-  );
-}
-
-export default function InventoryPage() {
-  return (
-    <DashboardLayout pageTitle="Inventory Management">
-      <HospitalProvider>
-        <InventoryContent />
-      </HospitalProvider>
     </DashboardLayout>
   );
 }

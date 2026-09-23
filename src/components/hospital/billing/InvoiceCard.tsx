@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Invoice } from "@/types/hospital";
 import { Eye, Edit, Trash2, FileText } from "lucide-react";
+import { formatLKR } from "@/lib/currency";
 
 interface InvoiceCardProps {
   invoice: Invoice;
@@ -56,12 +57,13 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onDelete }) =
             <p className="text-xs text-slate-500">{invoice.patientName}</p>
           </div>
         </div>
-        <span className="text-lg font-bold text-slate-900">
-          ${invoice.total?.toFixed(2) || '0.00'}
+        {/* ✅ LKR Total */}
+        <span className="text-base font-bold text-slate-900">
+          {formatLKR(invoice.total)}
         </span>
       </div>
 
-      {/* Details */}
+      {/* Status Badges */}
       <div className="mt-3 flex flex-wrap gap-2">
         <span className={`px-2.5 py-1 text-xs font-medium rounded-full border ${getStatusColor(invoice.status)}`}>
           {invoice.status}
@@ -71,9 +73,10 @@ export const InvoiceCard: React.FC<InvoiceCardProps> = ({ invoice, onDelete }) =
         </span>
       </div>
 
+      {/* Details - ✅ LKR Balance */}
       <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
         <span>{new Date(invoice.issueDate).toLocaleDateString()}</span>
-        <span>Balance: ${invoice.balance?.toFixed(2) || '0.00'}</span>
+        <span>Balance: {formatLKR(invoice.balance)}</span>
       </div>
 
       {/* Actions */}
