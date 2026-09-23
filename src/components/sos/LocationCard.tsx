@@ -12,11 +12,12 @@ interface LocationCardProps {
   location: LocationInfo;
   isActive?: boolean;
   alertStatus?: string;
+  alertId?: string | null;
   onLocationChange?: (lat: number, lng: number) => void;
   onArrival?: () => void;
 }
 
-export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive = false, alertStatus = 'ACTIVE', onLocationChange, onArrival }) => {
+export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive = false, alertStatus = 'ACTIVE', alertId = null, onLocationChange, onArrival }) => {
   const [ambulanceArrived, setAmbulanceArrived] = React.useState(false);
   const [liveDistanceKm, setLiveDistanceKm] = React.useState<number | null>(null);
   const [liveTimeMins, setLiveTimeMins] = React.useState<number | null>(null);
@@ -87,6 +88,7 @@ export const LocationCard: React.FC<LocationCardProps> = ({ location, isActive =
             patientLng={location.longitude} 
             isActive={isActive}
             alertStatus={alertStatus}
+            alertId={alertId}
             onLocationChange={isActive ? undefined : onLocationChange} // Disable dragging when active
             onArrival={handleArrival}
             onProgress={handleProgress}

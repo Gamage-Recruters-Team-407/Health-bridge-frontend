@@ -23,6 +23,9 @@ import {
   Receipt,
   Sparkles,
   Lock,
+  ChevronDown,
+  Check,
+  TestTube2,
 } from "lucide-react";
 
 type PaymentStep = "DETAILS" | "CARD" | "VERIFICATION" | "SUCCESS";
@@ -34,9 +37,73 @@ interface CategoryOption {
   defaultAmount: number;
 }
 
+export interface LabTestOption {
+  id: string;
+  code: string;
+  name: string;
+  panel: string;
+  price: number;
+  turnaround: string;
+  fastingRequired: boolean;
+  description: string;
+}
+
+export const LAB_TEST_OPTIONS: LabTestOption[] = [
+  {
+    id: "CBC",
+    code: "LB-101",
+    name: "Complete Blood Count (CBC / FBC)",
+    panel: "Hematology",
+    price: 1500,
+    turnaround: "2 - 4 Hours",
+    fastingRequired: false,
+    description: "Evaluates red & white blood cells, hemoglobin, and platelets to screen for anemia and infection.",
+  },
+  {
+    id: "LIPID_GLUCOSE",
+    code: "LB-204",
+    name: "Fasting Blood Sugar & Lipid Profile",
+    panel: "Biochemistry",
+    price: 2800,
+    turnaround: "4 - 6 Hours",
+    fastingRequired: true,
+    description: "Evaluates glucose, cholesterol, HDL, LDL, and triglycerides for cardiovascular & diabetic health.",
+  },
+  {
+    id: "THYROID_PANEL",
+    code: "LB-315",
+    name: "Comprehensive Thyroid Panel (TSH, FT3, FT4)",
+    panel: "Endocrinology",
+    price: 4200,
+    turnaround: "Same Day",
+    fastingRequired: false,
+    description: "Complete hormone assay to diagnose thyroid gland health and metabolic regulation.",
+  },
+  {
+    id: "LFT_KFT",
+    code: "LB-422",
+    name: "Liver (LFT) & Kidney (KFT) Function Screening",
+    panel: "Organ Function",
+    price: 5600,
+    turnaround: "6 - 8 Hours",
+    fastingRequired: true,
+    description: "Screening of liver enzymes (ALT, AST, bilirubin) and renal markers (creatinine, BUN, electrolytes).",
+  },
+  {
+    id: "EXECUTIVE_HEALTH",
+    code: "LB-580",
+    name: "Full Body Executive Diagnostic & Wellness Screen",
+    panel: "Advanced Diagnostic",
+    price: 7800,
+    turnaround: "24 Hours",
+    fastingRequired: true,
+    description: "All-inclusive clinical diagnostic battery: CBC, LFT, KFT, lipid panel, HbA1c, and urine analysis.",
+  },
+];
+
 const CATEGORIES: CategoryOption[] = [
   { id: "CONSULTATION", name: "Doctor Consultation", icon: Stethoscope, defaultAmount: 3000 },
-  { id: "LAB_TEST", name: "Laboratory Test", icon: FlaskConical, defaultAmount: 1000 },
+  { id: "LAB_TEST", name: "Laboratory Test", icon: FlaskConical, defaultAmount: 1500 },
   { id: "INSURANCE", name: "Insurance Copay", icon: Shield, defaultAmount: 1000 },
   { id: "OTHER", name: "Medical Service", icon: FileText, defaultAmount: 5000 },
   { id: "CHECKUP", name: "Medical Checkup", icon: Pill, defaultAmount: 5000 },
@@ -57,6 +124,14 @@ export default function PaymentsPage() {
   const [cardNumber, setCardNumber] = useState<string>("");
   const [expiryDate, setExpiryDate] = useState<string>("");
   const [cvv, setCvv] = useState<string>("");
+
+  // Lab Test Dropdown State
+  const [selectedLabTestId, setSelectedLabTestId] = useState<string>("CBC");
+  const [isLabDropdownOpen, setIsLabDropdownOpen] = useState<boolean>(false);
+  const labDropdownRef = useRef<HTMLDivElement>(null);
+
+  const currentLabTest =
+    LAB_TEST_OPTIONS.find((t) => t.id === selectedLabTestId) || LAB_TEST_OPTIONS[0];
 
   // OTP State
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
@@ -83,6 +158,28 @@ export default function PaymentsPage() {
     setUser(currentUser);
     setCardHolderName(currentUser.fullName || "");
   }, [router]);
+
+  // Click outside to close lab test dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (labDropdownRef.current && !labDropdownRef.current.contains(event.target as Node)) {
+        setIsLabDropdownOpen(false);
+      }
+    }
+    if (isLabDropdownOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [isLabDropdownOpen]);
+
+  const handleSelectLabTest = (test: LabTestOption) => {
+    setSelectedLabTestId(test.id);
+    setAmount(test.price.toFixed(2));
+    setDescription(`Laboratory Test - ${test.name}`);
+    setIsLabDropdownOpen(false);
+  };
 
   // Countdown timer effect
   useEffect(() => {
@@ -309,6 +406,8 @@ export default function PaymentsPage() {
     setAmount("3000.00");
     setDescription("Doctor Consultation");
     setCategory("CONSULTATION");
+    setSelectedLabTestId("CBC");
+    setIsLabDropdownOpen(false);
     setCardNumber("");
     setExpiryDate("");
     setCvv("");
@@ -405,12 +504,21 @@ export default function PaymentsPage() {
                       key={cat.id}
                       onClick={() => {
                         setCategory(cat.id);
-                        setAmount(cat.defaultAmount.toFixed(2));
-                        setDescription(cat.name);
+                        if (cat.id === "LAB_TEST") {
+                          const activeTest =
+                            LAB_TEST_OPTIONS.find((t) => t.id === selectedLabTestId) ||
+                            LAB_TEST_OPTIONS[0];
+                          setAmount(activeTest.price.toFixed(2));
+                          setDescription(`Laboratory Test - ${activeTest.name}`);
+                        } else {
+                          setAmount(cat.defaultAmount.toFixed(2));
+                          setDescription(cat.name);
+                          setIsLabDropdownOpen(false);
+                        }
                       }}
                       className={`flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all ${
                         isSelected
-                          ? "border-blue-600 bg-blue-50/50 shadow-sm"
+                          ? "border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-500/20"
                           : "border-slate-200 hover:border-slate-300 bg-white"
                       }`}
                     >
@@ -421,16 +529,205 @@ export default function PaymentsPage() {
                       >
                         <Icon className="w-5 h-5" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold text-slate-900 truncate">{cat.name}</div>
                         <div className="text-xs text-slate-500 font-medium">
-                          Fee: RS {cat.defaultAmount.toLocaleString()}
+                          {cat.id === "LAB_TEST"
+                            ? isSelected
+                              ? `Selected: RS ${Number(amount).toLocaleString()}`
+                              : "5 Tests (RS 1,000 - 8,000)"
+                            : `Fee: RS ${cat.defaultAmount.toLocaleString()}`}
                         </div>
                       </div>
                     </button>
                   );
                 })}
               </div>
+
+              {/* LABORATORY TEST SELECTION DROPDOWN SECTION */}
+              {category === "LAB_TEST" && (
+                <div className="rounded-3xl border-2 border-blue-200/90 bg-gradient-to-br from-blue-50/80 via-indigo-50/30 to-white p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-blue-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20">
+                        <FlaskConical className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <h3 className="text-base font-bold text-slate-900">
+                          Choose Diagnostic Laboratory Test
+                        </h3>
+                        <p className="text-xs text-slate-500">
+                          Select the specific diagnostic lab test to order. Standard hospital fee applies.
+                        </p>
+                      </div>
+                    </div>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-100/90 text-blue-700 text-xs font-bold self-start sm:self-auto border border-blue-200">
+                      <TestTube2 className="w-3.5 h-3.5" />
+                      5 Tests (RS 1,000 - 8,000)
+                    </span>
+                  </div>
+
+                  {/* Dropdown Container */}
+                  <div className="relative" ref={labDropdownRef}>
+                    <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                      Selected Diagnostic Test (Click to Change)
+                    </label>
+
+                    <button
+                      type="button"
+                      id="lab-test-dropdown-button"
+                      onClick={() => setIsLabDropdownOpen((prev) => !prev)}
+                      className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border-2 border-slate-200 hover:border-blue-400 focus:outline-none focus:ring-4 focus:ring-blue-100 transition shadow-sm text-left group cursor-pointer"
+                      aria-haspopup="listbox"
+                      aria-expanded={isLabDropdownOpen}
+                    >
+                      <div className="flex items-center gap-3.5 min-w-0">
+                        <div className="w-11 h-11 rounded-xl bg-blue-50 group-hover:bg-blue-100 text-blue-600 flex items-center justify-center shrink-0 transition">
+                          <FlaskConical className="w-5 h-5" />
+                        </div>
+                        <div className="min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-sm font-bold text-slate-900 truncate">
+                              {currentLabTest.name}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 text-[11px] font-mono font-semibold">
+                              {currentLabTest.code}
+                            </span>
+                          </div>
+                          <div className="text-xs text-slate-500 font-medium mt-0.5 flex items-center gap-2 flex-wrap">
+                            <span className="text-blue-700 font-semibold">{currentLabTest.panel}</span>
+                            <span>•</span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-3 h-3 text-slate-400" />
+                              {currentLabTest.turnaround}
+                            </span>
+                            <span>•</span>
+                            <span
+                              className={
+                                currentLabTest.fastingRequired
+                                  ? "text-amber-600 font-medium"
+                                  : "text-emerald-600 font-medium"
+                              }
+                            >
+                              {currentLabTest.fastingRequired ? "Fasting Required" : "No Fasting"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-3 shrink-0 ml-3">
+                        <div className="text-right">
+                          <span className="text-[10px] text-slate-400 uppercase tracking-wider block font-bold">
+                            Fee
+                          </span>
+                          <span className="text-base font-extrabold text-blue-600">
+                            RS {currentLabTest.price.toLocaleString()}
+                          </span>
+                        </div>
+                        <div
+                          className={`w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-600 transition-transform duration-200 ${
+                            isLabDropdownOpen ? "rotate-180 bg-blue-50 text-blue-600" : ""
+                          }`}
+                        >
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                      </div>
+                    </button>
+
+                    {/* Dropdown Menu Options */}
+                    {isLabDropdownOpen && (
+                      <div
+                        className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-slate-200 shadow-2xl z-30 overflow-hidden divide-y divide-slate-100 animate-in fade-in slide-in-from-top-2 duration-150"
+                        role="listbox"
+                      >
+                        {LAB_TEST_OPTIONS.map((test) => {
+                          const isCurrent = test.id === selectedLabTestId;
+                          return (
+                            <button
+                              type="button"
+                              key={test.id}
+                              role="option"
+                              aria-selected={isCurrent}
+                              onClick={() => handleSelectLabTest(test)}
+                              className={`w-full flex items-center justify-between p-4 text-left transition ${
+                                isCurrent
+                                  ? "bg-blue-50/70 text-blue-900"
+                                  : "hover:bg-slate-50 text-slate-800"
+                              }`}
+                            >
+                              <div className="flex items-start gap-3 min-w-0 pr-4">
+                                <div
+                                  className={`w-5 h-5 mt-0.5 rounded-full border-2 flex items-center justify-center shrink-0 ${
+                                    isCurrent
+                                      ? "border-blue-600 bg-blue-600 text-white"
+                                      : "border-slate-300"
+                                  }`}
+                                >
+                                  {isCurrent && <Check className="w-3 h-3 stroke-[3]" />}
+                                </div>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="text-sm font-bold text-slate-900">
+                                      {test.name}
+                                    </span>
+                                    <span className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                                      {test.code}
+                                    </span>
+                                  </div>
+                                  <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                                    {test.description}
+                                  </p>
+                                  <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-500 flex-wrap">
+                                    <span className="font-semibold text-slate-700">{test.panel}</span>
+                                    <span>•</span>
+                                    <span>{test.turnaround}</span>
+                                    <span>•</span>
+                                    <span
+                                      className={
+                                        test.fastingRequired
+                                          ? "text-amber-600 font-semibold"
+                                          : "text-emerald-600 font-semibold"
+                                      }
+                                    >
+                                      {test.fastingRequired ? "10-12 Hr Fasting Required" : "No Fasting Needed"}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="shrink-0 text-right pl-2">
+                                <div className="text-sm font-black text-blue-700 font-mono">
+                                  RS {test.price.toLocaleString()}
+                                </div>
+                                {isCurrent && (
+                                  <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider block mt-0.5">
+                                    Selected
+                                  </span>
+                                )}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Selected Test Information Highlight Card */}
+                  <div className="bg-white/90 backdrop-blur-sm rounded-2xl border border-blue-100 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-600">
+                    <div className="flex items-start gap-2.5">
+                      <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-slate-900">Clinical Focus: </span>
+                        <span>{currentLabTest.description}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto text-[11px] font-medium text-slate-500">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>ISO 15189 Certified Pathology</span>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Amount and Description (Non-changeable fixed fees) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-slate-100">

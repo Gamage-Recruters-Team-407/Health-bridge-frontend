@@ -30,11 +30,27 @@ const setCookie = (name: string, value: string, maxAgeInSeconds = 60 * 60 * 24 *
 const clearCookie = (name: string) => {
   if (typeof document === "undefined") return;
 
-  const isHttps = window.location.protocol === "https:";
+  const isHttps = typeof window !== "undefined" && window.location.protocol === "https:";
   const securePart = isHttps ? "; Secure" : "";
   document.cookie = `${name}=; path=/; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${securePart}`;
   document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+
+  if (typeof window !== "undefined" && window.location.hostname) {
+    const host = window.location.hostname;
+    document.cookie = `${name}=; path=/; domain=${host}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${securePart}`;
+    document.cookie = `${name}=; path=/; domain=.${host}; max-age=0; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax${securePart}`;
+  }
+};
+
+/** Custom event name fired whenever auth data is saved or cleared. */
+export const AUTH_CHANGE_EVENT = "healthbridge_auth_change";
+
+/** Notify all listeners (useAuth external store) that auth data changed. */
+const notifyAuthChange = () => {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+  }
 };
 
 /** Persists the token and user after a successful login/register/OAuth call. */
@@ -44,6 +60,7 @@ export const saveAuthData = (token: string, user: AuthUser) => {
     localStorage.setItem(USER_KEY, JSON.stringify(user));
     setCookie(TOKEN_COOKIE, token);
     setCookie(USER_COOKIE, JSON.stringify(user));
+    notifyAuthChange();
   }
 };
 
@@ -85,9 +102,15 @@ export const clearAuthData = () => {
   if (typeof window !== "undefined") {
     localStorage.removeItem(TOKEN_KEY);
     localStorage.removeItem(USER_KEY);
+    localStorage.removeItem("authToken");
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
     sessionStorage.clear();
     clearCookie(TOKEN_COOKIE);
     clearCookie(USER_COOKIE);
+    clearCookie("token");
+    clearCookie("authToken");
+    notifyAuthChange();
   }
 };
 

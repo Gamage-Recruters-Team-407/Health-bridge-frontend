@@ -41,11 +41,15 @@ const getAmbulanceIcon = (angle: number) => L.divIcon({
   popupAnchor: [0, -30]
 });
 
+import { Client } from '@stomp/stompjs';
+import SockJS from 'sockjs-client';
+
 interface LiveMapProps {
   patientLat: number;
   patientLng: number;
   isActive?: boolean;
   alertStatus?: string;
+  alertId?: string | null;
   onLocationChange?: (lat: number, lng: number) => void;
   onArrival?: () => void;
   onProgress?: (distanceKm: number, timeMins: number) => void;
@@ -71,73 +75,94 @@ function getDistanceFromLatLonInKm(lat1: number, lon1: number, lat2: number, lon
   return R * c; // Distance in km
 }
 
-export default function LiveMap({ patientLat, patientLng, isActive = false, alertStatus = 'ACTIVE', onLocationChange, onArrival, onProgress }: LiveMapProps) {
-  // Mock ambulance location (offset from patient)
-  const [ambulanceLat, setAmbulanceLat] = useState(patientLat + 0.005);
-  const [ambulanceLng, setAmbulanceLng] = useState(patientLng + 0.005);
+export default function LiveMap({ patientLat, patientLng, isActive = false, alertStatus = 'ACTIVE', alertId = null, onLocationChange, onArrival, onProgress }: LiveMapProps) {
+  const [ambulanceLat, setAmbulanceLat] = useState<number | null>(null);
+  const [ambulanceLng, setAmbulanceLng] = useState<number | null>(null);
   const [ambulanceAngle, setAmbulanceAngle] = useState(0);
   const [hasArrived, setHasArrived] = useState(false);
 
-  // Simulate ambulance moving towards patient only if active and dispatched
+  // Use a ref to track previous location to calculate angle
+  const prevLocRef = React.useRef<{lat: number, lng: number} | null>(null);
+
   useEffect(() => {
-    if (!isActive || alertStatus !== 'DISPATCHED') {
-      if (!isActive) setHasArrived(false);
+    if (!isActive || alertStatus !== 'DISPATCHED' || !alertId) {
+      if (!isActive) {
+        setHasArrived(false);
+        setAmbulanceLat(null);
+        setAmbulanceLng(null);
+        prevLocRef.current = null;
+      }
       return;
     }
-    
-    // Reset position when activated
-    let currentLat = patientLat + 0.01; // ~1km away
-    let currentLng = patientLng + 0.01;
-    setAmbulanceLat(currentLat);
-    setAmbulanceLng(currentLng);
-    
-    // Initial bearing
-    const dx = patientLng - currentLng;
-    const dy = patientLat - currentLat;
-    const initialAngle = Math.atan2(dx, dy) * (180 / Math.PI);
-    setAmbulanceAngle(initialAngle);
-    
-    setHasArrived(false);
-    
-    // Initial distance report
-    if (onProgress) {
-      const dist = getDistanceFromLatLonInKm(currentLat, currentLng, patientLat, patientLng);
-      onProgress(dist, dist * 1.5); // assuming 40km/h -> 1.5 mins per km
-    }
-    
-    const interval = setInterval(() => {
-      // Calculate next step towards patient
-      const nextLat = currentLat - (currentLat - patientLat) * 0.15;
-      const nextLng = currentLng - (currentLng - patientLng) * 0.15;
-      
-      // Calculate bearing angle to make ambulance face the direction of travel
-      const moveDx = nextLng - currentLng;
-      const moveDy = nextLat - currentLat;
-      const angle = Math.atan2(moveDx, moveDy) * (180 / Math.PI);
-      
-      currentLat = nextLat;
-      currentLng = nextLng;
-      
-      const distKm = getDistanceFromLatLonInKm(currentLat, currentLng, patientLat, patientLng);
-      
-      setAmbulanceLat(currentLat);
-      setAmbulanceLng(currentLng);
-      setAmbulanceAngle(angle);
-      
-      if (distKm < 0.05) { // arrived if < 50 meters
-        clearInterval(interval);
-        setHasArrived(true);
-        if (onArrival) onArrival();
-      } else {
-        // Report progress
-        if (onProgress) {
-          onProgress(distKm, distKm * 1.5);
-        }
+
+    const stompClient = new Client({
+      webSocketFactory: () => new SockJS('http://localhost:8088/ws/alerts'),
+      debug: function (str) {
+        // console.log(str);
+      },
+      onConnect: () => {
+        stompClient.subscribe('/topic/driver/location', (msg) => {
+          if (msg.body) {
+            const data = JSON.parse(msg.body);
+            // Only update if it's for our alert
+            if (data.alertId === alertId) {
+              const { lat: currentLat, lng: currentLng } = data;
+              
+              let angle = 0;
+              if (prevLocRef.current) {
+                const moveDx = currentLng - prevLocRef.current.lng;
+                const moveDy = currentLat - prevLocRef.current.lat;
+                // Only update angle if there's significant movement
+                if (Math.abs(moveDx) > 0.0001 || Math.abs(moveDy) > 0.0001) {
+                  angle = Math.atan2(moveDx, moveDy) * (180 / Math.PI);
+                } else {
+                  setAmbulanceAngle(prev => prev); // keep old angle
+                }
+              }
+              
+              if (angle !== 0) setAmbulanceAngle(angle);
+              setAmbulanceLat(currentLat);
+              setAmbulanceLng(currentLng);
+              prevLocRef.current = { lat: currentLat, lng: currentLng };
+              
+              const distKm = getDistanceFromLatLonInKm(currentLat, currentLng, patientLat, patientLng);
+              
+              if (distKm < 0.05) { // arrived if < 50 meters
+                setHasArrived(true);
+                if (onArrival) onArrival();
+              } else {
+                if (onProgress) {
+                  // Assume average speed 40km/h = 1.5 mins per km, or use data.speed if available
+                  let speedKmH = 40;
+                  if (data.speed && data.speed > 0) speedKmH = data.speed * 3.6; 
+                  let timeMins = (distKm / speedKmH) * 60;
+                  onProgress(distKm, timeMins);
+                }
+              }
+            }
+          }
+        });
+      },
+      onStompError: (frame) => {
+        console.error('Broker reported error: ' + frame.headers['message']);
       }
-    }, 2000);
-    
-    return () => clearInterval(interval);
-  }, [patientLat, patientLng, isActive, onArrival, onProgress]);
+    });
+
+    stompClient.activate();
+
+    return () => {
+      stompClient.deactivate();
+    };
+  }, [patientLat, patientLng, isActive, alertStatus, alertId, onArrival, onProgress]);
+
+  // Add a slight offset to the ambulance rendering position if it exactly overlaps the patient
+  let renderAmbulanceLng = ambulanceLng;
+  if (ambulanceLat !== null && ambulanceLng !== null) {
+    const isOverlap = Math.abs(ambulanceLat - patientLat) < 0.0001 && Math.abs(ambulanceLng - patientLng) < 0.0001;
+    if (isOverlap) {
+      renderAmbulanceLng = ambulanceLng + 0.0002;
+    }
+  }
 
   return (
     <MapContainer center={[patientLat, patientLng]} zoom={14} style={{ height: '100%', width: '100%' }} zoomControl={false}>
@@ -161,8 +186,8 @@ export default function LiveMap({ patientLat, patientLng, isActive = false, aler
       >
         <Popup>Drag to adjust your exact location</Popup>
       </Marker>
-      {isActive && (
-        <Marker position={[ambulanceLat, ambulanceLng]} icon={getAmbulanceIcon(ambulanceAngle)}>
+      {isActive && ambulanceLat !== null && renderAmbulanceLng !== null && (
+        <Marker position={[ambulanceLat, renderAmbulanceLng]} icon={getAmbulanceIcon(ambulanceAngle)}>
           <Popup>Incoming Ambulance 🚑</Popup>
         </Marker>
       )}

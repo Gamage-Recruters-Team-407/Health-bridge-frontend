@@ -62,9 +62,24 @@ export const EmergencySOS: React.FC = () => {
         }
       });
       if (res.ok) {
-        const data = await res.json();
-        setAlertHistory(data.alerts || []);
-      }
+          const data = await res.json();
+          const processAlerts = (alertsArray: any[]) => 
+            alertsArray
+              .sort((a, b) => new Date(b.triggeredAt || 0).getTime() - new Date(a.triggeredAt || 0).getTime())
+              .slice(0, 10);
+
+          if (data.data && Array.isArray(data.data.alerts)) {
+            setAlertHistory(processAlerts(data.data.alerts));
+          } else if (data.data && Array.isArray(data.data.content)) {
+            setAlertHistory(processAlerts(data.data.content));
+          } else if (data.data && Array.isArray(data.data)) {
+            setAlertHistory(processAlerts(data.data));
+          } else if (Array.isArray(data)) {
+            setAlertHistory(processAlerts(data));
+          } else {
+            setAlertHistory(processAlerts(data.alerts || []));
+          }
+        }
     } catch (e) {
       console.error("Failed to fetch SOS history:", e);
     }
@@ -82,7 +97,15 @@ export const EmergencySOS: React.FC = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        setContacts(data.contacts || []);
+        if (data.data && Array.isArray(data.data.contacts)) {
+          setContacts(data.data.contacts);
+        } else if (data.data && Array.isArray(data.data)) {
+          setContacts(data.data);
+        } else if (Array.isArray(data)) {
+          setContacts(data);
+        } else {
+          setContacts(data.contacts || []);
+        }
       }
     } catch (e) {
       console.error("Failed to fetch contacts:", e);
@@ -111,12 +134,24 @@ export const EmergencySOS: React.FC = () => {
           });
           if (res.ok) {
             const data = await res.json();
-            setPatient(prev => ({
-              ...prev,
-              bloodType: data.bloodGroup || prev.bloodType,
-              allergies: data.allergies?.length > 0 ? data.allergies : prev.allergies,
-              conditions: data.conditions?.length > 0 ? data.conditions : prev.conditions
-            }));
+            setPatient(prev => {
+              let fetchedAllergies = data.allergies || [];
+              let fetchedConditions = data.conditions || [];
+              
+              if (fetchedAllergies.length === 1 && fetchedAllergies[0] === 'Peanuts') {
+                fetchedAllergies = [];
+              }
+              if (fetchedConditions.length === 1 && fetchedConditions[0] === 'Asthma') {
+                fetchedConditions = data.medicalHistory ? [data.medicalHistory] : [];
+              }
+
+              return {
+                ...prev,
+                bloodType: data.bloodGroup || 'Unknown',
+                allergies: fetchedAllergies,
+                conditions: fetchedConditions
+              };
+            });
           }
         } catch (e) {
           console.error("Failed to fetch user profile", e);
@@ -225,22 +260,26 @@ export const EmergencySOS: React.FC = () => {
     if (!isEmergencyActive || !alertId) return;
     const interval = setInterval(async () => {
       try {
-        const res = await fetch(`http://localhost:8088/api/sos/${alertId}`);
+        const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+        const res = await fetch(`http://localhost:8088/api/sos/${alertId}`, {
+          headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+        });
         if (res.ok) {
           const data = await res.json();
-          if (data.status !== alertStatus) {
-            setAlertStatus(data.status);
+          const newStatus = data.data?.status || data.status;
+          if (newStatus && newStatus !== alertStatus) {
+            setAlertStatus(newStatus);
           }
-          if (data.status === 'ARRIVED' && !hasArrived) {
+          if (newStatus === 'ARRIVED' && !hasArrived) {
             setHasArrived(true);
           }
         }
       } catch (e) {
         console.error("Polling error", e);
       }
-    }, 2000);
+    }, 5000);
     return () => clearInterval(interval);
-  }, [isEmergencyActive, alertId, hasArrived, alertStatus]);
+  }, [isEmergencyActive, alertId, alertStatus, hasArrived]);
 
   async function handleSOSTrigger() {
     setIsEmergencyActive(true);
@@ -280,9 +319,10 @@ export const EmergencySOS: React.FC = () => {
       });
       if (res.ok) {
         const data = await res.json();
-        setAlertId(data.alertId);
-        setAlertStatus(data.status);
-        console.log("SOS Triggered successfully on backend:", data.alertId);
+        const alertData = data.data || data;
+        setAlertId(alertData.alertId || alertData.id);
+        setAlertStatus(alertData.status);
+        console.log("SOS Triggered successfully on backend:", alertData.alertId || alertData.id);
         fetchHistory();
       } else {
         throw new Error(`Server returned ${res.status}`);
@@ -294,6 +334,14 @@ export const EmergencySOS: React.FC = () => {
       setAlertStatus('CANCELLED');
     }
   };
+
+  async function handleSOSDismiss() {
+    setIsEmergencyActive(false);
+    setHasArrived(false);
+    setAlertId(null);
+    setAlertStatus('ACTIVE');
+    fetchHistory();
+  }
 
   async function handleSOSCancel() {
     setIsEmergencyActive(false);
@@ -314,11 +362,10 @@ export const EmergencySOS: React.FC = () => {
             ...(token ? { 'Authorization': `Bearer ${token}` } : {})
           }
         });
-        console.log("SOS Cancelled successfully on backend");
-        setAlertId(null);
+        setAlertStatus('CANCELLED');
         fetchHistory();
       } catch (e) {
-        console.error("Failed to cancel SOS on backend:", e);
+        console.error("Failed to cancel SOS:", e);
       }
     }
   };
@@ -364,7 +411,7 @@ export const EmergencySOS: React.FC = () => {
 
       <SOSButton 
         onTrigger={handleSOSTrigger} 
-        onCancel={hasArrived ? () => setIsEmergencyActive(false) : handleSOSCancel} 
+        onCancel={hasArrived ? handleSOSDismiss : handleSOSCancel} 
         holdDuration={3000} 
         isActive={isEmergencyActive} 
         buttonText={hasArrived ? 'Dismiss Alert' : undefined}
@@ -393,6 +440,7 @@ export const EmergencySOS: React.FC = () => {
             location={location}
             isActive={isEmergencyActive} 
             alertStatus={alertStatus}
+            alertId={alertId}
             onArrival={() => setHasArrived(true)}
             onLocationChange={async (lat, lng) => {
               setIsLocationManuallySet(true);

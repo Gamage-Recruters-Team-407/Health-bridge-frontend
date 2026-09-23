@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, LogOut, Bell, HeadphonesIcon, CreditCard, Video } from "lucide-react";
-import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
+import { getStoredUser, clearAuthData, AuthUser, AUTH_CHANGE_EVENT } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
 
@@ -66,9 +66,26 @@ export default function PatientDashboardPage() {
     // Set up live updating (polling every 5 seconds)
     const intervalId = setInterval(fetchData, 5000);
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
+    // Watch for logout in another tab or component
+    const handleAuthChange = () => {
+      const current = getStoredUser();
+      if (!current || current.role !== "PATIENT") {
+        window.location.href = "/login";
+      }
+    };
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    };
   }, [router]);
+
+  const handleLogout = () => {
+    clearAuthData();
+    window.location.href = "/login";
+  };
 
   // Dynamic Metric Calculations
   const upcomingAppointmentsCount = appointments.filter(a => a.status !== 'CANCELLED').length;
@@ -135,6 +152,14 @@ export default function PatientDashboardPage() {
               <HeadphonesIcon className="w-4 h-4" />
               <span>Support</span>
             </Link>
+            <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-semibold backdrop-blur-sm transition cursor-pointer"
+                title="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
 

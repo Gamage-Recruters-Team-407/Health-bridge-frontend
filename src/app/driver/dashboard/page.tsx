@@ -21,15 +21,30 @@ interface LocationData {
 export default function DriverDashboard() {
   const [isDispatchActive, setIsDispatchActive] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<LocationData | null>(null);
+  const [defaultLocation, setDefaultLocation] = useState<{lat: number, lng: number} | null>(null);
   const [logs, setLogs] = useState<string[]>([]);
   const [pendingAlert, setPendingAlert] = useState<any>(null);
   const [cancelledMessage, setCancelledMessage] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    if (typeof navigator !== 'undefined' && navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          setDefaultLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+        },
+        (error) => console.error("Initial GPS Error:", error.message),
+        { enableHighAccuracy: true, maximumAge: 0, timeout: 10000 }
+      );
+    }
+  }, []);
+
   const addLog = (msg: string) => {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 10));
   };
+
+  const stompClientRef = useRef<Client | null>(null);
 
   useEffect(() => {
     const stompClient = new Client({
@@ -90,20 +105,8 @@ export default function DriverDashboard() {
       }
     });
 
+    stompClientRef.current = stompClient;
     stompClient.activate();
-
-    // Fetch any currently active alerts in case we connected late
-    fetch('http://localhost:8088/api/sos/active')
-      .then(res => res.json())
-      .then(data => {
-        if (data && data.length > 0) {
-          const latestAlert = data[data.length - 1];
-          setPendingAlert(latestAlert);
-          setCancelledMessage(null);
-          addLog(`Loaded active alert from history: ${latestAlert.id}`);
-        }
-      })
-      .catch(err => console.error('Failed to fetch active alerts', err));
 
     return () => {
       stompClient.deactivate();
@@ -120,15 +123,31 @@ export default function DriverDashboard() {
     addLog("Dispatch accepted. Starting GPS tracker...");
 
     if (pendingAlert?.id) {
-      fetch(`http://localhost:8088/api/sos/${pendingAlert.id}/dispatch`, { method: 'PUT' })
-        .catch(err => addLog(`Failed to notify dispatch: ${err}`));
+      const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+      fetch(`http://localhost:8088/api/sos/${pendingAlert.id}/dispatch`, { 
+        method: 'PUT',
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      }).catch(err => addLog(`Failed to notify dispatch: ${err}`));
     }
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude, accuracy, speed } = position.coords;
         setCurrentLocation({ lat: latitude, lng: longitude, accuracy, speed });
-        // TODO: Broadcast to WebSocket
+        
+        if (stompClientRef.current && stompClientRef.current.connected && pendingAlert?.id) {
+          stompClientRef.current.publish({
+            destination: '/app/driver/location',
+            body: JSON.stringify({
+              lat: latitude,
+              lng: longitude,
+              accuracy: accuracy,
+              speed: speed || 0,
+              driverId: 'driver-123',
+              alertId: pendingAlert.id
+            })
+          });
+        }
       },
       (error) => {
         addLog(`GPS Error: ${error.message}`);
@@ -144,8 +163,11 @@ export default function DriverDashboard() {
     }
     
     if (pendingAlert?.id) {
-      fetch(`http://localhost:8088/api/sos/${pendingAlert.id}/arrive`, { method: 'PUT' })
-        .catch(err => addLog(`Failed to notify arrival: ${err}`));
+      const token = typeof window !== 'undefined' ? localStorage.getItem('healthbridge_token') : null;
+      fetch(`http://localhost:8088/api/sos/${pendingAlert.id}/arrive`, { 
+        method: 'PUT',
+        headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) }
+      }).catch(err => addLog(`Failed to notify arrival: ${err}`));
     }
 
     setIsDispatchActive(false);
@@ -161,6 +183,27 @@ export default function DriverDashboard() {
       }
     };
   }, []);
+
+  // Periodic heartbeat so late subscribers get the location even if the driver is stationary
+  useEffect(() => {
+    if (!isDispatchActive || !currentLocation || !pendingAlert?.id || !stompClientRef.current?.connected) return;
+    
+    const interval = setInterval(() => {
+      stompClientRef.current?.publish({
+        destination: '/app/driver/location',
+        body: JSON.stringify({
+          lat: currentLocation.lat,
+          lng: currentLocation.lng,
+          accuracy: currentLocation.accuracy,
+          speed: currentLocation.speed || 0,
+          driverId: 'driver-123',
+          alertId: pendingAlert.id
+        })
+      });
+    }, 3000);
+    
+    return () => clearInterval(interval);
+  }, [isDispatchActive, currentLocation, pendingAlert]);
 
   return (
     <div style={{ padding: '24px', maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui, sans-serif', backgroundColor: '#FFFFFF', minHeight: '100vh', color: '#0F172A' }}>
@@ -244,14 +287,14 @@ export default function DriverDashboard() {
       )}
 
       {/* Live Map */}
-      {isDispatchActive && currentLocation && (
+      {(currentLocation || defaultLocation) && (
         <div style={{ marginBottom: '24px' }}>
           <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase' }}>Live Route Map</h3>
           <DriverMap 
-            driverLat={currentLocation.lat} 
-            driverLng={currentLocation.lng} 
-            patientLat={pendingAlert?.location?.latitude || 6.9271} 
-            patientLng={pendingAlert?.location?.longitude || 79.8612} 
+            driverLat={currentLocation?.lat || defaultLocation!.lat} 
+            driverLng={currentLocation?.lng || defaultLocation!.lng} 
+            patientLat={pendingAlert ? (pendingAlert.location?.latitude || 6.9271) : null} 
+            patientLng={pendingAlert ? (pendingAlert.location?.longitude || 79.8612) : null} 
           />
         </div>
       )}

@@ -17,7 +17,7 @@ const redirectToRoleDashboard = (request: NextRequest, role: string) => {
     : redirectToLogin(request);
 };
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   if (isPublicPath(pathname)) {
