@@ -168,7 +168,7 @@ setSelectedId((current) =>
   return (
       <div className="min-h-screen bg-slate-50">
       {/* Navbar spans full width, on top */}
-      <Navbar />
+     
     <div
       className="flex h-screen bg-white text-[#242424]"
       style={{ fontFamily: "'Segoe UI', Roboto, system-ui, sans-serif" }}

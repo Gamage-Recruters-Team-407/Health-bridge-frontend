@@ -335,12 +335,11 @@ function AddDocumentPanel({
       setSubmitting(true);
       setErrors((prev) => ({ ...prev, form: undefined }));
 
-      const formData = new FormData();
-      formData.append("file", file);
-      formData.append("category", category);
-      formData.append("description", description);
-
-    const created = await uploadSupportDocument(category, description, file);
+    const created = await uploadSupportDocument(
+  category,
+  description,
+  file
+);
 
       reset();
       onCreated(created);
