@@ -131,6 +131,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Lab Reports", href: "/patient/lab-reports", icon: TestTube2 },
           { title: "Insurance", href: "/patient/insurance", icon: ShieldAlert },
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },

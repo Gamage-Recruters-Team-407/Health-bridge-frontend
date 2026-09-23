@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
 import { Activity, HeartPulse, Scale, Droplet, Plus, X } from "lucide-react";
-import DashboardLayout from "@/components/dashboard/DashboardLayout";
 import { PatientTable } from "@/components/patient/PatientTable";
 import { PatientForm } from "@/components/patient/PatientForm";
 import { healthMetricService } from "@/services/healthMetricService";
@@ -23,6 +22,17 @@ export default function HealthMetricsPage() {
   const [timeRange, setTimeRange] = useState("1M"); // New Time Range Filter (Default to 1 Month)
   const [error, setError] = useState<string | null>(null);
 
+  const fetchMetrics = async (patientId: string) => {
+    try {
+      const data = await healthMetricService.getPatientMetrics(patientId);
+      setMetrics(data);
+    } catch (err) {
+      console.error("Failed to load metrics", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     const storedUser = getStoredUser();
 
@@ -31,18 +41,6 @@ export default function HealthMetricsPage() {
       return;
     }
     setUser(storedUser);
-
-    const fetchMetrics = async (patientId: string) => {
-      try {
-        const data = await healthMetricService.getPatientMetrics(patientId);
-        setMetrics(data);
-      } catch (err) {
-        console.error("Failed to load metrics", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchMetrics(storedUser.id);
   }, [router]);
 

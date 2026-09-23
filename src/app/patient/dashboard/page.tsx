@@ -6,6 +6,7 @@ import { User as UserIcon, LogOut, Bell, HeadphonesIcon, CreditCard, Video } fro
 import { getStoredUser, clearAuthData, AuthUser, AUTH_CHANGE_EVENT } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
+import { labReportService } from "@/services/labReportService";
 
 export default function PatientDashboardPage() {
   const router = useRouter();
@@ -46,11 +47,8 @@ export default function PatientDashboardPage() {
           .catch(err => console.error(err));
 
       // Fetch Live Lab Reports
-      api.get(`/lab/results/patient/${storedUser.id}/history`)
-          .then((data: any) => {
-            const valid = data.filter((r: any) => r.status !== 'DRAFT');
-            setLabReports(valid);
-          })
+      labReportService.getPatientLabHistory(storedUser.id)
+          .then(data => setLabReports(data))
           .catch(err => console.error(err));
 
       // Fetch Active Prescriptions Count
@@ -337,7 +335,7 @@ export default function PatientDashboardPage() {
           <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-zinc-950 text-[16px]">Recent lab reports</h3>
-              <Link href="/patient/records" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
+              <Link href="/patient/lab-reports" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
             </div>
 
             <div className="w-full">
@@ -354,15 +352,26 @@ export default function PatientDashboardPage() {
                     labReports.slice(0, 3).map((report, index) => (
                         <div key={index} className="flex justify-between items-center py-4 border-b border-zinc-100 last:border-0 hover:bg-slate-50 transition px-2 -mx-2 rounded-lg">
                           <div className="w-1/3 text-sm text-zinc-950 font-medium truncate pr-2">
-                            {report.parameters && report.parameters[0] ? report.parameters[0].parameterName : `Test Order #${report.testOrderId}`}
+                            {report.parameters && report.parameters.length > 0 ? (
+                              <>
+                                {report.parameters[0].parameterName}
+                                {report.parameters.length > 1 && (
+                                  <span className="text-zinc-500 text-xs ml-1.5 font-normal">
+                                    +{report.parameters.length - 1} more
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              `Test Order #${report.testOrderId}`
+                            )}
                           </div>
                           <div className="w-1/3 text-sm text-zinc-500 text-center">
                             {formatDate(report.publishedAt || report.resultedAt)}
                           </div>
                           <div className="w-1/3 flex justify-end items-center gap-4 sm:gap-8 pr-2">
-                            {report.isCritical ? (
+                            { (report.critical || report.isCritical) ? (
                                 <span className="bg-red-500/15 text-red-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Critical</span>
-                            ) : report.isAbnormal ? (
+                            ) : (report.abnormal || report.isAbnormal) ? (
                                 <span className="bg-orange-500/15 text-orange-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Review needed</span>
                             ) : (
                                 <span className="bg-teal-500/15 text-teal-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Normal</span>
