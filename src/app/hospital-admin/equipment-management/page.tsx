@@ -38,10 +38,10 @@ import {
 export default function EquipmentManagementPage() {
   const [equipmentList, setEquipmentList] = useState<EquipmentAsset[]>([]);
   const [stats, setStats] = useState<EquipmentOverviewStats>({
-    totalInventory: 1240,
-    operationalRate: 94.2,
-    underMaintenance: 18,
-    calibrationDue: 7
+    totalInventory: 0,
+    operationalRate: 0,
+    underMaintenance: 0,
+    calibrationDue: 0
   });
 
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -107,13 +107,12 @@ export default function EquipmentManagementPage() {
   const handleBulkExportCSV = () => {
     const itemsToExport = equipmentList.filter((item) => selectedIds.includes(item.id));
     if (itemsToExport.length === 0) return;
-    const headers = ['Asset ID', 'Name', 'Category', 'Department', 'Location', 'Serial No', 'Status', 'Calibration Due Date'];
+    const headers = ['Asset ID', 'Name', 'Category', 'Department', 'Serial No', 'Status', 'Calibration Due Date'];
     const rows = itemsToExport.map((item) => [
       item.assetId,
       `"${item.name}"`,
       `"${item.category}"`,
       `"${item.department}"`,
-      `"${item.location}"`,
       item.serialNo,
       item.status,
       item.calibrationDueDate
@@ -149,7 +148,6 @@ export default function EquipmentManagementPage() {
     name: '',
     category: 'Life Support',
     department: 'ICU',
-    location: '',
     serialNo: '',
     status: 'Available',
     calibrationDueDate: '',
@@ -167,53 +165,40 @@ export default function EquipmentManagementPage() {
   const fetchEquipmentData = async () => {
     setIsLoading(true);
     try {
-      const [listData, statsData] = await Promise.all([
-        equipmentService.getAll(),
+      const [listRes, statsRes] = await Promise.all([
+        equipmentService.getAll({
+          category: categoryFilter !== 'All' ? categoryFilter : undefined,
+          department: departmentFilter !== 'All' ? departmentFilter : undefined,
+          status: statusFilter !== 'All' ? statusFilter : undefined,
+          search: searchTerm ? searchTerm : undefined
+        }),
         equipmentService.getStats()
       ]);
-      if (listData && listData.length > 0) {
+      const listData = (listRes as any)?.data || listRes;
+      if (Array.isArray(listData)) {
         setEquipmentList(listData);
       }
-      if (statsData) {
-        setStats(statsData);
+      const parsedStats = (statsRes as any)?.data || statsRes;
+      if (parsedStats && typeof parsedStats.totalInventory === 'number') {
+        setStats(parsedStats);
       }
     } catch (err) {
-      console.warn('Backend connection error, relying on initial state:', err);
+      console.warn('Backend connection error:', err);
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Dynamic Locations State per Department fetched from Backend
-  const [availableLocations, setAvailableLocations] = useState<string[]>([]);
-
-  // Fetch locations from Backend whenever selected department in form changes
-  useEffect(() => {
-    const fetchLocations = async () => {
-      const selectedDept = formData.department || 'ICU';
-      try {
-        const locs = await equipmentService.getLocationsByDepartment(selectedDept);
-        if (locs && locs.length > 0) {
-          setAvailableLocations(locs);
-        }
-      } catch (err) {
-        console.warn('Failed to fetch backend locations for department:', err);
-      }
-    };
-    if (isAddModalOpen) {
-      fetchLocations();
-    }
-  }, [formData.department, isAddModalOpen]);
-
   // Dynamic Departments State loaded from Backend
-  const [departmentsList, setDepartmentsList] = useState<string[]>(['ICU', 'Radiology', 'ER', 'Surgery', 'Biomed Workshop']);
+  const [departmentsList, setDepartmentsList] = useState<string[]>([]);
 
   // Fetch departments from backend
   const fetchDepartments = async () => {
     try {
-      const depts = await departmentService.getAll('Active');
-      if (depts && depts.length > 0) {
-        setDepartmentsList(depts.map((d) => d.name));
+      const deptsRes = await departmentService.getAll('Active');
+      const deptsData = (deptsRes as any)?.data || deptsRes;
+      if (Array.isArray(deptsData) && deptsData.length > 0) {
+        setDepartmentsList(deptsData.map((d: any) => d.name).filter(Boolean));
       }
     } catch (err) {
       console.warn('Backend connection error for departments:', err);
@@ -222,20 +207,48 @@ export default function EquipmentManagementPage() {
 
   useEffect(() => {
     fetchEquipmentData();
+  }, [categoryFilter, departmentFilter, statusFilter, searchTerm]);
+
+  useEffect(() => {
     fetchDepartments();
   }, []);
+
+  // Dynamic / Computed Stats from current equipment state
+  const displayStats: EquipmentOverviewStats = useMemo(() => {
+    if (stats && (stats.totalInventory > 0 || stats.underMaintenance > 0 || stats.calibrationDue > 0)) {
+      return stats;
+    }
+    const total = equipmentList.length;
+    const underMaint = equipmentList.filter((e) => e.status === 'Maintenance').length;
+    const calDue = equipmentList.filter((e) => e.status === 'Calibration Due').length;
+    const operationalCount = equipmentList.filter((e) => e.status === 'In Use' || e.status === 'Available').length;
+    const opRate = total > 0 ? Math.round((operationalCount / total) * 1000) / 10 : 0;
+
+    return {
+      totalInventory: total,
+      operationalRate: opRate,
+      underMaintenance: underMaint,
+      calibrationDue: calDue
+    };
+  }, [stats, equipmentList]);
 
   // Filter & Search Logic
   const filteredEquipment = useMemo(() => {
     return equipmentList.filter((item) => {
       const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
-      const matchesDepartment = departmentFilter === 'All' || item.department === departmentFilter;
+      const targetDept = departmentFilter.trim().toLowerCase();
+      const itemDept = (item.department || '').trim().toLowerCase();
+      const matchesDepartment =
+        departmentFilter === 'All' ||
+        itemDept === targetDept ||
+        itemDept.includes(targetDept) ||
+        targetDept.includes(itemDept);
       const matchesStatus = statusFilter === 'All' || item.status === statusFilter;
       const matchesSearch =
+        !searchTerm ||
         item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.serialNo.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.location.toLowerCase().includes(searchTerm.toLowerCase());
+        item.serialNo.toLowerCase().includes(searchTerm.toLowerCase());
 
       return matchesCategory && matchesDepartment && matchesStatus && matchesSearch;
     });
@@ -265,7 +278,6 @@ export default function EquipmentManagementPage() {
       name: '',
       category: '',
       department: '',
-      location: '',
       serialNo: ``,
       status: 'Available',
       calibrationDueDate: new Date().toISOString().split('T')[0],
@@ -462,7 +474,7 @@ export default function EquipmentManagementPage() {
                 placeholder="Search assets..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
               />
               {searchTerm && (
                 <button
@@ -485,7 +497,7 @@ export default function EquipmentManagementPage() {
           </div>
         </div>
 
-        {/* --- 2. STATS OVERVIEW CARDS (Matching Screenshot 1 & 2) --- */}
+        {/* --- 2. STATS OVERVIEW CARDS --- */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
           {/* Card 1: Total Inventory */}
           <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-xs space-y-2 relative overflow-hidden">
@@ -495,9 +507,9 @@ export default function EquipmentManagementPage() {
                 <Package className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{stats.totalInventory.toLocaleString()}</div>
-            <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-              <span>↗ +12 this month</span>
+            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{displayStats.totalInventory.toLocaleString()}</div>
+            <p className="text-[11px] text-slate-400 font-medium flex items-center gap-1">
+              <span>Registered Medical Assets</span>
             </p>
           </div>
 
@@ -509,10 +521,9 @@ export default function EquipmentManagementPage() {
                 <CheckCircle2 className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{stats.operationalRate}%</div>
+            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{displayStats.operationalRate}%</div>
             <p className="text-[11px] text-emerald-600 font-bold flex items-center gap-1">
-              <span>↗ +0.5% vs last week</span>
-              <span className="text-slate-400 font-medium ml-auto hidden sm:inline">Target: 95%</span>
+              <span>Active & Operational</span>
             </p>
           </div>
 
@@ -524,10 +535,9 @@ export default function EquipmentManagementPage() {
                 <Wrench className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{stats.underMaintenance}</div>
+            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{displayStats.underMaintenance}</div>
             <p className="text-[11px] text-amber-600 font-bold flex items-center gap-1">
-              <span>⚡ 5 critical</span>
-              <span className="text-slate-400 font-medium ml-auto hidden sm:inline">Avg: 4 days</span>
+              <span>Units In Service / Repair</span>
             </p>
           </div>
 
@@ -539,10 +549,9 @@ export default function EquipmentManagementPage() {
                 <AlertTriangle className="w-4 h-4" />
               </div>
             </div>
-            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{stats.calibrationDue}</div>
+            <div className="text-xl sm:text-3xl font-extrabold text-slate-900">{displayStats.calibrationDue}</div>
             <p className="text-[11px] text-red-600 font-bold flex items-center gap-1">
-              <span>⚠ Action required</span>
-              <span className="text-slate-400 font-medium ml-auto hidden sm:inline">Within 7 days</span>
+              <span>Requires Inspection / Cal</span>
             </p>
           </div>
         </div>
@@ -630,7 +639,6 @@ export default function EquipmentManagementPage() {
                   </th>
                   <th className="p-4">Asset ID / Name</th>
                   <th className="p-4">Category</th>
-                  <th className="p-4">Location</th>
                   <th className="p-4">Serial No.</th>
                   <th className="p-4">Status</th>
                   <th className="p-4">Cal. Due Date</th>
@@ -656,7 +664,6 @@ export default function EquipmentManagementPage() {
                         <div className="font-bold text-slate-900 text-sm mt-0.5">{asset.name}</div>
                       </td>
                       <td className="p-4 font-bold text-slate-600">{asset.category}</td>
-                      <td className="p-4 font-bold text-slate-800">{asset.location}</td>
                       <td className="p-4 font-mono text-slate-500">{asset.serialNo}</td>
                       <td className="p-4">
                         <span className={`px-2.5 py-1 rounded-full border text-[11px] font-extrabold inline-flex items-center gap-1.5 ${getStatusBadge(asset.status)}`}>
@@ -715,7 +722,7 @@ export default function EquipmentManagementPage() {
                   })
                 ) : (
                   <tr>
-                    <td colSpan={8} className="p-8 text-center text-slate-400 font-semibold">
+                    <td colSpan={7} className="p-8 text-center text-slate-400 font-semibold">
                       No medical equipment found matching your filters.
                     </td>
                   </tr>
@@ -751,10 +758,6 @@ export default function EquipmentManagementPage() {
                   </div>
 
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600 pt-1 border-t border-slate-100">
-                    <div className="flex items-center gap-1 font-semibold">
-                      <Building className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{asset.location}</span>
-                    </div>
                     <div className="flex items-center gap-1 font-semibold text-slate-500">
                       <Calendar className="w-3.5 h-3.5 text-slate-400" />
                       <span>PM Due: {asset.calibrationDueDate}</span>
@@ -898,7 +901,6 @@ export default function EquipmentManagementPage() {
               {activeTab === 'Usage' && (
                 <div className="p-4 border border-slate-200 rounded-2xl bg-white space-y-2">
                   <h4 className="font-bold text-slate-900 text-xs">Recent Usage Log</h4>
-                  <p className="text-slate-500 text-xs">Current Location: {viewingAsset.location}</p>
                   <p className="text-slate-500 text-xs">Total Operating Hours: 1,420 hrs</p>
                 </div>
               )}
@@ -1010,19 +1012,7 @@ export default function EquipmentManagementPage() {
                   <label className="block text-slate-600 font-semibold mb-1">Department</label>
                   <select
                     value={formData.department || departmentsList[0] || 'ICU'}
-                    onChange={async (e) => {
-                      const newDept = e.target.value;
-                      setFormData({ ...formData, department: newDept });
-                      try {
-                        const locs = await equipmentService.getLocationsByDepartment(newDept);
-                        if (locs && locs.length > 0) {
-                          setAvailableLocations(locs);
-                          setFormData((prev) => ({ ...prev, department: newDept, location: locs[0] }));
-                        }
-                      } catch {
-                        // fallback
-                      }
-                    }}
+                    onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white font-semibold"
                   >
                     {departmentsList.map((dept) => (
@@ -1034,35 +1024,18 @@ export default function EquipmentManagementPage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Location</label>
-                  <select
-                    value={formData.location || availableLocations[0] || ''}
-                    onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white font-semibold"
-                  >
-                    {availableLocations.map((loc) => (
-                      <option key={loc} value={loc}>
-                        {loc}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Status</label>
-                  <select
-                    value={formData.status || 'Available'}
-                    onChange={(e) => setFormData({ ...formData, status: e.target.value as EquipmentStatus })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white font-semibold"
-                  >
-                    <option value="In Use">In Use</option>
-                    <option value="Available">Available</option>
-                    <option value="Maintenance">Maintenance</option>
-                    <option value="Calibration Due">Calibration Due</option>
-                  </select>
-                </div>
+              <div className="w-full">
+                <label className="block text-slate-600 font-semibold mb-1">Status</label>
+                <select
+                  value={formData.status || 'Available'}
+                  onChange={(e) => setFormData({ ...formData, status: e.target.value as EquipmentStatus })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white font-semibold"
+                >
+                  <option value="In Use">In Use</option>
+                  <option value="Available">Available</option>
+                  <option value="Maintenance">Maintenance</option>
+                  <option value="Calibration Due">Calibration Due</option>
+                </select>
               </div>
 
               <div className="grid grid-cols-2 gap-3">

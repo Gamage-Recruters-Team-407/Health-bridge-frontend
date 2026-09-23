@@ -4,6 +4,8 @@ import React, { useState, useMemo, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { StaffMember, DutyStatus, StaffOverviewStats } from '@/types/staff';
 import { staffService } from '@/services/staffService';
+import { departmentService } from '@/services/departmentService';
+import { Department } from '@/types/department';
 import {
   Users,
   UserCheck,
@@ -40,6 +42,7 @@ export default function StaffManagementPage() {
   const [deptFilter, setDeptFilter] = useState('All');
   const [roleFilter, setRoleFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -94,6 +97,26 @@ export default function StaffManagementPage() {
   useEffect(() => {
     fetchStaffData();
   }, [deptFilter, statusFilter, searchTerm]);
+
+  // Fetch Department List from Backend API
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const data = await departmentService.getAll();
+        if (data && Array.isArray(data)) {
+          setDepartments(data);
+        }
+      } catch (err) {
+        console.warn('Backend department list fetch failed, using fallback:', err);
+      }
+    };
+    fetchDepartments();
+  }, []);
+
+  // Department List Options (dynamic from backend)
+  const availableDepartments = useMemo(() => {
+    return departments.map((d) => d.name).filter(Boolean);
+  }, [departments]);
 
   // Compute Overall Stats
   const stats: StaffOverviewStats = useMemo(() => {
@@ -424,7 +447,7 @@ export default function StaffManagementPage() {
               placeholder="Smart filter by name, role, or ID..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-50 focus:bg-white text-xs rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-50 focus:bg-white text-xs rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all text-slate-900 placeholder:text-slate-500"
             />
           </div>
 
@@ -437,11 +460,11 @@ export default function StaffManagementPage() {
                 className="w-full appearance-none pl-3 pr-7 py-2 bg-slate-100 hover:bg-slate-200/60 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer outline-none"
               >
                 <option value="All">Department: All</option>
-                <option value="ICU">Department: ICU</option>
-                <option value="Cardiology">Department: Cardiology</option>
-                <option value="Radiology">Department: Radiology</option>
-                <option value="Surgery">Department: Surgery</option>
-                <option value="Pediatrics">Department: Pediatrics</option>
+                {availableDepartments.map((dept) => (
+                  <option key={dept} value={dept}>
+                    Department: {dept}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -731,7 +754,7 @@ export default function StaffManagementPage() {
                       placeholder="e.g. Dr. Jane Smith"
                       value={onboardForm.fullName}
                       onChange={(e) => setOnboardForm({ ...onboardForm, fullName: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-500 font-medium"
                       required
                     />
                   </div>
@@ -742,7 +765,7 @@ export default function StaffManagementPage() {
                       type="date"
                       value={onboardForm.dob}
                       onChange={(e) => setOnboardForm({ ...onboardForm, dob: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-500 font-medium [color-scheme:light]"
                     />
                   </div>
                 </div>
@@ -753,12 +776,12 @@ export default function StaffManagementPage() {
                     <select
                       value={onboardForm.gender}
                       onChange={(e) => setOnboardForm({ ...onboardForm, gender: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white text-slate-900 font-medium"
                     >
-                      <option value="">Select gender</option>
-                      <option value="Female">Female</option>
-                      <option value="Male">Male</option>
-                      <option value="Other">Other</option>
+                      <option value="" className="text-slate-500">Select gender</option>
+                      <option value="Female" className="text-slate-900">Female</option>
+                      <option value="Male" className="text-slate-900">Male</option>
+                      <option value="Other" className="text-slate-900">Other</option>
                     </select>
                   </div>
 
@@ -767,14 +790,14 @@ export default function StaffManagementPage() {
                     <select
                       value={onboardForm.bloodGroup}
                       onChange={(e) => setOnboardForm({ ...onboardForm, bloodGroup: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white text-slate-900 font-medium"
                     >
-                      <option value="">Select blood group</option>
-                      <option value="O Positive">O Positive</option>
-                      <option value="O Negative">O Negative</option>
-                      <option value="A Positive">A Positive</option>
-                      <option value="A Negative">A Negative</option>
-                      <option value="B Positive">B Positive</option>
+                      <option value="" className="text-slate-500">Select blood group</option>
+                      <option value="O Positive" className="text-slate-900">O Positive</option>
+                      <option value="O Negative" className="text-slate-900">O Negative</option>
+                      <option value="A Positive" className="text-slate-900">A Positive</option>
+                      <option value="A Negative" className="text-slate-900">A Negative</option>
+                      <option value="B Positive" className="text-slate-900">B Positive</option>
                     </select>
                   </div>
                 </div>
@@ -795,7 +818,7 @@ export default function StaffManagementPage() {
                       placeholder="jane.smith@citygeneral.com"
                       value={onboardForm.email}
                       onChange={(e) => setOnboardForm({ ...onboardForm, email: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-500 font-medium"
                       required
                     />
                   </div>
@@ -807,7 +830,7 @@ export default function StaffManagementPage() {
                       placeholder="+1 (555) 000-0000"
                       value={onboardForm.phone}
                       onChange={(e) => setOnboardForm({ ...onboardForm, phone: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-500 font-medium"
                     />
                   </div>
                 </div>
@@ -819,7 +842,7 @@ export default function StaffManagementPage() {
                     placeholder="Full residential address..."
                     value={onboardForm.address}
                     onChange={(e) => setOnboardForm({ ...onboardForm, address: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-500 font-medium"
                   />
                 </div>
               </div>
@@ -837,13 +860,13 @@ export default function StaffManagementPage() {
                     <select
                       value={onboardForm.jobTitle}
                       onChange={(e) => setOnboardForm({ ...onboardForm, jobTitle: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white text-slate-900 font-medium"
                     >
-                      <option value="">Select title</option>
-                      <option value="Attending Physician">Attending Physician</option>
-                      <option value="Senior RN">Senior RN</option>
-                      <option value="Lead Tech">Lead Tech</option>
-                      <option value="Anesthesiologist">Anesthesiologist</option>
+                      <option value="" className="text-slate-500">Select title</option>
+                      <option value="Attending Physician" className="text-slate-900">Attending Physician</option>
+                      <option value="Senior RN" className="text-slate-900">Senior RN</option>
+                      <option value="Lead Tech" className="text-slate-900">Lead Tech</option>
+                      <option value="Anesthesiologist" className="text-slate-900">Anesthesiologist</option>
                     </select>
                   </div>
 
@@ -852,14 +875,14 @@ export default function StaffManagementPage() {
                     <select
                       value={onboardForm.department}
                       onChange={(e) => setOnboardForm({ ...onboardForm, department: e.target.value })}
-                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+                      className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white text-slate-900 font-medium"
                     >
-                      <option value="">Select department</option>
-                      <option value="Cardiology">Cardiology</option>
-                      <option value="ICU">ICU</option>
-                      <option value="Radiology">Radiology</option>
-                      <option value="Surgery">Surgery</option>
-                      <option value="Pediatrics">Pediatrics</option>
+                      <option value="" className="text-slate-500">Select department</option>
+                      {availableDepartments.map((dept) => (
+                        <option key={dept} value={dept} className="text-slate-900">
+                          {dept}
+                        </option>
+                      ))}
                     </select>
                   </div>
                 </div>
@@ -870,7 +893,7 @@ export default function StaffManagementPage() {
                     type="date"
                     value={onboardForm.hireDate}
                     onChange={(e) => setOnboardForm({ ...onboardForm, hireDate: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none text-slate-900 placeholder:text-slate-500 font-medium [color-scheme:light]"
                   />
                 </div>
               </div>
@@ -1048,15 +1071,11 @@ export default function StaffManagementPage() {
                         className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white text-xs font-semibold text-slate-800"
                       >
                         <option value="">Select department</option>
-                        <option value="Cardiology">Cardiology</option>
-                        <option value="ICU">ICU</option>
-                        <option value="Radiology">Radiology</option>
-                        <option value="Surgery">Surgery</option>
-                        <option value="Pediatrics">Pediatrics</option>
-                        <option value="Emergency">Emergency</option>
-                        <option value="Orthopedics">Orthopedics</option>
-                        <option value="Neurology">Neurology</option>
-                        <option value="Administration">Administration</option>
+                        {availableDepartments.map((dept) => (
+                          <option key={dept} value={dept}>
+                            {dept}
+                          </option>
+                        ))}
                       </select>
                     </div>
 

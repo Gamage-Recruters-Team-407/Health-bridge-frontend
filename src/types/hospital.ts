@@ -5,18 +5,50 @@ export interface Invoice {
   invoiceNumber: string;
   patientId: string;
   patientName: string;
+  patientPhone?: string;
+  patientEmail?: string;
   hospitalId: string;
+  hospitalName?: string;
+  departmentId?: string;
+
+  // Cross-Module References
+  appointmentId?: string;
+  appointmentRef?: string;
+  medicalRecordId?: string;
+  diagnosis?: string;
+  prescriptionId?: string;
+  prescriptionRef?: string;
+  labTestId?: string;
+  labOrderNumber?: string;
+  doctorId?: string;
+  doctorName?: string;
+  doctorSpecialization?: string;
+  paymentId?: string;
+  insuranceClaimId?: string;
+  insuranceClaimNumber?: string;
+  insurancePolicyId?: string;
+  insuranceCovered?: number;
+  patientResponsible?: number;
+
+  // Billing Details
   issueDate: string;
-  dueDate: string;
-  subtotal: number;
+  dueDate?: string;
+  subtotal: number;         // ✅ NOW IN INTERFACE
   discount: number;
   tax: number;
   total: number;
   paidAmount: number;
   balance: number;
+
+  // Status
   status: 'DRAFT' | 'ISSUED' | 'PAID' | 'CANCELLED';
   paymentStatus: 'UNPAID' | 'PARTIAL' | 'PAID' | 'REFUNDED';
+
+  // Metadata
   notes?: string;
+  invoiceSource?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface InvoiceRequest {
@@ -25,10 +57,15 @@ export interface InvoiceRequest {
   hospitalId: string;
   issueDate?: string;
   dueDate?: string;
+  subtotal?: number;        // ✅ NOW IN REQUEST
   discount?: number;
   tax?: number;
   paidAmount?: number;
   notes?: string;
+  doctorId?: string;
+  appointmentId?: string;
+  prescriptionId?: string;
+  labTestId?: string;
 }
 
 // ==================== BILLING ITEM TYPES ====================
@@ -42,6 +79,11 @@ export interface BillingItem {
   quantity: number;
   unitPrice: number;
   amount: number;
+  medicineId?: string;
+  medicineCode?: string;
+  labTestId?: string;
+  inventoryId?: string;
+  prescriptionItemRef?: string;
 }
 
 export interface BillingItemRequest {
@@ -51,6 +93,11 @@ export interface BillingItemRequest {
   description: string;
   quantity: number;
   unitPrice: number;
+  medicineId?: string;
+  medicineCode?: string;
+  labTestId?: string;
+  inventoryId?: string;
+  prescriptionItemRef?: string;
 }
 
 // ==================== INVENTORY TYPES ====================

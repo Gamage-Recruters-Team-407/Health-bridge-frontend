@@ -1,6 +1,7 @@
+// src/app/pharmacy/prescriptions/[id]/page.tsx
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { prescriptionService } from "@/services/prescriptionService";
 import type { Prescription } from "@/types/prescription";
@@ -18,18 +19,23 @@ const STATUS_LABELS: Record<Prescription["status"], string> = {
 };
 
 export default function PrescriptionDetailPage() {
-    const { id } = useParams<{ id: string }>();
+    const params = useParams();
+    const rawId = params?.id;
+    const id = Array.isArray(rawId) ? rawId[0] : rawId;
     const router = useRouter();
 
     const [prescription, setPrescription] = useState<Prescription | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [downloading, setDownloading] = useState(false);
+    const [updating, setUpdating] = useState(false);
+    const [actionError, setActionError] = useState<string | null>(null);
 
     useEffect(() => {
         let cancelled = false;
 
         async function load() {
+            if (!id) return;
             try {
                 setLoading(true);
                 const data = await prescriptionService.getPrescriptionById(id);
@@ -41,7 +47,7 @@ export default function PrescriptionDetailPage() {
             }
         }
 
-        if (id) load();
+        void load();
         return () => {
             cancelled = true;
         };
@@ -65,36 +71,74 @@ export default function PrescriptionDetailPage() {
         }
     }
 
+    async function handleStatusChange(newStatus: Prescription["status"]) {
+        if (!prescription) return;
+        setActionError(null);
+        setUpdating(true);
+        try {
+            await prescriptionService.updatePrescription(prescription.id, {
+                status: newStatus,
+            } as unknown as Parameters<typeof prescriptionService.updatePrescription>[1]);
+
+            const refreshed = await prescriptionService.getPrescriptionById(prescription.id);
+            setPrescription(refreshed);
+
+            if (refreshed.status !== newStatus) {
+                setActionError(
+                    `Backend didn't apply the status change (still "${refreshed.status}"). A dedicated status update endpoint might be needed.`
+                );
+            }
+        } catch (err) {
+            setActionError(err instanceof Error ? err.message : "Status update failed");
+        } finally {
+            setUpdating(false);
+        }
+    }
+
     if (loading) {
-        return <p className="text-sm text-slate-400">Loading prescription…</p>;
+        return (
+            <div className="p-6 text-sm text-slate-400 flex items-center gap-2">
+                <span className="h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
+                Loading prescription…
+            </div>
+        );
     }
 
     if (error || !prescription) {
         return (
-            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+            <div className="m-6 rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-700">
                 Couldn&apos;t load prescription: {error ?? "Not found"}
             </div>
         );
     }
 
     return (
-        <div>
-            <div className="mb-6 flex items-center justify-between">
+        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
+            <div className="flex items-center justify-between">
                 <div>
-                    <button onClick={() => router.back()} className="mb-1 text-sm text-slate-500 hover:text-slate-700">
+                    <button
+                        type="button"
+                        onClick={() => router.back()}
+                        className="mb-1 text-xs text-slate-500 hover:text-slate-700"
+                    >
                         ← Back to queue
                     </button>
-                    <h1 className="text-2xl font-semibold text-slate-900">Prescription verification</h1>
+                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">Prescription verification</h1>
                 </div>
-                <span className={`rounded-full px-3 py-1.5 text-sm font-medium ${STATUS_STYLES[prescription.status]}`}>
+                <span className={`rounded-full px-3 py-1 text-xs font-semibold ${STATUS_STYLES[prescription.status]}`}>
           {STATUS_LABELS[prescription.status]}
         </span>
             </div>
 
+            {actionError && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-xs text-amber-700">
+                    ⚠️ {actionError}
+                </div>
+            )}
+
             <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-                {/* Prescription details */}
-                <div className="rounded-xl bg-white p-6 shadow-sm lg:col-span-2">
-                    <h2 className="mb-4 text-base font-semibold text-slate-900">Prescription details</h2>
+                <div className="rounded-xl bg-white p-6 shadow-sm border border-slate-200/80 lg:col-span-2">
+                    <h2 className="mb-4 text-sm font-semibold text-slate-900">Prescription details</h2>
 
                     <div className="mb-5 flex items-center gap-3 rounded-lg bg-slate-50 p-4">
                         <div className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-100 text-sm font-semibold text-blue-700">
@@ -106,46 +150,54 @@ export default function PrescriptionDetailPage() {
                                 .toUpperCase()}
                         </div>
                         <div>
-                            <p className="font-medium text-slate-900">{prescription.patientName}</p>
+                            <p className="font-medium text-slate-900 text-sm">{prescription.patientName}</p>
                             <p className="text-xs text-slate-500">
                                 Patient ID: {prescription.patientId} &middot; Phone: {prescription.patientPhone}
                             </p>
                         </div>
                     </div>
 
-                    <div className="mb-6 grid grid-cols-2 gap-4 text-sm sm:grid-cols-3">
+                    <div className="mb-6 grid grid-cols-2 gap-4 text-xs sm:grid-cols-3">
                         <Field label="Rx ID" value={prescription.prescriptionNumber} />
                         <Field label="Prescribing Doctor" value={prescription.doctorName} />
                         <Field
                             label="Issue Date"
-                            value={new Date(prescription.date).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            value={new Date(prescription.date).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                            })}
                         />
                         <Field
                             label="Valid Until"
-                            value={new Date(prescription.validUntil).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+                            value={new Date(prescription.validUntil).toLocaleDateString("en-US", {
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                            })}
                         />
                     </div>
 
-                    <h3 className="mb-2 text-sm font-semibold text-slate-900">Medications</h3>
+                    <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-500">Medications</h3>
                     <div className="overflow-hidden rounded-lg border border-slate-100">
-                        <table className="w-full text-left text-sm">
-                            <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-400">
+                        <table className="w-full text-left text-xs">
+                            <thead className="bg-slate-50 text-[11px] uppercase tracking-wide text-slate-400">
                             <tr>
-                                <th className="px-4 py-2 font-medium">Drug</th>
-                                <th className="px-4 py-2 font-medium">Dosage</th>
-                                <th className="px-4 py-2 font-medium">Frequency</th>
-                                <th className="px-4 py-2 font-medium">Duration</th>
-                                <th className="px-4 py-2 font-medium text-right">Qty</th>
+                                <th className="px-4 py-2.5 font-medium">Drug</th>
+                                <th className="px-4 py-2.5 font-medium">Dosage</th>
+                                <th className="px-4 py-2.5 font-medium">Frequency</th>
+                                <th className="px-4 py-2.5 font-medium">Duration</th>
+                                <th className="px-4 py-2.5 font-medium text-right">Qty</th>
                             </tr>
                             </thead>
-                            <tbody className="divide-y divide-slate-100">
+                            <tbody className="divide-y divide-slate-100 text-slate-600">
                             {prescription.items.map((item) => (
                                 <tr key={item.id}>
-                                    <td className="px-4 py-2 font-medium text-slate-900">{item.medicineName}</td>
-                                    <td className="px-4 py-2 text-slate-600">{item.dosage}</td>
-                                    <td className="px-4 py-2 text-slate-600">{item.frequency}</td>
-                                    <td className="px-4 py-2 text-slate-600">{item.duration}</td>
-                                    <td className="px-4 py-2 text-right text-slate-600">{item.quantity}</td>
+                                    <td className="px-4 py-2.5 font-medium text-slate-900">{item.medicineName}</td>
+                                    <td className="px-4 py-2.5">{item.dosage}</td>
+                                    <td className="px-4 py-2.5">{item.frequency}</td>
+                                    <td className="px-4 py-2.5">{item.duration}</td>
+                                    <td className="px-4 py-2.5 text-right font-medium">{item.quantity}</td>
                                 </tr>
                             ))}
                             </tbody>
@@ -153,42 +205,52 @@ export default function PrescriptionDetailPage() {
                     </div>
 
                     {prescription.notes && (
-                        <div className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-600">
+                        <div className="mt-4 rounded-lg bg-slate-50 p-3 text-xs text-slate-600">
                             <span className="font-medium text-slate-700">Notes: </span>
                             {prescription.notes}
                         </div>
                     )}
                 </div>
 
-                {/* Side panel */}
                 <div className="space-y-4">
-                    <div className="rounded-xl bg-white p-5 text-center shadow-sm">
+                    <div className="rounded-xl bg-white p-5 text-center shadow-sm border border-slate-200/80">
                         <p className="mb-3 text-2xl" aria-hidden>📷</p>
-                        <p className="mb-3 text-sm font-medium text-slate-700">Scan QR to verify</p>
+                        <p className="mb-3 text-xs font-medium text-slate-700">Scan QR to verify</p>
                         <input
                             type="text"
                             placeholder="Enter Rx ID manually"
-                            className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm outline-none focus:border-blue-400"
+                            className="w-full rounded-lg border border-slate-200 px-3 py-1.5 text-xs outline-none focus:border-blue-400"
                         />
                     </div>
 
-                    <div className="rounded-xl bg-white p-5 shadow-sm">
+                    <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
                         <h3 className="mb-1 text-sm font-semibold text-slate-900">Actions</h3>
                         <p className="mb-3 text-xs text-slate-400">
-                            Verify/reject/flag endpoints aren&apos;t available in the Prescription API yet — wire these once ready.
+                            Update prescription status and dispense medicines.
                         </p>
                         <div className="space-y-2">
                             <button
-                                onClick={handleDownload}
+                                type="button"
+                                onClick={() => void handleDownload()}
                                 disabled={downloading}
-                                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-50"
+                                className="w-full rounded-lg bg-blue-600 px-4 py-2 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 transition"
                             >
                                 {downloading ? "Downloading…" : "Download prescription"}
                             </button>
-                            <button disabled className="w-full cursor-not-allowed rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-300">
-                                Verify and dispense
+                            <button
+                                type="button"
+                                onClick={() => void handleStatusChange("completed")}
+                                disabled={updating || prescription.status !== "active"}
+                                className="w-full rounded-lg bg-emerald-600 px-4 py-2 text-xs font-medium text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                            >
+                                {updating ? "Working…" : "Verify and dispense"}
                             </button>
-                            <button disabled className="w-full cursor-not-allowed rounded-lg border border-slate-200 px-4 py-2 text-sm font-medium text-slate-300">
+                            <button
+                                type="button"
+                                onClick={() => void handleStatusChange("cancelled")}
+                                disabled={updating || prescription.status !== "active"}
+                                className="w-full rounded-lg border border-red-200 px-4 py-2 text-xs font-medium text-red-600 hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-40 transition"
+                            >
                                 Reject
                             </button>
                         </div>
@@ -202,8 +264,8 @@ export default function PrescriptionDetailPage() {
 function Field({ label, value }: { label: string; value: string }) {
     return (
         <div>
-            <p className="text-xs text-slate-400">{label}</p>
-            <p className="font-medium text-slate-900">{value}</p>
+            <p className="text-[11px] text-slate-400">{label}</p>
+            <p className="font-medium text-slate-800 text-xs mt-0.5">{value}</p>
         </div>
     );
 }

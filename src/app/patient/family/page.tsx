@@ -4,7 +4,9 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
 import { Users, UserPlus, X, Trash2, Mail, Edit2 } from "lucide-react";
-import api from "@/lib/axios";
+import { PatientCard } from "@/components/patient/PatientCard";
+import { PatientForm } from "@/components/patient/PatientForm";
+import { familyService } from "@/services/familyService";
 
 export default function FamilyPage() {
   const router = useRouter();
@@ -40,7 +42,7 @@ export default function FamilyPage() {
 
   const fetchFamilyMembers = async (patientId: string) => {
     try {
-      const data = await api.get<any[]>(`/family-members/patient/${patientId}`);
+      const data = await familyService.getFamilyMembers(patientId);
       setFamilyMembers(data);
     } catch (err) {
       console.error("Failed to load family members", err);
@@ -99,38 +101,27 @@ export default function FamilyPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Final safety check before submission
-    const nameErr = validateField("name", formData.name);
-    const dobErr = validateField("dob", formData.dateOfBirth);
-    const emailErr = validateField("email", formData.linkedEmail);
-    
-    if (nameErr || dobErr || emailErr) {
-      setFieldErrors({ name: nameErr, dob: dobErr, email: emailErr });
-      return;
-    }
+    if (!isFormValid) return;
 
     try {
       if (editingId) {
-        await api.put(`/family-members/${editingId}`, { ...formData, primaryPatientId: user?.id });
+        await familyService.updateFamilyMember(editingId, { ...formData, primaryPatientId: user?.id });
       } else {
-        await api.post("/family-members", { ...formData, primaryPatientId: user?.id });
+        await familyService.addFamilyMember({ ...formData, primaryPatientId: user?.id });
       }
       
       setShowModal(false);
       setEditingId(null);
-      setFormData({ name: "", relationship: "Child", dateOfBirth: "", linkedEmail: "" });
-      setFieldErrors({ name: "", dob: "", email: "" });
       if (user) fetchFamilyMembers(user.id);
     } catch (err) {
-      alert(editingId ? "Failed to update family member." : "Failed to add family member.");
+      alert("Failed to save family member.");
     }
   };
 
   const handleDelete = async (id: string) => {
     if (!confirm("Are you sure you want to remove this family member?")) return;
     try {
-      await api.delete(`/family-members/${id}`);
+      await familyService.deleteFamilyMember(id);
       if (user) fetchFamilyMembers(user.id);
     } catch (err) {
       alert("Failed to delete family member.");
@@ -209,41 +200,7 @@ export default function FamilyPage() {
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {familyMembers.map((member) => (
-                <div key={member.id} className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm hover:border-blue-300 transition group relative">
-                  <div className="absolute top-6 right-6 flex gap-2 opacity-0 group-hover:opacity-100 transition">
-                    <button 
-                      onClick={() => handleEdit(member)}
-                      className="text-slate-300 hover:text-blue-500 transition p-1"
-                      title="Edit Profile"
-                    >
-                      <Edit2 className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => handleDelete(member.id)}
-                      className="text-slate-300 hover:text-red-500 transition p-1"
-                      title="Remove Profile"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                  
-                  <div className="w-14 h-14 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center font-bold text-xl mb-4">
-                    {member.name.charAt(0)}
-                  </div>
-                  <h3 className="text-lg font-bold text-slate-800">{member.name}</h3>
-                  <div className="flex items-center gap-2 mt-2">
-                    <span className="bg-slate-100 text-slate-600 text-xs font-bold px-2.5 py-1 rounded-md">
-                      {member.relationship}
-                    </span>
-                    <span className="text-sm text-slate-500">DOB: {member.dateOfBirth}</span>
-                  </div>
-                  {member.linkedEmail && (
-                    <div className="mt-4 pt-4 border-t border-slate-100 flex items-center gap-2 text-sm text-slate-500">
-                      <Mail className="w-4 h-4 text-slate-400" />
-                      {member.linkedEmail}
-                    </div>
-                  )}
-                </div>
+                <PatientCard key={member.id} member={member} onEdit={handleEdit} onDelete={handleDelete} />
               ))}
             </div>
           )}
@@ -260,90 +217,44 @@ export default function FamilyPage() {
                 {editingId ? "Edit Family Member" : "Add Family Member"}
               </h2>
               
-              <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Full Name</label>
-                  <input 
-                    type="text" required placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, name: val });
-                      setFieldErrors({ ...fieldErrors, name: validateField("name", val) });
-                    }}
-                    className={`w-full p-3.5 rounded-xl border outline-none transition ${
-                      fieldErrors.name ? 'border-red-500 focus:ring-2 focus:ring-red-500/30 bg-red-50/30' : 'border-slate-200 focus:ring-2 focus:ring-blue-600/30'
-                    }`}
-                  />
-                  {fieldErrors.name && <p className="text-red-500 text-xs font-semibold mt-1.5">{fieldErrors.name}</p>}
+              <PatientForm 
+                fields={[
+                  { name: 'name', label: 'Full Name', type: 'text', required: true, placeholder: 'John Doe' },
+                  { 
+                    name: 'relationship', label: 'Relationship', type: 'select', required: true,
+                    options: [
+                      { label: 'Child', value: 'Child' },
+                      { label: 'Spouse', value: 'Spouse' },
+                      { label: 'Parent', value: 'Parent' },
+                      { label: 'Sibling', value: 'Sibling' },
+                      { label: 'Other', value: 'Other' }
+                    ]
+                  },
+                  { name: 'dateOfBirth', label: 'Date of Birth', type: 'date', required: true },
+                  { name: 'linkedEmail', label: 'Linked Email (Optional)', type: 'email', placeholder: 'patient@example.com' }
+                ]}
+                values={formData}
+                onChange={(e) => {
+                  const { name, value } = e.target;
+                  setFormData(prev => ({ ...prev, [name]: value }));
+                  
+                  // Map field name correctly for custom validation logic
+                  const valKey = name === 'dateOfBirth' ? 'dob' : name === 'linkedEmail' ? 'email' : name;
+                  if (valKey !== 'relationship') {
+                    setFieldErrors(prev => ({ ...prev, [valKey]: validateField(valKey, value) }));
+                  }
+                }}
+                onSubmit={handleSubmit}
+                buttonText={editingId ? "Save Changes" : "Save Family Member"}
+              />
+              {/* Custom Error Messages Output */}
+              {(fieldErrors.name || fieldErrors.dob || fieldErrors.email) && (
+                <div className="mt-4 p-3 bg-red-50 rounded-lg border border-red-100">
+                  {fieldErrors.name && <p className="text-red-500 text-xs font-semibold">{fieldErrors.name}</p>}
+                  {fieldErrors.dob && <p className="text-red-500 text-xs font-semibold">{fieldErrors.dob}</p>}
+                  {fieldErrors.email && <p className="text-red-500 text-xs font-semibold">{fieldErrors.email}</p>}
                 </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Relationship</label>
-                    <select 
-                      value={formData.relationship}
-                      onChange={(e) => setFormData({ ...formData, relationship: e.target.value })}
-                      className="w-full p-3.5 rounded-xl border border-slate-200 focus:ring-2 focus:ring-blue-600/30 outline-none transition bg-white"
-                    >
-                      <option>Child</option>
-                      <option>Spouse</option>
-                      <option>Parent</option>
-                      <option>Sibling</option>
-                      <option>Other</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-700 mb-2">Date of Birth</label>
-                    <input 
-                      type="date" required 
-                      value={formData.dateOfBirth}
-                      onChange={(e) => {
-                        const val = e.target.value;
-                        setFormData({ ...formData, dateOfBirth: val });
-                        setFieldErrors({ ...fieldErrors, dob: validateField("dob", val) });
-                      }}
-                      className={`w-full p-3.5 rounded-xl border outline-none transition ${
-                        fieldErrors.dob ? 'border-red-500 focus:ring-2 focus:ring-red-500/30 bg-red-50/30' : 'border-slate-200 focus:ring-2 focus:ring-blue-600/30'
-                      }`}
-                    />
-                    {fieldErrors.dob && <p className="text-red-500 text-xs font-semibold mt-1.5">{fieldErrors.dob}</p>}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-bold text-slate-700 mb-2">Linked Email (Optional)</label>
-                  <input 
-                    type="email" placeholder="patient@example.com"
-                    value={formData.linkedEmail}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setFormData({ ...formData, linkedEmail: val });
-                      setFieldErrors({ ...fieldErrors, email: validateField("email", val) });
-                    }}
-                    className={`w-full p-3.5 rounded-xl border outline-none transition ${
-                      fieldErrors.email ? 'border-red-500 focus:ring-2 focus:ring-red-500/30 bg-red-50/30' : 'border-slate-200 focus:ring-2 focus:ring-blue-600/30'
-                    }`}
-                  />
-                  {fieldErrors.email ? (
-                    <p className="text-red-500 text-xs font-semibold mt-1.5">{fieldErrors.email}</p>
-                  ) : (
-                    <p className="text-xs text-slate-500 mt-2">Enter an email if you want to link an existing registered patient account.</p>
-                  )}
-                </div>
-                
-                <button 
-                  type="submit" 
-                  disabled={!isFormValid}
-                  className={`w-full py-4 rounded-xl font-bold mt-4 transition shadow-sm ${
-                    isFormValid 
-                      ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-blue-600/20 cursor-pointer' 
-                      : 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                  }`}
-                >
-                  {editingId ? "Save Changes" : "Save Family Member"}
-                </button>
-              </form>
+              )}
             </div>
           </div>
         )}

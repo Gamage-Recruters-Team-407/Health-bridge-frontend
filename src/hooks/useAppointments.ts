@@ -1,104 +1,12 @@
 "use client";
-
-import { useCallback, useEffect, useState } from "react";
+import { useCallback,useEffect,useMemo,useState } from "react";
 import { appointmentService } from "@/services/appointmentService";
-import {
-  Appointment,
-  AppointmentFilters,
-  AppointmentFormValues,
-  AppointmentSummary,
-} from "@/types/appointment";
-
-const emptySummary: AppointmentSummary = {
-  upcoming: 0,
-  completed: 0,
-  cancelled: 0,
-};
-
-const getErrorMessage = (error: unknown, fallback: string) => {
-  return error instanceof Error ? error.message : fallback;
-};
-
-export function useAppointments(
-  initialFilters: AppointmentFilters = {},
-  autoLoad = true
-) {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [summary, setSummary] = useState<AppointmentSummary>(emptySummary);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-  const [filters, setFilters] = useState<AppointmentFilters>(initialFilters);
-
-  const loadAppointments = useCallback(
-    async (nextFilters: AppointmentFilters) => {
-      try {
-        setLoading(true);
-        setError("");
-        const [appointmentData, summaryData] = await Promise.all([
-          appointmentService.getAppointments(nextFilters),
-          appointmentService.getSummary(),
-        ]);
-        setAppointments(appointmentData);
-        setSummary(summaryData);
-      } catch (error: unknown) {
-        setError(
-          getErrorMessage(error, "Unable to load appointments. Please try again.")
-        );
-      } finally {
-        setLoading(false);
-      }
-    },
-    []
-  );
-
-  useEffect(() => {
-    if (!autoLoad) {
-      return;
-    }
-    const timer = window.setTimeout(() => {
-      void loadAppointments(filters);
-    }, 0);
-
-    return () => window.clearTimeout(timer);
-  }, [autoLoad, filters, loadAppointments]);
-
-  const bookAppointment = async (values: AppointmentFormValues) => {
-    const appointment = await appointmentService.createAppointment(values);
-    await loadAppointments(filters);
-    return appointment;
-  };
-
-  const rescheduleAppointment = async (
-    appointmentId: string,
-    values: AppointmentFormValues
-  ) => {
-    const appointment = await appointmentService.rescheduleAppointment(
-      appointmentId,
-      values
-    );
-    await loadAppointments(filters);
-    return appointment;
-  };
-
-  const cancelAppointment = async (appointmentId: string, reason?: string) => {
-    const appointment = await appointmentService.cancelAppointment({
-      appointmentId,
-      reason,
-    });
-    await loadAppointments(filters);
-    return appointment;
-  };
-
-  return {
-    appointments,
-    summary,
-    loading,
-    error,
-    filters,
-    setFilters,
-    reload: () => loadAppointments(filters),
-    bookAppointment,
-    rescheduleAppointment,
-    cancelAppointment,
-  };
+import type { Appointment,AppointmentFilters } from "@/types/appointment";
+export function useAppointments(initialFilters:AppointmentFilters={},autoLoad=true){
+  const[appointments,setAppointments]=useState<Appointment[]>([]);const[loading,setLoading]=useState(autoLoad);const[error,setError]=useState("");const[filters,setFilters]=useState(initialFilters);
+  const loadAppointments=useCallback(async(next:AppointmentFilters)=>{try{setLoading(true);setError("");setAppointments(await appointmentService.getAppointments(next));}catch(e){setError(e instanceof Error?e.message:"Unable to load appointments.");}finally{setLoading(false);}},[]);
+  useEffect(()=>{if(!autoLoad)return;const timer=window.setTimeout(()=>void loadAppointments(filters),0);return()=>window.clearTimeout(timer);},[autoLoad,filters,loadAppointments]);
+  const summary=useMemo(()=>({upcoming:appointments.filter(a=>a.status==="BOOKED"||a.status==="UPCOMING").length,completed:appointments.filter(a=>a.status==="COMPLETED"||a.status==="NO_SHOW").length,cancelled:appointments.filter(a=>a.status==="CANCELLED").length}),[appointments]);
+  const cancelAppointment=async(appointmentId:string,reason?:string)=>{const result=await appointmentService.cancelAppointment({appointmentId,reason});await loadAppointments(filters);return result;};
+  return{appointments,summary,loading,error,filters,setFilters,reload:()=>loadAppointments(filters),cancelAppointment};
 }

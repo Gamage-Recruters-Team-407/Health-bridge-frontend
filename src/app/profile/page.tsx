@@ -94,7 +94,21 @@ export default function ProfilePage() {
             )}
           </div>
 
-          <div className="space-y-4">
+                     <div className="space-y-4">
+            <div className="flex justify-between border-b pb-3">
+              <span className="text-gray-500">Name</span>
+              <span className="text-gray-800 font-medium">
+                {user.fullName}
+              </span>
+            </div>
+            {user.role && (
+              <div className="flex justify-between border-b pb-3">
+                <span className="text-gray-500">Role</span>
+                <span className="text-gray-800 font-medium">
+                  {formatRole(user.role)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between border-b pb-3">
               <span className="text-gray-500">Email</span>
               <span className="text-gray-800 font-medium">{user.email}</span>

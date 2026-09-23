@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { useLanguage } from "@/context/LanguageContext";
+import { Locale } from "@/constants/translations";
 
 // ---- Types ----
 type NotificationPrefs = {
@@ -66,6 +68,8 @@ function ToggleSwitch({
 }
 
 export default function AccountSettingsPage() {
+  const { locale, setLocale, t } = useLanguage();
+
   // Account status
   const [accountStatus, setAccountStatus] = useState("Active");
   const [createdAt, setCreatedAt] = useState<string | null>(null);
@@ -119,13 +123,19 @@ export default function AccountSettingsPage() {
           profileVisibility: data.privacyPrefs?.profileVisibility ?? "doctors_only",
           shareDataForResearch: data.privacyPrefs?.shareDataForResearch ?? false,
         });
+        const savedLanguage = data.localizationPrefs?.language ?? "en";
         setLocalization({
-          language: data.localizationPrefs?.language ?? "en",
+          language: savedLanguage,
           timezone: data.localizationPrefs?.timezone ?? "Asia/Colombo",
         });
+        // Sync the app-wide UI language with what's saved on the backend
+        if (savedLanguage && savedLanguage !== locale) {
+          setLocale(savedLanguage as Locale);
+        }
       })
-      .catch(() => setError("Could not load account settings."))
+      .catch(() => setError(t("settings.error.load")))
       .finally(() => setLoading(false));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   function flashSuccess(msg: string) {
@@ -143,10 +153,10 @@ export default function AccountSettingsPage() {
     try {
       const data = await api.put<any>("/users/profile/deactivate");
       setAccountStatus(data.accountStatus);
-      flashSuccess("Account deactivated.");
+      flashSuccess(t("settings.success.deactivated"));
     } catch (err) {
       console.error(err);
-      setError("Failed to deactivate account.");
+      setError(t("settings.error.deactivate"));
     } finally {
       setUpdating(false);
     }
@@ -158,10 +168,10 @@ export default function AccountSettingsPage() {
     try {
       const data = await api.put<any>("/users/profile/reactivate");
       setAccountStatus(data.accountStatus);
-      flashSuccess("Account reactivated.");
+      flashSuccess(t("settings.success.reactivated"));
     } catch (err) {
       console.error(err);
-      setError("Could not reactivate account.");
+      setError(t("settings.error.reactivate"));
     } finally {
       setUpdating(false);
     }
@@ -176,11 +186,11 @@ export default function AccountSettingsPage() {
       await api.put("/users/profile/2fa", { enabled: nextValue });
       setTwoFactorEnabled(nextValue);
       flashSuccess(
-        nextValue ? "Two-factor authentication enabled." : "Two-factor authentication disabled."
+        nextValue ? t("settings.success.twoFactorOn") : t("settings.success.twoFactorOff")
       );
     } catch (err) {
       console.error(err);
-      setError("Could not update two-factor authentication.");
+      setError(t("settings.error.twoFactor"));
     } finally {
       setSavingTwoFactor(false);
     }
@@ -196,10 +206,10 @@ export default function AccountSettingsPage() {
     setError("");
     try {
       await api.put("/users/profile/notifications", notifications);
-      flashSuccess("Notification preferences saved.");
+      flashSuccess(t("settings.success.notifications"));
     } catch (err) {
       console.error(err);
-      setError("Could not save notification preferences.");
+      setError(t("settings.error.notifications"));
     } finally {
       setSavingNotifications(false);
     }
@@ -227,10 +237,10 @@ export default function AccountSettingsPage() {
     setError("");
     try {
       await api.put("/users/profile/privacy", privacy);
-      flashSuccess("Privacy settings saved.");
+      flashSuccess(t("settings.success.privacy"));
     } catch (err) {
       console.error(err);
-      setError("Could not save privacy settings.");
+      setError(t("settings.error.privacy"));
     } finally {
       setSavingPrivacy(false);
     }
@@ -242,6 +252,12 @@ export default function AccountSettingsPage() {
   ) => {
     const { name, value } = e.target;
     setLocalization((prev) => ({ ...prev, [name]: value }));
+
+    // Live-update the app-wide language immediately when the dropdown changes,
+    // so the UI reflects the choice before the user even clicks "Save".
+    if (name === "language") {
+      setLocale(value as Locale);
+    }
   };
 
   const handleSaveLocalization = async () => {
@@ -249,30 +265,30 @@ export default function AccountSettingsPage() {
     setError("");
     try {
       await api.put("/users/profile/localization", localization);
-      flashSuccess("Language and timezone updated.");
+      flashSuccess(t("settings.success.localization"));
     } catch (err) {
       console.error(err);
-      setError("Could not save localization settings.");
+      setError(t("settings.error.localization"));
     } finally {
       setSavingLocalization(false);
     }
   };
 
   return (
-    <DashboardLayout pageTitle="Account Settings">
+    <DashboardLayout pageTitle={t("settings.pageTitle")}>
       {loading ? (
         <div className="flex items-center justify-center py-20">
-          <p className="text-gray-500">Loading...</p>
+          <p className="text-gray-500">{t("settings.loading")}</p>
         </div>
       ) : (
         <div className="max-w-2xl mx-auto space-y-6">
           <div>
             <h1 className="text-2xl font-bold text-gray-800 mb-1">
-              Account Settings
+              {t("settings.pageTitle")}
             </h1>
             {createdAt && (
               <p className="text-sm text-gray-400">
-                Member since{" "}
+                {t("settings.memberSince")}{" "}
                 {new Date(createdAt).toLocaleDateString(undefined, {
                   year: "numeric",
                   month: "long",
@@ -296,14 +312,16 @@ export default function AccountSettingsPage() {
           {/* ---- Login & Security ---- */}
           <section className="bg-white rounded-2xl shadow-md p-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-6">
-              Login &amp; Security
+              {t("settings.security.title")}
             </h2>
 
             <div className="flex items-center justify-between border-b pb-6 mb-6">
               <div>
-                <h3 className="font-medium text-gray-800">Account Status</h3>
+                <h3 className="font-medium text-gray-800">
+                  {t("settings.security.accountStatus")}
+                </h3>
                 <p className="text-sm text-gray-500">
-                  Your account is currently{" "}
+                  {t("settings.security.accountStatusText")}{" "}
                   <span
                     className={
                       accountStatus === "Active"
@@ -321,7 +339,7 @@ export default function AccountSettingsPage() {
                   disabled={updating}
                   className="bg-red-50 hover:bg-red-100 text-red-600 font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
                 >
-                  {updating ? "Updating..." : "Deactivate"}
+                  {updating ? t("settings.security.updating") : t("settings.security.deactivate")}
                 </button>
               ) : (
                 <button
@@ -329,33 +347,33 @@ export default function AccountSettingsPage() {
                   disabled={updating}
                   className="bg-green-50 hover:bg-green-100 text-green-600 font-medium px-4 py-2 rounded-lg transition disabled:opacity-50"
                 >
-                  {updating ? "Updating..." : "Reactivate"}
+                  {updating ? t("settings.security.updating") : t("settings.security.reactivate")}
                 </button>
               )}
             </div>
 
             <div className="flex items-center justify-between border-b pb-6 mb-6">
               <div>
-                <h3 className="font-medium text-gray-800">Password</h3>
+                <h3 className="font-medium text-gray-800">{t("settings.security.password")}</h3>
                 <p className="text-sm text-gray-500">
-                  Change your password to keep your account secure.
+                  {t("settings.security.passwordDesc")}
                 </p>
-              </div>
-              <a
-                href="/forgot-password"
+                           </div>
+              <button
+                onClick={() => (window.location.href = "/forgot-password")}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium px-4 py-2 rounded-lg transition"
               >
-                Change Password
-              </a>
+                {t("settings.security.changePassword")}
+              </button>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-gray-800">
-                  Two-Factor Authentication (2FA)
+                  {t("settings.security.twoFactor")}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Add an extra layer of security with an OTP sent to your phone or email.
+                  {t("settings.security.twoFactorDesc")}
                 </p>
               </div>
               <ToggleSwitch
@@ -369,15 +387,15 @@ export default function AccountSettingsPage() {
           {/* ---- Notification Preferences ---- */}
           <section className="bg-white rounded-2xl shadow-md p-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-6">
-              Notification Preferences
+              {t("settings.notifications.title")}
             </h2>
 
             <div className="space-y-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-800">Email</h3>
+                  <h3 className="font-medium text-gray-800">{t("settings.notifications.email")}</h3>
                   <p className="text-sm text-gray-500">
-                    Appointment reminders, lab results, and account updates.
+                    {t("settings.notifications.emailDesc")}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -388,9 +406,9 @@ export default function AccountSettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-800">SMS</h3>
+                  <h3 className="font-medium text-gray-800">{t("settings.notifications.sms")}</h3>
                   <p className="text-sm text-gray-500">
-                    Urgent alerts sent directly to your phone.
+                    {t("settings.notifications.smsDesc")}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -401,9 +419,9 @@ export default function AccountSettingsPage() {
 
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="font-medium text-gray-800">Push Notifications</h3>
+                  <h3 className="font-medium text-gray-800">{t("settings.notifications.push")}</h3>
                   <p className="text-sm text-gray-500">
-                    In-app and browser notifications.
+                    {t("settings.notifications.pushDesc")}
                   </p>
                 </div>
                 <ToggleSwitch
@@ -419,40 +437,40 @@ export default function AccountSettingsPage() {
                 disabled={savingNotifications}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg transition disabled:opacity-50"
               >
-                {savingNotifications ? "Saving..." : "Save Preferences"}
+                {savingNotifications ? t("settings.notifications.saving") : t("settings.notifications.save")}
               </button>
             </div>
           </section>
 
           {/* ---- Privacy ---- */}
           <section className="bg-white rounded-2xl shadow-md p-8">
-            <h2 className="text-lg font-semibold text-gray-800 mb-6">Privacy</h2>
+            <h2 className="text-lg font-semibold text-gray-800 mb-6">{t("settings.privacy.title")}</h2>
 
             <div className="mb-6">
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Profile Visibility
+                {t("settings.privacy.visibility")}
               </label>
               <p className="text-sm text-gray-500 mb-2">
-                Control who can view your profile and medical history summary.
+                {t("settings.privacy.visibilityDesc")}
               </p>
               <select
                 value={privacy.profileVisibility}
                 onChange={handlePrivacyChange}
                 className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
               >
-                <option value="doctors_only">Doctors &amp; hospital staff only</option>
-                <option value="private">Only me</option>
-                <option value="public">Public (visible to all HealthBridge users)</option>
+                <option value="doctors_only">{t("settings.privacy.doctorsOnly")}</option>
+                <option value="private">{t("settings.privacy.onlyMe")}</option>
+                <option value="public">{t("settings.privacy.public")}</option>
               </select>
             </div>
 
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="font-medium text-gray-800">
-                  Share anonymized data for research
+                  {t("settings.privacy.research")}
                 </h3>
                 <p className="text-sm text-gray-500">
-                  Helps improve healthcare outcomes. Your identity is never shared.
+                  {t("settings.privacy.researchDesc")}
                 </p>
               </div>
               <ToggleSwitch
@@ -467,7 +485,7 @@ export default function AccountSettingsPage() {
                 disabled={savingPrivacy}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg transition disabled:opacity-50"
               >
-                {savingPrivacy ? "Saving..." : "Save Privacy Settings"}
+                {savingPrivacy ? t("settings.privacy.saving") : t("settings.privacy.save")}
               </button>
             </div>
           </section>
@@ -475,13 +493,13 @@ export default function AccountSettingsPage() {
           {/* ---- Localization ---- */}
           <section className="bg-white rounded-2xl shadow-md p-8">
             <h2 className="text-lg font-semibold text-gray-800 mb-6">
-              Language &amp; Region
+              {t("settings.language.title")}
             </h2>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-2">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Language
+                  {t("settings.language.label")}
                 </label>
                 <select
                   name="language"
@@ -499,7 +517,7 @@ export default function AccountSettingsPage() {
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Timezone
+                  {t("settings.timezone.label")}
                 </label>
                 <select
                   name="timezone"
@@ -522,17 +540,17 @@ export default function AccountSettingsPage() {
                 disabled={savingLocalization}
                 className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg transition disabled:opacity-50"
               >
-                {savingLocalization ? "Saving..." : "Save Language & Region"}
+                {savingLocalization ? t("settings.language.saving") : t("settings.language.save")}
               </button>
             </div>
-          </section>
+                        </section>
 
-          <a
-            href="/profile"
-            className="block text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
+          <button
+            onClick={() => (window.location.href = "/profile")}
+            className="block w-full text-center bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
           >
-            Back to Profile
-          </a>
+            {t("settings.backToProfile")}
+          </button>
         </div>
       )}
 
@@ -545,24 +563,23 @@ export default function AccountSettingsPage() {
           />
           <div className="relative bg-white rounded-2xl shadow-xl p-6 w-full max-w-sm">
             <h3 className="text-lg font-semibold text-gray-800 mb-2">
-              Deactivate your account?
+              {t("settings.deactivateModal.title")}
             </h3>
             <p className="text-sm text-gray-500 mb-6">
-              You&apos;ll lose access to your account until you reactivate it.
-              This won&apos;t delete any of your data.
+              {t("settings.deactivateModal.desc")}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeactivateModal(false)}
                 className="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-800 font-medium py-2.5 rounded-lg transition"
               >
-                Cancel
+                {t("settings.deactivateModal.cancel")}
               </button>
               <button
                 onClick={confirmDeactivate}
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2.5 rounded-lg transition"
               >
-                Deactivate
+                {t("settings.deactivateModal.confirm")}
               </button>
             </div>
           </div>
