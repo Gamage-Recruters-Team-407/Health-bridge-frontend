@@ -21,6 +21,7 @@ import {
   Search,
   Stethoscope,
   UserRound,
+  X,
 } from "lucide-react";
 
 import DashboardLayout from "@/components/medical-records/MedicalRecordsShell";
@@ -712,6 +713,39 @@ export default function MedicalRecordsPage() {
     };
 
 
+  /*
+   * =========================================================
+   * CLOSE PATIENT LIST
+   * =========================================================
+   *
+   * Clear the search state as well so an in-flight/debounced
+   * search cannot immediately reopen the patient dropdown.
+   */
+  const closePatientSearch =
+    () => {
+
+      setPatientSearchOpen(
+        false
+      );
+
+      setPatientSearch(
+        ""
+      );
+
+      setPatientResults(
+        []
+      );
+
+      setPatientSearchError(
+        ""
+      );
+
+      setSearchingPatients(
+        false
+      );
+    };
+
+
   const selectPatient =
     (
       patient:
@@ -920,11 +954,19 @@ export default function MedicalRecordsPage() {
         >
           <div>
             <p
-              className="
+              className={
+                  isDoctor
+                    ? `
+                text-sm
+                font-semibold
+                text-teal-600
+              `
+                    : `
                 text-sm
                 font-semibold
                 text-blue-600
-              "
+              `
+                }
             >
               Medical Records
             </p>
@@ -964,7 +1006,23 @@ export default function MedicalRecordsPage() {
             {isDoctor && (
               <Link
                 href={createHref}
-                className="
+                className={
+                  isDoctor
+                    ? `
+                  inline-flex
+                  items-center
+                  gap-2
+                  rounded-xl
+                  bg-teal-600
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-sm
+                  hover:bg-teal-700
+                `
+                    : `
                   inline-flex
                   items-center
                   gap-2
@@ -977,7 +1035,8 @@ export default function MedicalRecordsPage() {
                   text-white
                   shadow-sm
                   hover:bg-blue-700
-                "
+                `
+                }
               >
                 <Plus className="h-4 w-4" />
 
@@ -1143,12 +1202,21 @@ export default function MedicalRecordsPage() {
 
               {doctorPatientsLoading && (
                 <Loader2
-                  className="
+                  className={
+                  isDoctor
+                    ? `
+                    h-5
+                    w-5
+                    animate-spin
+                    text-teal-600
+                  `
+                    : `
                     h-5
                     w-5
                     animate-spin
                     text-blue-600
-                  "
+                  `
+                }
                 />
               )}
             </div>
@@ -1226,7 +1294,19 @@ export default function MedicalRecordsPage() {
                             patient
                           )
                       }
-                      className="
+                      className={
+                  isDoctor
+                    ? `
+                        rounded-2xl
+                        border
+                        border-slate-200
+                        p-4
+                        text-left
+                        transition
+                        hover:border-teal-300
+                        hover:bg-teal-50/40
+                      `
+                    : `
                         rounded-2xl
                         border
                         border-slate-200
@@ -1235,7 +1315,8 @@ export default function MedicalRecordsPage() {
                         transition
                         hover:border-blue-300
                         hover:bg-blue-50/40
-                      "
+                      `
+                }
                     >
                       <div
                         className="
@@ -1245,7 +1326,21 @@ export default function MedicalRecordsPage() {
                         "
                       >
                         <div
-                          className="
+                          className={
+                  isDoctor
+                    ? `
+                            flex
+                            h-11
+                            w-11
+                            shrink-0
+                            items-center
+                            justify-center
+                            overflow-hidden
+                            rounded-xl
+                            bg-teal-50
+                            text-teal-600
+                          `
+                    : `
                             flex
                             h-11
                             w-11
@@ -1256,7 +1351,8 @@ export default function MedicalRecordsPage() {
                             rounded-xl
                             bg-blue-50
                             text-blue-600
-                          "
+                          `
+                }
                         >
                           {patient.picture
                             ? (
@@ -1322,10 +1418,17 @@ export default function MedicalRecordsPage() {
                         "
                       >
                         <span
-                          className="
+                          className={
+                  isDoctor
+                    ? `
+                            font-semibold
+                            text-teal-600
+                          `
+                    : `
                             font-semibold
                             text-blue-600
-                          "
+                          `
+                }
                         >
                           {patient.recordCount ?? 0}{" "}
                           record
@@ -1361,13 +1464,23 @@ export default function MedicalRecordsPage() {
             ============================================== */}
         {canSearchPatients && (
           <section
-            className="
+            className={
+                  isDoctor
+                    ? `
+              rounded-2xl
+              border
+              border-teal-100
+              bg-teal-50/60
+              p-4
+            `
+                    : `
               rounded-2xl
               border
               border-blue-100
               bg-blue-50/60
               p-4
-            "
+            `
+                }
           >
             <p
               className="
@@ -1423,7 +1536,24 @@ export default function MedicalRecordsPage() {
                     }
                   }
                   placeholder="Search patient by name or exact Patient ID..."
-                  className="
+                  className={
+                  isDoctor
+                    ? `
+                    w-full
+                    rounded-xl
+                    border
+                    border-slate-200
+                    bg-white
+                    py-3
+                    pl-10
+                    pr-10
+                    text-sm
+                    outline-none
+                    focus:border-teal-500
+                    focus:ring-2
+                    focus:ring-teal-100
+                  `
+                    : `
                     w-full
                     rounded-xl
                     border
@@ -1437,12 +1567,25 @@ export default function MedicalRecordsPage() {
                     focus:border-blue-500
                     focus:ring-2
                     focus:ring-blue-100
-                  "
+                  `
+                }
                 />
 
                 {searchingPatients && (
                   <Loader2
-                    className="
+                    className={
+                  isDoctor
+                    ? `
+                      absolute
+                      right-3
+                      top-1/2
+                      h-4
+                      w-4
+                      -translate-y-1/2
+                      animate-spin
+                      text-teal-600
+                    `
+                    : `
                       absolute
                       right-3
                       top-1/2
@@ -1451,7 +1594,8 @@ export default function MedicalRecordsPage() {
                       -translate-y-1/2
                       animate-spin
                       text-blue-600
-                    "
+                    `
+                }
                   />
                 )}
               </div>
@@ -1488,6 +1632,83 @@ export default function MedicalRecordsPage() {
                     shadow-xl
                   "
                 >
+
+                  <div
+                    className="
+                      sticky
+                      top-0
+                      z-10
+                      mb-1
+                      flex
+                      items-center
+                      justify-between
+                      rounded-xl
+                      bg-white
+                      px-3
+                      py-2
+                      shadow-sm
+                    "
+                  >
+                    <div>
+                      <p
+                        className="
+                          text-xs
+                          font-bold
+                          uppercase
+                          tracking-wide
+                          text-slate-500
+                        "
+                      >
+                        Patients
+                      </p>
+
+                      <p
+                        className="
+                          mt-0.5
+                          text-[11px]
+                          text-slate-400
+                        "
+                      >
+                        Select a patient to open their EHR.
+                      </p>
+                    </div>
+
+
+                    <button
+                      type="button"
+                      onClick={
+                        closePatientSearch
+                      }
+                      aria-label="Close patient list"
+                      title="Close patient list"
+                      className="
+                        inline-flex
+                        h-9
+                        w-9
+                        shrink-0
+                        items-center
+                        justify-center
+                        rounded-lg
+                        border
+                        border-slate-200
+                        bg-white
+                        text-slate-500
+                        transition
+                        hover:border-red-200
+                        hover:bg-red-50
+                        hover:text-red-600
+                      "
+                    >
+                      <X
+                        className="
+                          h-4
+                          w-4
+                        "
+                      />
+                    </button>
+                  </div>
+
+
                   {searchingPatients
                     && patientResults.length === 0
                     ? (
@@ -1555,7 +1776,19 @@ export default function MedicalRecordsPage() {
                                     patient
                                   )
                               }
-                              className="
+                              className={
+                  isDoctor
+                    ? `
+                                flex
+                                w-full
+                                items-start
+                                gap-3
+                                rounded-xl
+                                p-3
+                                text-left
+                                hover:bg-teal-50
+                              `
+                    : `
                                 flex
                                 w-full
                                 items-start
@@ -1564,10 +1797,25 @@ export default function MedicalRecordsPage() {
                                 p-3
                                 text-left
                                 hover:bg-blue-50
-                              "
+                              `
+                }
                             >
                               <div
-                                className="
+                                className={
+                  isDoctor
+                    ? `
+                                  flex
+                                  h-10
+                                  w-10
+                                  shrink-0
+                                  items-center
+                                  justify-center
+                                  overflow-hidden
+                                  rounded-xl
+                                  bg-slate-100
+                                  text-teal-600
+                                `
+                    : `
                                   flex
                                   h-10
                                   w-10
@@ -1578,7 +1826,8 @@ export default function MedicalRecordsPage() {
                                   rounded-xl
                                   bg-slate-100
                                   text-blue-600
-                                "
+                                `
+                }
                               >
                                 {patient.picture
                                   ? (
@@ -1714,13 +1963,23 @@ export default function MedicalRecordsPage() {
           >
             <div className="text-center">
               <Loader2
-                className="
+                className={
+                  isDoctor
+                    ? `
+                  mx-auto
+                  h-8
+                  w-8
+                  animate-spin
+                  text-teal-600
+                `
+                    : `
                   mx-auto
                   h-8
                   w-8
                   animate-spin
                   text-blue-600
-                "
+                `
+                }
               />
 
               <p
@@ -1759,12 +2018,21 @@ export default function MedicalRecordsPage() {
             >
               <div className="text-center">
                 <UserRound
-                  className="
+                  className={
+                  isDoctor
+                    ? `
+                    mx-auto
+                    h-10
+                    w-10
+                    text-teal-500
+                  `
+                    : `
                     mx-auto
                     h-10
                     w-10
                     text-blue-500
-                  "
+                  `
+                }
                 />
 
                 <h2
@@ -1827,7 +2095,20 @@ export default function MedicalRecordsPage() {
                     "
                   >
                     <div
-                      className="
+                      className={
+                  isDoctor
+                    ? `
+                        flex
+                        h-12
+                        w-12
+                        items-center
+                        justify-center
+                        overflow-hidden
+                        rounded-2xl
+                        bg-teal-50
+                        text-teal-600
+                      `
+                    : `
                         flex
                         h-12
                         w-12
@@ -1837,7 +2118,8 @@ export default function MedicalRecordsPage() {
                         rounded-2xl
                         bg-blue-50
                         text-blue-600
-                      "
+                      `
+                }
                     >
                       {activePatient?.picture
                         ? (
@@ -1865,12 +2147,21 @@ export default function MedicalRecordsPage() {
 
                     <div>
                       <p
-                        className="
+                        className={
+                  isDoctor
+                    ? `
+                          text-xs
+                          font-semibold
+                          uppercase
+                          text-teal-500
+                        `
+                    : `
                           text-xs
                           font-semibold
                           uppercase
                           text-blue-500
-                        "
+                        `
+                }
                       >
                         Patient EHR
                       </p>
@@ -1906,7 +2197,27 @@ export default function MedicalRecordsPage() {
                           href={
                             selectedPatientCreateHref
                           }
-                          className="
+                          className={
+                  isDoctor
+                    ? `
+                            mt-3
+                            inline-flex
+                            items-center
+                            gap-2
+                            rounded-xl
+                            border
+                            border-teal-200
+                            bg-teal-50
+                            px-3
+                            py-2
+                            text-xs
+                            font-semibold
+                            text-teal-700
+                            transition
+                            hover:border-teal-300
+                            hover:bg-teal-100
+                          `
+                    : `
                             mt-3
                             inline-flex
                             items-center
@@ -1923,7 +2234,8 @@ export default function MedicalRecordsPage() {
                             transition
                             hover:border-blue-300
                             hover:bg-blue-100
-                          "
+                          `
+                }
                         >
                           <Plus className="h-3.5 w-3.5" />
 
@@ -1942,29 +2254,54 @@ export default function MedicalRecordsPage() {
                     "
                   >
                     <div
-                      className="
+                      className={
+                  isDoctor
+                    ? `
+                        rounded-xl
+                        bg-teal-50
+                        px-4
+                        py-3
+                        text-center
+                      `
+                    : `
                         rounded-xl
                         bg-blue-50
                         px-4
                         py-3
                         text-center
-                      "
+                      `
+                }
                     >
                       <p
-                        className="
+                        className={
+                  isDoctor
+                    ? `
+                          text-xl
+                          font-bold
+                          text-teal-700
+                        `
+                    : `
                           text-xl
                           font-bold
                           text-blue-700
-                        "
+                        `
+                }
                       >
                         {history.medicalRecords.length}
                       </p>
 
                       <p
-                        className="
+                        className={
+                  isDoctor
+                    ? `
+                          text-[11px]
+                          text-teal-600
+                        `
+                    : `
                           text-[11px]
                           text-blue-600
-                        "
+                        `
+                }
                       >
                         Records
                       </p>
@@ -2057,7 +2394,22 @@ export default function MedicalRecordsPage() {
                           "history"
                         )
                     }
-                    className={`
+                    className={
+                  isDoctor
+                    ? `
+                      rounded-xl
+                      px-4
+                      py-2.5
+                      text-sm
+                      font-semibold
+                      ${
+                        activeTab
+                        === "history"
+                          ? "bg-teal-600 text-white"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }
+                    `
+                    : `
                       rounded-xl
                       px-4
                       py-2.5
@@ -2069,7 +2421,8 @@ export default function MedicalRecordsPage() {
                           ? "bg-blue-600 text-white"
                           : "text-slate-600 hover:bg-slate-50"
                       }
-                    `}
+                    `
+                }
                   >
                     Medical History
                   </button>
@@ -2082,7 +2435,22 @@ export default function MedicalRecordsPage() {
                           "notes"
                         )
                     }
-                    className={`
+                    className={
+                  isDoctor
+                    ? `
+                      rounded-xl
+                      px-4
+                      py-2.5
+                      text-sm
+                      font-semibold
+                      ${
+                        activeTab
+                        === "notes"
+                          ? "bg-teal-600 text-white"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }
+                    `
+                    : `
                       rounded-xl
                       px-4
                       py-2.5
@@ -2094,7 +2462,8 @@ export default function MedicalRecordsPage() {
                           ? "bg-blue-600 text-white"
                           : "text-slate-600 hover:bg-slate-50"
                       }
-                    `}
+                    `
+                }
                   >
                     Consultation Notes
                   </button>
@@ -2107,7 +2476,22 @@ export default function MedicalRecordsPage() {
                           "documents"
                         )
                     }
-                    className={`
+                    className={
+                  isDoctor
+                    ? `
+                      rounded-xl
+                      px-4
+                      py-2.5
+                      text-sm
+                      font-semibold
+                      ${
+                        activeTab
+                        === "documents"
+                          ? "bg-teal-600 text-white"
+                          : "text-slate-600 hover:bg-slate-50"
+                      }
+                    `
+                    : `
                       rounded-xl
                       px-4
                       py-2.5
@@ -2119,7 +2503,8 @@ export default function MedicalRecordsPage() {
                           ? "bg-blue-600 text-white"
                           : "text-slate-600 hover:bg-slate-50"
                       }
-                    `}
+                    `
+                }
                   >
                     Documents
                   </button>
@@ -2232,7 +2617,18 @@ export default function MedicalRecordsPage() {
                                         </span>
 
                                         <span
-                                          className="
+                                          className={
+                  isDoctor
+                    ? `
+                                            rounded-full
+                                            bg-teal-50
+                                            px-2.5
+                                            py-1
+                                            text-xs
+                                            font-semibold
+                                            text-teal-700
+                                          `
+                    : `
                                             rounded-full
                                             bg-blue-50
                                             px-2.5
@@ -2240,7 +2636,8 @@ export default function MedicalRecordsPage() {
                                             text-xs
                                             font-semibold
                                             text-blue-700
-                                          "
+                                          `
+                }
                                         >
                                           {record.recordType}
                                         </span>
@@ -2354,7 +2751,23 @@ export default function MedicalRecordsPage() {
                                             )
                                           }`
                                         }
-                                        className="
+                                        className={
+                  isDoctor
+                    ? `
+                                          inline-flex
+                                          w-full
+                                          items-center
+                                          justify-center
+                                          rounded-xl
+                                          bg-teal-600
+                                          px-4
+                                          py-2.5
+                                          text-sm
+                                          font-semibold
+                                          text-white
+                                          hover:bg-teal-700
+                                        `
+                    : `
                                           inline-flex
                                           w-full
                                           items-center
@@ -2367,7 +2780,8 @@ export default function MedicalRecordsPage() {
                                           font-semibold
                                           text-white
                                           hover:bg-blue-700
-                                        "
+                                        `
+                }
                                       >
                                         View Details
                                       </Link>
@@ -2491,11 +2905,19 @@ export default function MedicalRecordsPage() {
                                         )
                                       }`
                                     }
-                                    className="
+                                    className={
+                  isDoctor
+                    ? `
+                                      text-xs
+                                      font-semibold
+                                      text-teal-600
+                                    `
+                    : `
                                       text-xs
                                       font-semibold
                                       text-blue-600
-                                    "
+                                    `
+                }
                                   >
                                     View Record Details
                                   </Link>
@@ -2571,7 +2993,21 @@ export default function MedicalRecordsPage() {
 
                       <Link
                         href={documentsHref}
-                        className="
+                        className={
+                  isDoctor
+                    ? `
+                          inline-flex
+                          items-center
+                          gap-2
+                          rounded-xl
+                          bg-teal-600
+                          px-4
+                          py-2.5
+                          text-sm
+                          font-semibold
+                          text-white
+                        `
+                    : `
                           inline-flex
                           items-center
                           gap-2
@@ -2582,7 +3018,8 @@ export default function MedicalRecordsPage() {
                           text-sm
                           font-semibold
                           text-white
-                        "
+                        `
+                }
                       >
                         <FolderOpen className="h-4 w-4" />
 
@@ -2634,11 +3071,19 @@ export default function MedicalRecordsPage() {
                                 "
                               >
                                 <FileText
-                                  className="
+                                  className={
+                  isDoctor
+                    ? `
+                                    h-5
+                                    w-5
+                                    text-teal-600
+                                  `
+                    : `
                                     h-5
                                     w-5
                                     text-blue-600
-                                  "
+                                  `
+                }
                                 />
 
                                 <h3
@@ -2653,11 +3098,19 @@ export default function MedicalRecordsPage() {
                                 </h3>
 
                                 <p
-                                  className="
+                                  className={
+                  isDoctor
+                    ? `
+                                    mt-1
+                                    text-xs
+                                    text-teal-600
+                                  `
+                    : `
                                     mt-1
                                     text-xs
                                     text-blue-600
-                                  "
+                                  `
+                }
                                 >
                                   {document.documentType}
                                 </p>
@@ -2689,7 +3142,20 @@ export default function MedicalRecordsPage() {
                                   href={document.fileUrl}
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="
+                                  className={
+                  isDoctor
+                    ? `
+                                    mt-4
+                                    inline-flex
+                                    rounded-lg
+                                    bg-teal-600
+                                    px-3
+                                    py-2
+                                    text-xs
+                                    font-semibold
+                                    text-white
+                                  `
+                    : `
                                     mt-4
                                     inline-flex
                                     rounded-lg
@@ -2699,7 +3165,8 @@ export default function MedicalRecordsPage() {
                                     text-xs
                                     font-semibold
                                     text-white
-                                  "
+                                  `
+                }
                                 >
                                   Open Document
                                 </a>
