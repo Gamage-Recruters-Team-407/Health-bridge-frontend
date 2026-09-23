@@ -74,6 +74,27 @@ function normalizeTicketFeedback(ticket: Ticket): Ticket {
   return { ...ticket, feedback };
 }
 
+function normalizeTicketSummaryFeedback(summary: TicketSummary): TicketSummary {
+  const raw = summary as TicketSummary & {
+    supportFeedback?: TicketSummary["feedback"];
+    rating?: number | null;
+    comment?: string | null;
+    feedbackSubmittedAt?: string | null;
+  };
+
+  const feedback = raw.feedback ?? raw.supportFeedback ?? (
+    raw.feedbackRating != null || raw.rating != null
+      ? {
+          rating: raw.feedbackRating ?? raw.rating ?? 0,
+          comment: raw.feedbackComment ?? raw.comment ?? null,
+          createdAt: raw.feedbackCreatedAt ?? raw.feedbackSubmittedAt ?? undefined,
+        }
+      : null
+  );
+
+  return { ...summary, feedback };
+}
+
 // ---------- User endpoints ----------
 
 export function createTicket(
@@ -146,7 +167,9 @@ export function submitTicketFeedback(
 // ---------- Admin endpoints ----------
 
 export function getAllTickets() {
-  return request<TicketSummary[]>("/api/admin/tickets");
+  return request<TicketSummary[]>("/api/admin/tickets").then((summaries) =>
+    summaries.map(normalizeTicketSummaryFeedback)
+  );
 }
 
 export function getTicketByIdForAdmin(id: string) {
