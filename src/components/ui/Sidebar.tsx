@@ -30,6 +30,11 @@ import {
   Bed,
   Wrench,
   UserCog,
+  ClipboardList,
+  Plus,
+  AlertTriangle,
+  CalendarClock,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -166,10 +171,15 @@ const getNavGroups = (role: string): NavGroup[] => {
       {
         groupTitle: "Pharmacy",
         items: [
-          { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
-          { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: FileText },
-          { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
-          { title: "Sales", href: "/pharmacy/orders", icon: TrendingUp },
+          { title: "Pharmacy Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
+          { title: "Prescription", href: "/pharmacy/prescriptions", icon: FileText },
+          { title: "Order Management", href: "/pharmacy/orders", icon: ClipboardList },
+          { title: "Medicine Inventory", href: "/pharmacy/inventory", icon: Pill },
+          { title: "Add/ Edit Medicine", href: "/pharmacy/medicines/new", icon: Plus },
+          { title: "Low Stock Alerts", href: "/pharmacy/inventory/low-stock", icon: AlertTriangle },
+          { title: "Expiry Management", href: "/pharmacy/inventory/expiry", icon: CalendarClock },
+          { title: "Deliveries", href: "/pharmacy/deliveries", icon: Truck },
+          { title: "Reports", href: "/pharmacy/reports", icon: FileSpreadsheet },
         ],
       },
     ];
