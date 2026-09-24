@@ -47,6 +47,8 @@ import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, ClaimStatus, InsuranceReportSummary } from "@/types/insurance";
 
+import { generateInsuranceOfficerReportPdf } from "@/lib/insurancePdfGenerator";
+
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
   PAID: "primary",
@@ -135,52 +137,35 @@ export default function InsuranceReportsPage() {
     fetchReport(startDate || undefined, endDate || undefined);
   };
 
-  // CSV Export Generator
-  const exportToCSV = () => {
-    if (!report || !report.claims || report.claims.length === 0) {
+  // PDF Export Generator
+  const exportToPDF = () => {
+    if (!report) {
       showError("No claim records available to export");
       return;
     }
 
-    const headers = [
-      "Claim Number",
-      "Patient ID",
-      "Policy ID",
-      "Treatment Description",
-      "Claim Amount (Rs.)",
-      "Approved Amount (Rs.)",
-      "Status",
-      "Submitted Date",
-      "Reviewed Date",
-      "Rejection Reason",
-    ];
+    const presetNames: Record<DatePreset, string> = {
+      ALL: "All Time",
+      "7D": "Last 7 Days",
+      "30D": "Last 30 Days",
+      YTD: "Year to Date",
+      CUSTOM: `${startDate || "Start"} to ${endDate || "End"}`,
+    };
 
-    const rows = report.claims.map((c) => [
-      `"${c.claimNumber}"`,
-      `"${c.patientId}"`,
-      `"${c.policyId}"`,
-      `"${(c.treatmentDescription || "").replace(/"/g, '""')}"`,
-      c.claimAmount?.toFixed(2) || "0.00",
-      c.approvedAmount !== undefined ? c.approvedAmount.toFixed(2) : "0.00",
-      `"${c.status}"`,
-      `"${c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : ""}"`,
-      `"${c.reviewedAt ? new Date(c.reviewedAt).toLocaleDateString() : ""}"`,
-      `"${(c.rejectionReason || "").replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Insurance_Report_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showSuccess("Insurance report downloaded as CSV");
-  };
-
-  const printReport = () => {
-    window.print();
+    try {
+      const pdfBlob = generateInsuranceOfficerReportPdf(report, presetNames[preset] || "All Time");
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Insurance_Report_${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess("Insurance report downloaded as PDF");
+    } catch {
+      showError("Failed to generate PDF report.");
+    }
   };
 
   // Filtered claims for search
@@ -241,13 +226,9 @@ export default function InsuranceReportsPage() {
 
           {/* Export Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={printReport} className="gap-1.5">
-              <Printer className="w-4 h-4" />
-              <span>Print / PDF</span>
-            </Button>
-            <Button size="sm" onClick={exportToCSV} className="gap-1.5">
+            <Button size="sm" onClick={exportToPDF} className="gap-1.5 shadow-sm">
               <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              <span>Export PDF</span>
             </Button>
           </div>
         </div>
@@ -579,9 +560,11 @@ export default function InsuranceReportsPage() {
                             <TableCell className="max-w-xs truncate text-slate-600">
                               {c.treatmentDescription || "General Treatment"}
                             </TableCell>
-                            <TableCell className="font-bold text-[#0A2540]">Rs. {c.claimAmount?.toFixed(2)}</TableCell>
+                            <TableCell className="font-bold text-[#0A2540]">
+                              Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
+                            </TableCell>
                             <TableCell className="font-semibold text-emerald-600">
-                              {c.approvedAmount !== undefined ? `Rs. ${c.approvedAmount.toFixed(2)}` : "—"}
+                              {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
                             </TableCell>
                             <TableCell>
                               <Badge variant={statusVariant[c.status]}>{c.status}</Badge>

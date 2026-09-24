@@ -456,9 +456,9 @@ export default function ClaimDetailsPage() {
                         : "Reviewed by claims specialist"}
                     </p>
                     <p className="text-slate-400 text-[11px]">{reviewedDateStr} · {reviewedTimeStr}</p>
-                    {claim.status === "APPROVED" && claim.approvedAmount !== undefined && (
+                    {claim.status === "APPROVED" && claim.approvedAmount != null && (
                       <p className="text-emerald-600 font-semibold text-[11px]">
-                        Settlement authorized: Rs. {claim.approvedAmount.toFixed(2)}
+                        Settlement authorized: Rs. {Number(claim.approvedAmount).toFixed(2)}
                       </p>
                     )}
                     {claim.status === "REJECTED" && claim.rejectionReason && (

@@ -44,6 +44,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generatePatientStatementPdf } from "@/lib/insurancePdfGenerator";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
@@ -155,47 +156,22 @@ export default function PatientInsurancePage() {
     );
   }, [claims, searchQuery]);
 
-  // Export Statement as CSV
+  // Export Statement as PDF
   const handleExportStatement = () => {
-    if (claims.length === 0) {
-      showError("No claim records to export.");
-      return;
+    try {
+      const pdfBlob = generatePatientStatementPdf(activePolicy, claims, metrics);
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Insurance_Statement_${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess("Insurance statement downloaded as PDF.");
+    } catch {
+      showError("Failed to generate insurance statement PDF.");
     }
-
-    const headers = [
-      "Claim ID",
-      "Provider",
-      "Service Description",
-      "Date Submitted",
-      "Claimed Amount (Rs.)",
-      "Approved Amount (Rs.)",
-      "Status",
-    ];
-
-    const rows = claims.map((c) => [
-      `"${c.claimNumber}"`,
-      `"${c.providerName || activePolicy?.providerName || "Insurance Provider"}"`,
-      `"${(c.treatmentDescription || "").replace(/"/g, '""')}"`,
-      `"${c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : ""}"`,
-      c.claimAmount?.toFixed(2) || "0.00",
-      c.approvedAmount !== undefined ? c.approvedAmount.toFixed(2) : "0.00",
-      `"${c.status}"`,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `Insurance_Statement_${new Date().toISOString().split("T")[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showSuccess("Insurance statement downloaded as CSV.");
   };
 
   if (loading) {
@@ -299,7 +275,7 @@ export default function PatientInsurancePage() {
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={handleExportStatement} className="gap-1.5 text-xs">
                   <Download className="w-3.5 h-3.5" />
-                  <span>Export</span>
+                  <span>Export PDF</span>
                 </Button>
                 <Button
                   size="sm"
@@ -623,7 +599,7 @@ export default function PatientInsurancePage() {
                 onClick={handleExportStatement}
                 className="w-full text-xs font-semibold py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
               >
-                Download Statement
+                Download Statement (PDF)
               </Button>
             </div>
           </Card>

@@ -419,9 +419,9 @@ export default function ClaimsListPage() {
                             <span className="font-bold text-slate-900">
                               Rs. {c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                            {c.approvedAmount !== undefined && (c.status === "APPROVED" || c.status === "PAID") && (
+                            {c.approvedAmount != null && (c.status === "APPROVED" || c.status === "PAID") && (
                               <p className="text-[10px] font-semibold text-emerald-600">
-                                Approved: Rs. {c.approvedAmount.toFixed(2)}
+                                Approved: Rs. {Number(c.approvedAmount).toFixed(2)}
                               </p>
                             )}
                           </div>

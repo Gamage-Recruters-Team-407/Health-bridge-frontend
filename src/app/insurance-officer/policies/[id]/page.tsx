@@ -423,10 +423,10 @@ export default function PolicyDetailsPage() {
                         {c.treatmentDescription}
                       </TableCell>
                       <TableCell className="font-semibold text-xs text-slate-900">
-                        Rs. {c.claimAmount?.toFixed(2)}
+                        Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
                       </TableCell>
                       <TableCell className="font-bold text-xs text-emerald-600">
-                        {c.approvedAmount !== undefined ? `Rs. ${c.approvedAmount.toFixed(2)}` : "—"}
+                        {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
                       </TableCell>
                       <TableCell className="text-xs text-slate-500">
                         {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : "—"}

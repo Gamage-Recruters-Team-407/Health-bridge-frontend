@@ -311,8 +311,8 @@ export default function PatientClaimTrackingPage() {
         <StatCard
           title="Approved Settlement"
           value={
-            claim.approvedAmount !== undefined
-              ? `Rs. ${claim.approvedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            claim.approvedAmount != null
+              ? `Rs. ${Number(claim.approvedAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : "Pending Review"
           }
           subtitle={
