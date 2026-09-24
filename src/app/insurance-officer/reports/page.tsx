@@ -47,6 +47,8 @@ import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, ClaimStatus, InsuranceReportSummary } from "@/types/insurance";
 
+import { generateInsuranceOfficerReportPdf } from "@/lib/insurancePdfGenerator";
+
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
   PAID: "primary",
@@ -135,52 +137,35 @@ export default function InsuranceReportsPage() {
     fetchReport(startDate || undefined, endDate || undefined);
   };
 
-  // CSV Export Generator
-  const exportToCSV = () => {
-    if (!report || !report.claims || report.claims.length === 0) {
+  // PDF Export Generator
+  const exportToPDF = () => {
+    if (!report) {
       showError("No claim records available to export");
       return;
     }
 
-    const headers = [
-      "Claim Number",
-      "Patient ID",
-      "Policy ID",
-      "Treatment Description",
-      "Claim Amount ($)",
-      "Approved Amount ($)",
-      "Status",
-      "Submitted Date",
-      "Reviewed Date",
-      "Rejection Reason",
-    ];
+    const presetNames: Record<DatePreset, string> = {
+      ALL: "All Time",
+      "7D": "Last 7 Days",
+      "30D": "Last 30 Days",
+      YTD: "Year to Date",
+      CUSTOM: `${startDate || "Start"} to ${endDate || "End"}`,
+    };
 
-    const rows = report.claims.map((c) => [
-      `"${c.claimNumber}"`,
-      `"${c.patientId}"`,
-      `"${c.policyId}"`,
-      `"${(c.treatmentDescription || "").replace(/"/g, '""')}"`,
-      c.claimAmount?.toFixed(2) || "0.00",
-      c.approvedAmount !== undefined ? c.approvedAmount.toFixed(2) : "0.00",
-      `"${c.status}"`,
-      `"${c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : ""}"`,
-      `"${c.reviewedAt ? new Date(c.reviewedAt).toLocaleDateString() : ""}"`,
-      `"${(c.rejectionReason || "").replace(/"/g, '""')}"`,
-    ]);
-
-    const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `Insurance_Report_${new Date().toISOString().split("T")[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showSuccess("Insurance report downloaded as CSV");
-  };
-
-  const printReport = () => {
-    window.print();
+    try {
+      const pdfBlob = generateInsuranceOfficerReportPdf(report, presetNames[preset] || "All Time");
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Insurance_Report_${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess("Insurance report downloaded as PDF");
+    } catch {
+      showError("Failed to generate PDF report.");
+    }
   };
 
   // Filtered claims for search
@@ -241,49 +226,11 @@ export default function InsuranceReportsPage() {
 
           {/* Export Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" variant="outline" onClick={printReport} className="gap-1.5">
-              <Printer className="w-4 h-4" />
-              <span>Print / PDF</span>
-            </Button>
-            <Button size="sm" onClick={exportToCSV} className="gap-1.5">
+            <Button size="sm" onClick={exportToPDF} className="gap-1.5 shadow-sm">
               <Download className="w-4 h-4" />
-              <span>Export CSV</span>
+              <span>Export PDF</span>
             </Button>
           </div>
-        </div>
-
-        {/* Tab Sub-Navigation (Matching Suite Design) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Reports
-          </Link>
         </div>
 
         {/* Feedback Banners */}
@@ -364,12 +311,12 @@ export default function InsuranceReportsPage() {
                 value={report.totalClaims.toLocaleString()}
                 icon={<FileText className="w-5 h-5 text-blue-600" />}
                 iconBgColor="bg-blue-50"
-                subtitle={`$${report.totalClaimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} claimed`}
+                subtitle={`Rs. ${report.totalClaimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} claimed`}
               />
 
               <StatCard
                 title="Total Approved Payout"
-                value={`$${report.totalApprovedAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+                value={`Rs. ${report.totalApprovedAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
                 iconBgColor="bg-emerald-50"
                 trend={{
@@ -396,7 +343,7 @@ export default function InsuranceReportsPage() {
                 value={`${report.policyUtilizationRate?.toFixed(1)}%`}
                 icon={<Building2 className="w-5 h-5 text-purple-600" />}
                 iconBgColor="bg-purple-50"
-                subtitle={`$${report.totalCoverageUsed?.toLocaleString()} of $${report.totalCoverageIssued?.toLocaleString()}`}
+                subtitle={`Rs. ${report.totalCoverageUsed?.toLocaleString()} of Rs. ${report.totalCoverageIssued?.toLocaleString()}`}
               />
             </div>
 
@@ -409,7 +356,7 @@ export default function InsuranceReportsPage() {
                     <CardTitle className="text-base font-bold text-[#0A2540]">
                       Claims Volume & Disbursed Amounts
                     </CardTitle>
-                    <p className="text-xs text-slate-500 mt-0.5">Historical submission and payout volume ($k)</p>
+                    <p className="text-xs text-slate-500 mt-0.5">Historical submission and payout volume (Rs. in thousands)</p>
                   </div>
                   <div className="flex items-center gap-4 text-xs font-semibold">
                     <div className="flex items-center gap-1.5">
@@ -418,7 +365,7 @@ export default function InsuranceReportsPage() {
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                      <span className="text-slate-600">Payout ($k)</span>
+                      <span className="text-slate-600">Payout (Rs. &apos;000)</span>
                     </div>
                   </div>
                 </CardHeader>
@@ -461,7 +408,7 @@ export default function InsuranceReportsPage() {
                         <Area
                           type="monotone"
                           dataKey="approvedAmount"
-                          name="Payout ($k)"
+                          name="Payout (Rs. '000)"
                           stroke="#10B981"
                           strokeWidth={2.5}
                           fillOpacity={1}
@@ -613,9 +560,11 @@ export default function InsuranceReportsPage() {
                             <TableCell className="max-w-xs truncate text-slate-600">
                               {c.treatmentDescription || "General Treatment"}
                             </TableCell>
-                            <TableCell className="font-bold text-[#0A2540]">${c.claimAmount?.toFixed(2)}</TableCell>
+                            <TableCell className="font-bold text-[#0A2540]">
+                              Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
+                            </TableCell>
                             <TableCell className="font-semibold text-emerald-600">
-                              {c.approvedAmount !== undefined ? `$${c.approvedAmount.toFixed(2)}` : "—"}
+                              {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
                             </TableCell>
                             <TableCell>
                               <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
@@ -645,7 +594,7 @@ export default function InsuranceReportsPage() {
                         <p className="text-xs font-semibold text-emerald-700 uppercase">Approved Claims</p>
                         <p className="text-2xl font-bold text-emerald-800 mt-1">{report.approvedClaims}</p>
                         <p className="text-xs text-emerald-600 mt-1">
-                          Total Approved: ${report.totalApprovedAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          Total Approved: Rs. {report.totalApprovedAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                       </div>
 
@@ -653,7 +602,7 @@ export default function InsuranceReportsPage() {
                         <p className="text-xs font-semibold text-red-700 uppercase">Rejected Claims</p>
                         <p className="text-2xl font-bold text-red-800 mt-1">{report.rejectedClaims}</p>
                         <p className="text-xs text-red-600 mt-1">
-                          Rejected Value: ${report.totalRejectedAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          Rejected Value: Rs. {report.totalRejectedAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                       </div>
 
@@ -661,7 +610,7 @@ export default function InsuranceReportsPage() {
                         <p className="text-xs font-semibold text-amber-700 uppercase">Pending In-Review</p>
                         <p className="text-2xl font-bold text-amber-800 mt-1">{report.pendingClaims}</p>
                         <p className="text-xs text-amber-600 mt-1">
-                          Pending Value: ${report.totalPendingAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                          Pending Value: Rs. {report.totalPendingAmount?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                         </p>
                       </div>
                     </div>
@@ -688,7 +637,7 @@ export default function InsuranceReportsPage() {
                                 <TableRow key={c.id}>
                                   <TableCell className="font-semibold text-red-600">{c.claimNumber}</TableCell>
                                   <TableCell className="text-slate-700">{c.patientId}</TableCell>
-                                  <TableCell className="font-bold text-[#0A2540]">${c.claimAmount?.toFixed(2)}</TableCell>
+                                  <TableCell className="font-bold text-[#0A2540]">Rs. {c.claimAmount?.toFixed(2)}</TableCell>
                                   <TableCell className="text-red-700 font-medium">
                                     {c.rejectionReason || "Eligibility criteria not met"}
                                   </TableCell>
@@ -730,14 +679,14 @@ export default function InsuranceReportsPage() {
                               <TableCell className="font-bold text-[#0A2540]">{p.providerName}</TableCell>
                               <TableCell className="font-semibold text-slate-700">{p.policyCount}</TableCell>
                               <TableCell className="font-medium text-slate-700">
-                                ${p.totalCoverage?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                Rs. {p.totalCoverage?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </TableCell>
                               <TableCell className="font-semibold text-blue-600">{p.claimCount}</TableCell>
                               <TableCell className="font-medium text-slate-700">
-                                ${p.totalClaimed?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                Rs. {p.totalClaimed?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </TableCell>
                               <TableCell className="font-bold text-emerald-600">
-                                ${p.totalApproved?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                Rs. {p.totalApproved?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                               </TableCell>
                               <TableCell className="text-right">
                                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">
