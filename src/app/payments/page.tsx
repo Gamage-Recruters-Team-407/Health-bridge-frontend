@@ -146,6 +146,7 @@ export default function PaymentsPage() {
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
   const [maskedCard, setMaskedCard] = useState<string>("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [confirmedPayment, setConfirmedPayment] = useState<{
     id: string;
     amount: number;
@@ -322,6 +323,12 @@ export default function PaymentsPage() {
       setMaskedCard(res.maskedCard);
       setTimeLeft(600); // 10 minutes reset
       setOtpDigits(["", "", "", "", "", ""]);
+      // Capture devOtp fallback when email quota exceeded
+      if (res.devOtp) {
+        setDevOtp(res.devOtp);
+      } else {
+        setDevOtp(null);
+      }
       setStep("VERIFICATION");
       // Focus first OTP input on next tick
       setTimeout(() => {
@@ -394,6 +401,7 @@ export default function PaymentsPage() {
         description,
         maskedCard,
       });
+      setDevOtp(null);
       setStep("SUCCESS");
     } catch (err: any) {
       console.error("Confirmation error:", err);
@@ -426,7 +434,14 @@ export default function PaymentsPage() {
       setActivePaymentId(res.paymentId);
       setTimeLeft(600);
       setOtpDigits(["", "", "", "", "", ""]);
-      alert("A fresh 6-digit confirmation code has been dispatched to your email.");
+      if (res.devOtp) {
+        setDevOtp(res.devOtp);
+      } else {
+        setDevOtp(null);
+      }
+      alert(res.devOtp
+        ? "Email could not be delivered (SMTP limit reached). Please use the code displayed on screen."
+        : "A fresh 6-digit confirmation code has been dispatched to your email.");
     } catch (err: any) {
       setErrorMsg("Could not resend code. Please restart payment.");
     } finally {
@@ -444,6 +459,7 @@ export default function PaymentsPage() {
     setExpiryDate("");
     setCvv("");
     setOtpDigits(["", "", "", "", "", ""]);
+    setDevOtp(null);
     setErrorMsg(null);
     setConfirmedPayment(null);
   };
@@ -1060,6 +1076,36 @@ export default function PaymentsPage() {
                 <div className="text-right shrink-0">
                   <div className="text-xs text-slate-500 font-medium">Total Due</div>
                   <div className="text-lg font-black text-blue-600">RS {Number(amount).toLocaleString()}</div>
+                </div>
+              </div>
+            )}
+
+            {/* Dev Fallback Banner – shown when email quota is exceeded */}
+            {devOtp && (
+              <div className="my-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left max-w-md mx-auto shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">⚠️</span>
+                  <span className="text-sm font-bold text-amber-800">Email Delivery Unavailable</span>
+                </div>
+                <p className="text-xs text-amber-700 mb-3">
+                  The confirmation email could not be sent (SMTP daily limit reached). Use the code below to continue:
+                </p>
+                <div className="flex items-center gap-3">
+                  <code className="px-4 py-2 bg-white rounded-xl text-2xl font-black font-mono tracking-[0.3em] text-amber-900 border border-amber-200 shadow-inner">
+                    {devOtp}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const digits = devOtp.split("");
+                      setOtpDigits(digits);
+                      // Auto-focus last input after fill
+                      setTimeout(() => otpInputsRef.current[5]?.focus(), 100);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm"
+                  >
+                    Auto-fill
+                  </button>
                 </div>
               </div>
             )}
