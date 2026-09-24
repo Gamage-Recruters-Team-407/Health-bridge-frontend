@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { User as UserIcon, LogOut, Bell, HeadphonesIcon, CreditCard, Video } from "lucide-react";
-import { getStoredUser, clearAuthData, AuthUser } from "@/lib/auth";
+import { getStoredUser, clearAuthData, AuthUser, AUTH_CHANGE_EVENT } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
+import { labReportService } from "@/services/labReportService";
 
 export default function PatientDashboardPage() {
   const router = useRouter();
@@ -41,16 +42,13 @@ export default function PatientDashboardPage() {
           .catch(err => console.error(err));
 
       // Fetch Live Appointments
-      api.get(`/appointments?patientId=${storedUser.id}`)
+      api.get(`/appointments/my`)
           .then((data: any) => setAppointments(data))
           .catch(err => console.error(err));
 
       // Fetch Live Lab Reports
-      api.get(`/lab/results/patient/${storedUser.id}/history`)
-          .then((data: any) => {
-            const valid = data.filter((r: any) => r.status !== 'DRAFT');
-            setLabReports(valid);
-          })
+      labReportService.getPatientLabHistory(storedUser.id)
+          .then(data => setLabReports(data))
           .catch(err => console.error(err));
 
       // Fetch Active Prescriptions Count
@@ -66,12 +64,29 @@ export default function PatientDashboardPage() {
     // Set up live updating (polling every 5 seconds)
     const intervalId = setInterval(fetchData, 5000);
 
-    // Cleanup interval on unmount
-    return () => clearInterval(intervalId);
+    // Watch for logout in another tab or component
+    const handleAuthChange = () => {
+      const current = getStoredUser();
+      if (!current || current.role !== "PATIENT") {
+        window.location.href = "/login";
+      }
+    };
+    window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+
+    // Cleanup on unmount
+    return () => {
+      clearInterval(intervalId);
+      window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+    };
   }, [router]);
 
+  const handleLogout = () => {
+    clearAuthData();
+    window.location.href = "/login";
+  };
+
   // Dynamic Metric Calculations
-  const upcomingAppointmentsCount = appointments.filter(a => a.status !== 'CANCELLED').length;
+  const upcomingAppointmentsCount = appointments.filter(a => a.status === 'UPCOMING' || a.status === 'BOOKED').length;
   const labReportsCount = labReports.length;
   const insuranceMessagesCount = 0; // Placeholder until Backend Developer 17 builds the messaging endpoint
 
@@ -135,6 +150,14 @@ export default function PatientDashboardPage() {
               <HeadphonesIcon className="w-4 h-4" />
               <span>Support</span>
             </Link>
+            <button
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-red-500/20 hover:bg-red-500/30 text-white text-xs font-semibold backdrop-blur-sm transition cursor-pointer"
+                title="Log Out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
           </div>
         </div>
 
@@ -192,37 +215,80 @@ export default function PatientDashboardPage() {
             {/* Upcoming Appointments List */}
             <div className="lg:col-span-2 bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
               <div className="flex justify-between items-center mb-6">
-                <h3 className="font-bold text-zinc-950 text-[16px]">Upcoming appointments</h3>
-                <Link href="/patient/appointments" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
+                <h3 className="font-bold text-zinc-950 text-[16px]">My Appointments</h3>
+                <Link href="/appointments" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
               </div>
 
               <div className="flex flex-col">
                 {appointments.length === 0 ? (
-                    <div className="py-6 text-center text-sm text-zinc-500">No upcoming appointments.</div>
+                    <div className="py-6 text-center text-sm text-zinc-500">No appointments found.</div>
                 ) : (
-                    appointments.slice(0, 3).map((app, index) => {
-                      const isCancelled = app.status === 'CANCELLED';
+                    appointments.slice(0, 2).map((app, index) => {
+                      const isCancelled = app.status === 'CANCELLED' || app.status === 'NO_SHOW';
+                      const isActive = app.status === 'UPCOMING' || app.status === 'BOOKED';
+                      
+                      let badgeText = app.status;
+                      let badgeColor = "text-zinc-500";
+                      if (app.status === 'COMPLETED') {
+                        badgeColor = 'text-emerald-600';
+                      } else if (app.status === 'CANCELLED' || app.status === 'NO_SHOW') {
+                        badgeText = app.status.replace('_', ' ');
+                        badgeColor = 'text-red-500';
+                      } else if (app.status === 'UPCOMING' || app.status === 'BOOKED') {
+                        badgeText = 'UPCOMING';
+                        badgeColor = 'text-blue-600';
+                      }
+
                       return (
-                          <div key={index} className={`flex justify-between items-center py-3 border-b border-zinc-100 last:border-0 ${isCancelled ? 'opacity-60' : ''}`}>
-                            <div className="flex items-center gap-4">
-                              <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold ${isCancelled ? 'bg-slate-100 text-slate-400' : 'bg-blue-500/10 text-blue-500'}`}>
-                                {getInitials(app.doctorName)}
+                          <div key={index} className={`flex flex-col py-4 border-b border-zinc-100 last:border-0 ${isCancelled ? 'opacity-60' : ''}`}>
+                            <div className="flex justify-between items-center">
+                              <div className="flex items-center gap-4">
+                                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-xs font-semibold ${isCancelled ? 'bg-slate-100 text-slate-400' : 'bg-blue-500/10 text-blue-500'}`}>
+                                  {getInitials(app.doctorName)}
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className={`text-sm font-semibold ${isCancelled ? 'text-slate-500 line-through' : 'text-zinc-950'}`}>
+                                    {app.doctorName || 'Unknown Doctor'}
+                                  </span>
+                                  <span className="text-xs text-zinc-500">
+                                    {app.specialization} • {app.hospitalName}
+                                  </span>
+                                </div>
                               </div>
-                              <div className="flex flex-col">
-                            <span className={`text-sm font-semibold ${isCancelled ? 'text-slate-500 line-through' : 'text-zinc-950'}`}>
-                              {app.doctorName || 'Unknown Doctor'}
-                            </span>
-                                <span className="text-xs text-zinc-500">
-                              {app.doctorSpecialization} • {app.appointmentType}
-                            </span>
+                              <div className="flex flex-col items-end gap-1">
+                                <div className={`text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${isCancelled ? 'bg-red-500/10 text-red-600' : 'bg-blue-500/10 text-blue-500'}`}>
+                                  {app.date}, {app.sessionTime}
+                                </div>
+                                <span className={`text-[10px] font-bold uppercase tracking-wider pr-1 ${badgeColor}`}>
+                                  {badgeText}
+                                </span>
                               </div>
                             </div>
-                            <div className="flex flex-col items-end gap-1">
-                              <div className={`text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap ${isCancelled ? 'bg-red-500/10 text-red-600' : 'bg-blue-500/10 text-blue-500'}`}>
-                                {app.appointmentDate}, {app.appointmentTime}
+
+                            {/* DYNAMIC LIVE QUEUE STATUS */}
+                            {isActive && (
+                              <div className="mt-4 pt-4 border-t border-zinc-100 flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                  <span className="relative flex h-3 w-3">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
+                                  </span>
+                                  <span className="text-xs font-bold text-red-600 uppercase tracking-wider">Live Queue</span>
+                                </div>
+                                
+                                <div className="flex items-center gap-4 text-sm">
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Now Serving</span>
+                                    <span className="font-bold text-zinc-900">Token {app.currentQueueNumber || 0}</span> 
+                                  </div>
+                                  <div className="h-8 w-px bg-zinc-200"></div>
+                                  <div className="flex flex-col items-end">
+                                    <span className="text-zinc-500 text-[10px] uppercase font-bold tracking-wider">Your Token</span>
+                                    <span className="font-bold text-blue-600">Token {app.appointmentNumber || 0}</span>
+                                  </div>
+                                </div>
                               </div>
-                              {isCancelled && <span className="text-[10px] font-bold text-red-500 uppercase tracking-wider pr-1">Cancelled</span>}
-                            </div>
+                            )}
                           </div>
                       );
                     })
@@ -232,7 +298,10 @@ export default function PatientDashboardPage() {
 
             {/* Vitals Box */}
             <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
-              <h3 className="font-bold text-zinc-950 text-[16px] mb-6">Vitals this week</h3>
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="font-bold text-zinc-950 text-[16px]">Vitals this week</h3>
+                <Link href="/patient/health-metrics" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
+              </div>
               <div className="flex flex-col gap-4">
                 <div className="flex justify-between items-center py-2 border-b border-zinc-100">
                   <span className="text-sm text-zinc-500">Blood pressure</span>
@@ -266,14 +335,14 @@ export default function PatientDashboardPage() {
           <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-zinc-950 text-[16px]">Recent lab reports</h3>
-              <Link href="/patient/records" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
+              <Link href="/patient/lab-reports" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
             </div>
 
             <div className="w-full">
               <div className="flex justify-between items-center text-xs text-zinc-500 pb-3 border-b border-zinc-200">
                 <div className="w-1/3">Test Parameter</div>
                 <div className="w-1/3 text-center">Date</div>
-                <div className="w-1/3 flex justify-end pr-8 sm:pr-[90px]">Status</div>
+                <div className="w-1/3 flex justify-end pr-2">Status</div>
               </div>
 
               <div className="flex flex-col">
@@ -283,20 +352,30 @@ export default function PatientDashboardPage() {
                     labReports.slice(0, 3).map((report, index) => (
                         <div key={index} className="flex justify-between items-center py-4 border-b border-zinc-100 last:border-0 hover:bg-slate-50 transition px-2 -mx-2 rounded-lg">
                           <div className="w-1/3 text-sm text-zinc-950 font-medium truncate pr-2">
-                            {report.parameters && report.parameters[0] ? report.parameters[0].parameterName : `Test Order #${report.testOrderId}`}
+                            {report.parameters && report.parameters.length > 0 ? (
+                              <>
+                                {report.parameters[0].parameterName}
+                                {report.parameters.length > 1 && (
+                                  <span className="text-zinc-500 text-xs ml-1.5 font-normal">
+                                    +{report.parameters.length - 1} more
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              `Test Order #${report.testOrderId}`
+                            )}
                           </div>
                           <div className="w-1/3 text-sm text-zinc-500 text-center">
                             {formatDate(report.publishedAt || report.resultedAt)}
                           </div>
-                          <div className="w-1/3 flex justify-end items-center gap-4 sm:gap-8">
-                            {report.isCritical ? (
+                          <div className="w-1/3 flex justify-end items-center gap-4 sm:gap-8 pr-2">
+                            { (report.critical || report.isCritical) ? (
                                 <span className="bg-red-500/15 text-red-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Critical</span>
-                            ) : report.isAbnormal ? (
+                            ) : (report.abnormal || report.isAbnormal) ? (
                                 <span className="bg-orange-500/15 text-orange-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Review needed</span>
                             ) : (
                                 <span className="bg-teal-500/15 text-teal-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Normal</span>
                             )}
-                            <button className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer whitespace-nowrap">View</button>
                           </div>
                         </div>
                     ))

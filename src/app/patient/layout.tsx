@@ -11,6 +11,7 @@ export default function PatientLayout({ children }: { children: React.ReactNode 
   if (pathname.includes("/dashboard")) title = "Patient Dashboard";
   else if (pathname.includes("/family")) title = "Family Members";
   else if (pathname.includes("/health-metrics")) title = "Health Metrics";
+  else if (pathname.includes("/lab-reports")) title = "My Lab Reports";
   else if (pathname.includes("/medications")) title = "Prescriptions & Medications";
   else if (pathname.includes("/reminders")) title = "Medication Reminders";
   else if (pathname.includes("/sos")) title = "Emergency SOS";

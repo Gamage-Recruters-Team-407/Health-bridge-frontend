@@ -27,6 +27,7 @@ export interface NavbarProps {
   title?: string;
   userName?: string;
   userRole?: string;
+  fixed?: boolean;
 }
 
 // ============================================================
@@ -80,6 +81,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   title = "Dashboard",
   userName = "User",
   userRole = "Patient",
+  fixed = false,
 }) => {
   const router = useRouter();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -94,14 +96,21 @@ export const Navbar: React.FC<NavbarProps> = ({
   // ============================================================
 
   const loadNotifications = async () => {
+    if (!localStorage.getItem("healthbridge_token")) {
+      setNotifications([]);
+      setUnreadNotifications(0);
+      return;
+    }
+
     try {
       const data = await getNotifications();
       setNotifications(data);
 
       const unreadCount = data.filter((notification) => !notification.read).length;
       setUnreadNotifications(unreadCount);
-    } catch (error) {
-      console.error("Failed to load notifications:", error);
+    } catch {
+      setNotifications([]);
+      setUnreadNotifications(0);
     }
   };
 
@@ -173,12 +182,33 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   const handleLogout = () => {
     clearAuthData();
-    router.push("/login");
+    window.location.href = "/login";
+  };
+
+  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key !== "Enter") return;
+
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return;
+
+    const destination = query.includes("record")
+      ? "/medical-records"
+      : query.includes("patient")
+        ? "/patients"
+        : query.includes("doctor")
+          ? "/doctors"
+          : "/dashboard";
+
+    router.push(destination);
+  };
+
+  const handleEmergency = () => {
+    router.push(userRole.toUpperCase() === "DOCTOR" ? "/emergency" : "/patient/sos");
   };
 
   const handleViewAllNotifications = () => {
     setShowNotifications(false);
-    window.location.href = getRoleRoutes(userRole).notificationsAll;
+    router.push(getRoleRoutes(userRole).notificationsAll);
   };
 
   const formatNotificationTime = (createdAt: string | undefined) => {
@@ -193,7 +223,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   return (
-    <header className="h-16 border-b border-slate-100 bg-white/90 backdrop-blur-md sticky top-0 z-20 px-4 md:px-6 flex items-center justify-between gap-4 transition-colors">
+    <header className={cn(
+      "h-16 border-b border-slate-100 bg-white/90 backdrop-blur-md z-40 px-4 md:px-6 flex items-center justify-between gap-4 transition-colors",
+      fixed ? "fixed top-0 left-0 right-0 lg:left-64" : "sticky top-0"
+    )}>
       {/* LEFT SIDE */}
       <div className="flex items-center gap-3">
         {onToggleMobileSidebar && (
@@ -227,6 +260,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             type="text"
             value={searchQuery}
             onChange={(event) => setSearchQuery(event.target.value)}
+            onKeyDown={handleSearchKeyDown}
             placeholder="Search patients, doctors, medical records..."
             className="w-full pl-10 pr-12 py-2 text-xs rounded-xl bg-[#F8FAFC] border border-transparent focus:border-blue-500 focus:bg-white text-[#0A2540] placeholder-slate-400 transition-all outline-none"
           />
@@ -239,7 +273,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* RIGHT SIDE */}
       <div className="flex items-center gap-2 sm:gap-3">
         {/* EMERGENCY */}
-        <button className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-semibold transition-all shadow-sm">
+        <button onClick={handleEmergency} className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-red-50 text-red-600 hover:bg-red-100 border border-red-200 text-xs font-semibold transition-all shadow-sm">
           <AlertTriangle className="w-3.5 h-3.5 animate-bounce" />
           <span>Emergency</span>
         </button>
@@ -383,7 +417,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Settings Link */}
               <a
-                href="/settings"
+                href="/profile/settings"
                 className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors"
               >
                 <ShieldCheck className="w-4 h-4 text-slate-400" />

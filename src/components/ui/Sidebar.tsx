@@ -26,6 +26,10 @@ import {
   ClipboardCheck,
   Video,
   LifeBuoy,
+  Building2,
+  Bed,
+  Wrench,
+  UserCog,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -62,6 +66,9 @@ const getNavGroups = (role: string): NavGroup[] => {
 
   // Admin & Super Admin
   if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
+    const isAdmin = roleUpper === "ADMIN";
+    const isSuperAdmin = roleUpper === "SUPER_ADMIN";
+
     return [
       {
         groupTitle: "Overview",
@@ -78,6 +85,13 @@ const getNavGroups = (role: string): NavGroup[] => {
           // ✅ FIXED: Compliance moved outside billing
           { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
+          ...(isAdmin
+            ? [
+                { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
+                { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
+                { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
+              ]
+            : []),
         ],
       },
       {
@@ -90,6 +104,9 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "System Admin",
         items: [
           { title: "Users", href: "/admin/users", icon: Users },
+          ...(isSuperAdmin
+            ? [{ title: "Staff Management", href: "/hospital-admin/staff-management", icon: UserCog }]
+            : []),
           { title: "Settings", href: "/admin/settings", icon: Settings },
           { title: "Support", href: "/support/admin", icon: LifeBuoy },
         ],
@@ -131,14 +148,17 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Lab Reports", href: "/patient/lab-reports", icon: TestTube2 },
           { title: "Insurance", href: "/patient/insurance", icon: ShieldAlert },
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
+          { title: "Support", href: "/support/patient", icon: LifeBuoy },
         ],
       },
     ];
   }
+
 
   // Pharmacist
   if (roleUpper === "PHARMACIST") {
@@ -146,10 +166,10 @@ const getNavGroups = (role: string): NavGroup[] => {
       {
         groupTitle: "Pharmacy",
         items: [
-          { title: "Dashboard", href: "/pharmacist/dashboard", icon: LayoutDashboard },
-          { title: "Prescriptions", href: "/prescriptions", icon: FileText },
+          { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
+          { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: FileText },
           { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
-          { title: "Sales", href: "/pharmacy/sales", icon: TrendingUp },
+          { title: "Sales", href: "/pharmacy/orders", icon: TrendingUp },
         ],
       },
     ];
@@ -324,7 +344,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div
           className={cn(
             "flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-200 transition-all",
-            collapsed && "justify-center p-1.5"
+            collapsed && "flex-col justify-center p-1.5 gap-2"
           )}
         >
           <div className="relative shrink-0">
@@ -341,18 +361,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {!collapsed && (
-            <button
-              onClick={() => {
-                clearAuthData();
-                router.push("/login");
-              }}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              clearAuthData();
+              window.location.href = "/login";
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>

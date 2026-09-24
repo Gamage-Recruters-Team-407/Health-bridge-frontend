@@ -499,7 +499,19 @@ export default function MedicalHistoryPage() {
               href={
                 ehrHref
               }
-              className="
+              className={
+              isDoctor
+                ? `
+                inline-flex
+                items-center
+                gap-2
+                text-sm
+                font-semibold
+                text-teal-600
+                transition
+                hover:text-teal-700
+              `
+                : `
                 inline-flex
                 items-center
                 gap-2
@@ -508,7 +520,8 @@ export default function MedicalHistoryPage() {
                 text-blue-600
                 transition
                 hover:text-blue-700
-              "
+              `
+            }
             >
               <ArrowLeft
                 className="
@@ -558,7 +571,25 @@ export default function MedicalHistoryPage() {
                 href={
                   createHref
                 }
-                className="
+                className={
+              isDoctor
+                ? `
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-teal-600
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  shadow-sm
+                  transition
+                  hover:bg-teal-700
+                `
+                : `
                   inline-flex
                   items-center
                   justify-center
@@ -573,7 +604,8 @@ export default function MedicalHistoryPage() {
                   shadow-sm
                   transition
                   hover:bg-blue-700
-                "
+                `
+            }
               >
                 <FilePlus2
                   className="
@@ -592,7 +624,28 @@ export default function MedicalHistoryPage() {
                 href={
                   documentsHref
                 }
-                className="
+                className={
+              isDoctor
+                ? `
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  border
+                  border-slate-200
+                  bg-white
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  shadow-sm
+                  transition
+                  hover:border-teal-300
+                  hover:text-teal-600
+                `
+                : `
                   inline-flex
                   items-center
                   justify-center
@@ -610,7 +663,8 @@ export default function MedicalHistoryPage() {
                   transition
                   hover:border-blue-300
                   hover:text-blue-600
-                "
+                `
+            }
               >
                 <FolderOpen
                   className="
@@ -634,13 +688,23 @@ export default function MedicalHistoryPage() {
             onSubmit={
               handleSearch
             }
-            className="
+            className={
+              isDoctor
+                ? `
+              rounded-2xl
+              border
+              border-teal-100
+              bg-teal-50/70
+              p-4
+            `
+                : `
               rounded-2xl
               border
               border-blue-100
               bg-blue-50/70
               p-4
-            "
+            `
+            }
           >
             <label
               className="
@@ -696,7 +760,25 @@ export default function MedicalHistoryPage() {
                       )
                   }
                   placeholder="Enter patient User ID"
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    w-full
+                    rounded-xl
+                    border
+                    border-slate-200
+                    bg-white
+                    py-2.5
+                    pl-10
+                    pr-4
+                    text-sm
+                    outline-none
+                    transition
+                    focus:border-teal-500
+                    focus:ring-2
+                    focus:ring-teal-100
+                  `
+                : `
                     w-full
                     rounded-xl
                     border
@@ -711,7 +793,8 @@ export default function MedicalHistoryPage() {
                     focus:border-blue-500
                     focus:ring-2
                     focus:ring-blue-100
-                  "
+                  `
+            }
                 />
               </div>
 
@@ -723,7 +806,25 @@ export default function MedicalHistoryPage() {
                   || !patientIdInput
                     .trim()
                 }
-                className="
+                className={
+              isDoctor
+                ? `
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-teal-600
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-teal-700
+                  disabled:opacity-50
+                `
+                : `
                   inline-flex
                   items-center
                   justify-center
@@ -738,7 +839,8 @@ export default function MedicalHistoryPage() {
                   transition
                   hover:bg-blue-700
                   disabled:opacity-50
-                "
+                `
+            }
               >
                 {loading
                   ? (
@@ -840,13 +942,23 @@ export default function MedicalHistoryPage() {
                 "
               >
                 <Loader2
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    mx-auto
+                    h-8
+                    w-8
+                    animate-spin
+                    text-teal-600
+                  `
+                : `
                     mx-auto
                     h-8
                     w-8
                     animate-spin
                     text-blue-600
-                  "
+                  `
+            }
                 />
 
                 <p
@@ -1039,11 +1151,19 @@ export default function MedicalHistoryPage() {
                 "
               >
                 <FileText
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    h-5
+                    w-5
+                    text-teal-600
+                  `
+                : `
                     h-5
                     w-5
                     text-blue-600
-                  "
+                  `
+            }
                 />
 
                 <p
@@ -1085,11 +1205,19 @@ export default function MedicalHistoryPage() {
                 "
               >
                 <Stethoscope
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    h-5
+                    w-5
+                    text-teal-600
+                  `
+                : `
                     h-5
                     w-5
                     text-indigo-600
-                  "
+                  `
+            }
                 />
 
                 <p
@@ -1273,7 +1401,11 @@ export default function MedicalHistoryPage() {
                         ${
                           filter === item.key
                             ? (
-                              "bg-blue-600 "
+                              (
+                                isDoctor
+                                  ? "bg-teal-600 "
+                                  : "bg-blue-600 "
+                              )
                               + "text-white"
                             )
                             : (
@@ -1361,14 +1493,25 @@ export default function MedicalHistoryPage() {
                         "
                       >
                         <div
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            absolute
+                            bottom-4
+                            left-[9px]
+                            top-4
+                            w-px
+                            bg-teal-100
+                          `
+                : `
                             absolute
                             bottom-4
                             left-[9px]
                             top-4
                             w-px
                             bg-blue-100
-                          "
+                          `
+            }
                         />
 
 
@@ -1412,9 +1555,17 @@ export default function MedicalHistoryPage() {
                                     ring-4
                                     ring-white
                                     ${
-                                      index === 0
-                                        ? "bg-blue-600"
-                                        : "bg-blue-300"
+                                      isDoctor
+                                        ? (
+                                          index === 0
+                                            ? "bg-teal-600"
+                                            : "bg-teal-300"
+                                        )
+                                        : (
+                                          index === 0
+                                            ? "bg-blue-600"
+                                            : "bg-blue-300"
+                                        )
                                     }
                                   `}
                                 />
@@ -1456,7 +1607,18 @@ export default function MedicalHistoryPage() {
                                       </span>
 
                                       <span
-                                        className="
+                                        className={
+              isDoctor
+                ? `
+                                          rounded-full
+                                          bg-teal-50
+                                          px-2.5
+                                          py-1
+                                          text-[11px]
+                                          font-bold
+                                          text-teal-700
+                                        `
+                : `
                                           rounded-full
                                           bg-blue-50
                                           px-2.5
@@ -1464,7 +1626,8 @@ export default function MedicalHistoryPage() {
                                           text-[11px]
                                           font-bold
                                           text-blue-700
-                                        "
+                                        `
+            }
                                       >
                                         {
                                           record.recordType
@@ -1649,13 +1812,23 @@ export default function MedicalHistoryPage() {
                                                 key={
                                                   diagnosis.id
                                                 }
-                                                className="
+                                                className={
+              isDoctor
+                ? `
+                                                  rounded-xl
+                                                  border
+                                                  border-teal-100
+                                                  bg-teal-50/50
+                                                  p-3
+                                                `
+                : `
                                                   rounded-xl
                                                   border
                                                   border-indigo-100
                                                   bg-indigo-50/50
                                                   p-3
-                                                "
+                                                `
+            }
                                               >
                                                 <div
                                                   className="
@@ -1666,11 +1839,19 @@ export default function MedicalHistoryPage() {
                                                   "
                                                 >
                                                   <p
-                                                    className="
+                                                    className={
+              isDoctor
+                ? `
+                                                      text-sm
+                                                      font-semibold
+                                                      text-teal-900
+                                                    `
+                : `
                                                       text-sm
                                                       font-semibold
                                                       text-indigo-900
-                                                    "
+                                                    `
+            }
                                                   >
                                                     {
                                                       diagnosis.diagnosisName
@@ -1679,7 +1860,19 @@ export default function MedicalHistoryPage() {
 
                                                   {diagnosis.severity && (
                                                     <span
-                                                      className="
+                                                      className={
+              isDoctor
+                ? `
+                                                        rounded-full
+                                                        bg-white
+                                                        px-2
+                                                        py-1
+                                                        text-[10px]
+                                                        font-bold
+                                                        uppercase
+                                                        text-teal-600
+                                                      `
+                : `
                                                         rounded-full
                                                         bg-white
                                                         px-2
@@ -1688,7 +1881,8 @@ export default function MedicalHistoryPage() {
                                                         font-bold
                                                         uppercase
                                                         text-indigo-600
-                                                      "
+                                                      `
+            }
                                                     >
                                                       {
                                                         diagnosis.severity
@@ -1699,12 +1893,21 @@ export default function MedicalHistoryPage() {
 
                                                 {diagnosis.description && (
                                                   <p
-                                                    className="
+                                                    className={
+              isDoctor
+                ? `
+                                                      mt-2
+                                                      text-xs
+                                                      leading-5
+                                                      text-teal-700
+                                                    `
+                : `
                                                       mt-2
                                                       text-xs
                                                       leading-5
                                                       text-indigo-700
-                                                    "
+                                                    `
+            }
                                                   >
                                                     {
                                                       diagnosis.description
@@ -1921,7 +2124,23 @@ export default function MedicalHistoryPage() {
                                           )
                                         }`
                                       }
-                                      className="
+                                      className={
+              isDoctor
+                ? `
+                                        inline-flex
+                                        items-center
+                                        justify-center
+                                        rounded-xl
+                                        bg-teal-600
+                                        px-3
+                                        py-2.5
+                                        text-xs
+                                        font-semibold
+                                        text-white
+                                        transition
+                                        hover:bg-teal-700
+                                      `
+                : `
                                         inline-flex
                                         items-center
                                         justify-center
@@ -1934,7 +2153,8 @@ export default function MedicalHistoryPage() {
                                         text-white
                                         transition
                                         hover:bg-blue-700
-                                      "
+                                      `
+            }
                                     >
                                       View Details
                                     </Link>
@@ -1974,11 +2194,19 @@ export default function MedicalHistoryPage() {
                   "
                 >
                   <Stethoscope
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      h-5
+                      w-5
+                      text-teal-600
+                    `
+                : `
                       h-5
                       w-5
                       text-indigo-600
-                    "
+                    `
+            }
                   />
 
                   <h2
@@ -1992,7 +2220,18 @@ export default function MedicalHistoryPage() {
                   </h2>
 
                   <span
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      rounded-full
+                      bg-teal-50
+                      px-2.5
+                      py-1
+                      text-xs
+                      font-bold
+                      text-teal-700
+                    `
+                : `
                       rounded-full
                       bg-indigo-50
                       px-2.5
@@ -2000,7 +2239,8 @@ export default function MedicalHistoryPage() {
                       text-xs
                       font-bold
                       text-indigo-700
-                    "
+                    `
+            }
                   >
                     {
                       history.diagnoses.length
@@ -2045,13 +2285,23 @@ export default function MedicalHistoryPage() {
                             key={
                               diagnosis.id
                             }
-                            className="
+                            className={
+              isDoctor
+                ? `
+                              rounded-2xl
+                              border
+                              border-teal-100
+                              bg-teal-50/50
+                              p-4
+                            `
+                : `
                               rounded-2xl
                               border
                               border-indigo-100
                               bg-indigo-50/50
                               p-4
-                            "
+                            `
+            }
                           >
                             <div
                               className="
@@ -2062,10 +2312,17 @@ export default function MedicalHistoryPage() {
                               "
                             >
                               <h3
-                                className="
+                                className={
+              isDoctor
+                ? `
+                                  font-bold
+                                  text-teal-950
+                                `
+                : `
                                   font-bold
                                   text-indigo-950
-                                "
+                                `
+            }
                               >
                                 {
                                   diagnosis.diagnosisName
@@ -2074,7 +2331,19 @@ export default function MedicalHistoryPage() {
 
                               {diagnosis.severity && (
                                 <span
-                                  className="
+                                  className={
+              isDoctor
+                ? `
+                                    rounded-full
+                                    bg-white
+                                    px-2.5
+                                    py-1
+                                    text-[10px]
+                                    font-bold
+                                    uppercase
+                                    text-teal-600
+                                  `
+                : `
                                     rounded-full
                                     bg-white
                                     px-2.5
@@ -2083,7 +2352,8 @@ export default function MedicalHistoryPage() {
                                     font-bold
                                     uppercase
                                     text-indigo-600
-                                  "
+                                  `
+            }
                                 >
                                   {
                                     diagnosis.severity
@@ -2095,12 +2365,21 @@ export default function MedicalHistoryPage() {
 
                             {diagnosis.description && (
                               <p
-                                className="
+                                className={
+              isDoctor
+                ? `
+                                  mt-3
+                                  text-sm
+                                  leading-6
+                                  text-teal-700
+                                `
+                : `
                                   mt-3
                                   text-sm
                                   leading-6
                                   text-indigo-700
-                                "
+                                `
+            }
                               >
                                 {
                                   diagnosis.description
@@ -2110,11 +2389,19 @@ export default function MedicalHistoryPage() {
 
 
                             <p
-                              className="
+                              className={
+              isDoctor
+                ? `
+                                mt-4
+                                text-xs
+                                text-teal-500
+                              `
+                : `
                                 mt-4
                                 text-xs
                                 text-indigo-500
-                              "
+                              `
+            }
                             >
                               Diagnosed:{" "}
                               {formatDate(
@@ -2131,7 +2418,24 @@ export default function MedicalHistoryPage() {
                                   )
                                 }`
                               }
-                              className="
+                              className={
+              isDoctor
+                ? `
+                                mt-4
+                                inline-flex
+                                rounded-lg
+                                border
+                                border-teal-200
+                                bg-white
+                                px-3
+                                py-2
+                                text-xs
+                                font-semibold
+                                text-teal-700
+                                transition
+                                hover:bg-teal-50
+                              `
+                : `
                                 mt-4
                                 inline-flex
                                 rounded-lg
@@ -2145,7 +2449,8 @@ export default function MedicalHistoryPage() {
                                 text-indigo-700
                                 transition
                                 hover:bg-indigo-50
-                              "
+                              `
+            }
                             >
                               View Medical Record
                             </Link>

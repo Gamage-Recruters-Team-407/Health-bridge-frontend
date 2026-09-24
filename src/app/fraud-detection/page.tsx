@@ -1,87 +1,53 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FraudDetectionTabs from "@/components/fraud-detection/FraudDetectionTabs";
+import { fraudDetectionService, type FraudAlert, type FraudRecord } from "@/services/fraudDetectionService";
 
-const claims = [
-  { id: "CLM-20481", patient: "Ava Thompson", provider: "BlueCross", risk: "high", reason: "Duplicate billing", date: "12 Aug 2026" },
-  { id: "CLM-20412", patient: "Marcus Lee", provider: "Aetna", risk: "medium", reason: "Unusual frequency", date: "11 Aug 2026" },
-  { id: "CLM-20377", patient: "Noah Patel", provider: "United", risk: "low", reason: "Low anomaly", date: "10 Aug 2026" },
-  { id: "CLM-20311", patient: "Emily Carter", provider: "Cigna", risk: "high", reason: "Confirmed fraud", date: "09 Aug 2026" },
-];
-
-const metrics = [
-  { label: "Total Flagged Claims", value: "1,284", detail: "Across all providers", tone: "blue", icon: "○" },
-  { label: "High Risk Count", value: "37", detail: "Needs immediate review", tone: "red", icon: "△" },
-  { label: "Under Review", value: "248", detail: "Pending analyst action", tone: "sky", icon: "◷" },
-  { label: "Confirmed Fraud", value: "12", detail: "Escalated cases", tone: "red", icon: "⊙" },
-];
-
-const riskLevels = [
-  { label: "Low Risk", value: "62%", width: "62%", color: "#00b981" },
-  { label: "Medium Risk", value: "28%", width: "28%", color: "#ff9d00" },
-  { label: "High Risk", value: "10%", width: "10%", color: "#ef1624" },
-];
-
-const patientRiskScores = [
-  { patient: "Ava Thompson", score: 91, detail: "Duplicate billing and provider history" },
-  { patient: "Marcus Lee", score: 68, detail: "Unusual claim frequency" },
-  { patient: "Noah Patel", score: 24, detail: "Provider code mismatch" },
-  { patient: "Emily Carter", score: 88, detail: "Confirmed fraud signal" },
-];
-
-function RiskMarker({ risk }: { risk: string }) {
-  const color = risk === "high" ? "#ef1624" : risk === "medium" ? "#ff9d00" : "#00b981";
-  return <span aria-label={`${risk} risk`} className="block h-1.5 w-6 rounded-full" style={{ backgroundColor: color }} />;
-}
-
-function ReasonBadge({ risk, reason }: { risk: string; reason: string }) {
-  const styles = risk === "high" ? "bg-[#fff0f1] text-[#ef1624]" : risk === "medium" ? "bg-[#fff7e8] text-[#e88900]" : "bg-[#e8fbf4] text-[#00a979]";
-  return <span className={`inline-flex max-w-[84px] rounded-full px-2 py-1 text-center text-[10px] font-medium leading-3 ${styles}`}>{reason}</span>;
-}
+const text = (record: FraudRecord | undefined, ...keys: string[]) => {
+  const key = keys.find((item) => record?.[item] !== undefined && record[item] !== null);
+  return key ? String(record?.[key]) : "-";
+};
+const score = (record: FraudRecord | undefined) => text(record, "score", "riskScore", "value");
+const idOf = (alert: FraudAlert) => String(alert.alertId ?? alert.id ?? alert.claimId ?? "");
 
 export default function FraudDetectionPage() {
-  const [selectedPatient, setSelectedPatient] = useState(patientRiskScores[0].patient);
-  const selectedRisk = patientRiskScores.find((item) => item.patient === selectedPatient) ?? patientRiskScores[0];
+  const [alerts, setAlerts] = useState<FraudAlert[]>([]);
+  const [patients, setPatients] = useState<FraudRecord[]>([]);
+  const [statistics, setStatistics] = useState<FraudRecord>();
+  const [riskStatistics, setRiskStatistics] = useState<FraudRecord>();
+  const [selectedPatient, setSelectedPatient] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  return (
-    <DashboardLayout pageTitle="Insurance" userRole="INSURANCE_OFFICER">
-      <div className="min-h-screen bg-[#fbfcfd] px-4 py-6 text-[#16191d] sm:px-7 lg:px-10 lg:py-9">
-      <div className="mx-auto max-w-[1280px]">
-        <FraudDetectionTabs />
-        <header className="mb-7 flex flex-col justify-between gap-3 sm:flex-row sm:items-end">
-          <div>
-            <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6c7680]">Claims intelligence</p>
-            <h1 className="text-[28px] font-semibold tracking-[-0.04em] text-[#171a1e] sm:text-[32px]">Fraud detection</h1>
-            <p className="mt-1 text-sm text-[#7b838c]">Monitor suspicious claims and coordinate investigations.</p>
-          </div>
-          <div className="flex items-center gap-2 text-xs text-[#737b84]"><span className="h-2 w-2 rounded-full bg-[#00b981]" /> Live data · 19 Aug 2026</div>
-        </header>
+  useEffect(() => {
+    let active = true;
+    Promise.all([
+      fraudDetectionService.getRecentAlerts(),
+      fraudDetectionService.getAlertStatistics(),
+      fraudDetectionService.getRiskScoreStatistics(),
+      fraudDetectionService.getHighRiskPatients(),
+      fraudDetectionService.getHighRiskDoctors(),
+      fraudDetectionService.getIncreasingRiskPatients(),
+      fraudDetectionService.getSuspiciousDoctors(),
+    ]).then(([recent, alertStats, scoreStats, highRiskPatients]) => {
+      if (!active) return;
+      setAlerts(recent.items as FraudAlert[]);
+      setStatistics(alertStats);
+      setRiskStatistics(scoreStats);
+      setPatients(highRiskPatients.items);
+    }).catch(() => active && setError("Fraud detection data is unavailable. Please try again."))
+      .finally(() => active && setLoading(false));
+    return () => { active = false; };
+  }, []);
 
-        <section aria-label="Fraud detection metrics" className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-          {metrics.map((metric) => (
-            <article key={metric.label} className="rounded-2xl border border-[#e8eaed] bg-white px-5 py-4 shadow-[0_2px_10px_rgba(26,36,44,0.025)]">
-              <div className="flex items-start justify-between"><p className="text-[11px] text-[#606a73]">{metric.label}</p><span className={`text-[14px] leading-none ${metric.tone === "red" ? "text-[#ef1624]" : "text-[#398bff]"}`}>{metric.icon}</span></div>
-              <p className={`mt-1 text-[27px] font-semibold leading-none tracking-[-0.04em] ${metric.tone === "red" ? "text-[#ef1624]" : "text-[#16191d]"}`}>{metric.value}</p>
-              <p className="mt-2 text-[10px] text-[#9299a0]">{metric.detail}</p>
-            </article>
-          ))}
-        </section>
-
-        <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]">
-          <article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 shadow-[0_2px_10px_rgba(26,36,44,0.02)] sm:p-6">
-            <div className="mb-5 flex items-start justify-between gap-3"><div><h2 className="text-sm font-semibold text-[#20252a]">Flagged claims</h2><p className="mt-1 text-[11px] text-[#9299a0]">Risk-scored claims requiring investigation</p></div><button type="button" className="rounded-lg border border-[#edf0f2] px-3 py-1.5 text-[11px] font-medium text-[#414850] transition hover:border-[#cad1d7] hover:bg-[#f8fafb]">Export</button></div>
-            <div className="overflow-x-auto rounded-xl border border-[#e3e6e9]"><table className="w-full min-w-[650px] border-collapse text-left"><thead className="bg-[#fbfcfd] text-[9px] uppercase tracking-[0.04em] text-[#6d7780]"><tr>{["Claim ID", "Patient name", "Provider", "Risk", "Flag reason", "Date"].map((heading) => <th key={heading} className="px-3 py-3 font-medium">{heading}</th>)}</tr></thead><tbody className="text-[11px] text-[#3b4249]">{claims.map((claim) => <tr key={claim.id} className="border-t border-[#e9ebed]"><td className="px-3 py-3 font-semibold text-[#2e353b]">{claim.id}</td><td className="px-3 py-3">{claim.patient}</td><td className="px-3 py-3">{claim.provider}</td><td className="px-3 py-3"><RiskMarker risk={claim.risk} /></td><td className="px-3 py-3"><ReasonBadge reason={claim.reason} risk={claim.risk} /></td><td className="whitespace-nowrap px-3 py-3 text-[#717a83]">{claim.date}</td></tr>)}</tbody></table></div>
-          </article>
-
-          <div className="space-y-4">
-            <article className="rounded-2xl border border-[#e7e9ec] bg-white p-4 shadow-[0_2px_10px_rgba(26,36,44,0.02)]"><div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-semibold text-[#20252a]">Patient risk score</h2><p className="mt-1 text-[10px] text-[#9299a0]">Individual claim risk</p></div><select aria-label="Select patient for risk score" value={selectedPatient} onChange={(event) => setSelectedPatient(event.target.value)} className="max-w-[140px] rounded-lg border border-[#e4e7ea] bg-white px-2 py-1.5 text-[10px] font-medium text-[#414850]"><option value="Ava Thompson">Ava Thompson</option><option value="Marcus Lee">Marcus Lee</option><option value="Noah Patel">Noah Patel</option><option value="Emily Carter">Emily Carter</option></select></div><div className="mt-4 flex items-end justify-between gap-3"><p className="text-[36px] font-semibold leading-none tracking-[-0.05em] text-[#ef1624]">{selectedRisk.score}<span className="text-base text-[#9ca3a9]">/100</span></p><p className="max-w-[145px] text-right text-[10px] leading-4 text-[#7b838c]">{selectedRisk.detail}</p></div><div className="mt-3 h-2 overflow-hidden rounded-full bg-[#f0f1f2]"><div className="h-full rounded-full bg-[#ef1624] transition-[width]" style={{ width: `${selectedRisk.score}%` }} /></div></article>
-            <article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 shadow-[0_2px_10px_rgba(26,36,44,0.02)] sm:p-6"><h2 className="text-sm font-semibold text-[#20252a]">Risk distribution</h2><p className="mt-1 text-[11px] text-[#9299a0]">Distribution of claims by risk level</p><div className="mt-6 space-y-5">{riskLevels.map((level) => <div key={level.label}><div className="mb-2 flex justify-between text-[11px] text-[#65707a]"><span>{level.label}</span><span className="font-medium text-[#343b42]">{level.value}</span></div><div className="h-2 overflow-hidden rounded-full bg-[#f0f1f2]"><div className="h-full rounded-full" style={{ width: level.width, backgroundColor: level.color }} /></div></div>)}</div><div className="mt-6 rounded-xl bg-[#fafafa] px-3 py-3 text-[10px] leading-[1.45] text-[#7b838b]">Claims with repeated billing patterns and mismatched provider codes are automatically escalated for manual review.</div></article>
-          </div>
-        </section>
-      </div>
-      </div>
-    </DashboardLayout>
-  );
+  const selected = patients[selectedPatient];
+  return <DashboardLayout pageTitle="Insurance" userRole="INSURANCE_OFFICER"><div className="min-h-screen bg-[#fbfcfd] px-4 py-6 text-[#16191d] sm:px-7 lg:px-10 lg:py-9"><div className="mx-auto max-w-7xl"><FraudDetectionTabs /><header className="mb-7"><p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-[#6c7680]">Claims intelligence</p><h1 className="text-[28px] font-semibold sm:text-[32px]">Fraud detection</h1><p className="mt-1 text-sm text-[#7b838c]">Monitor suspicious claims and coordinate investigations.</p></header>
+    {loading && <div role="status" className="rounded-2xl border border-[#e7e9ec] bg-white p-8 text-center text-sm text-[#707981]">Loading fraud detection data...</div>}
+    {error && <div role="alert" className="rounded-2xl border border-red-200 bg-red-50 p-8 text-center text-sm text-red-700">{error}</div>}
+    {!loading && !error && <><section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">{[["Total flagged claims", text(statistics, "totalFlaggedClaims", "totalAlerts", "total"), "Across all providers"], ["High risk count", text(statistics, "highRiskCount", "highRiskAlerts"), "Needs immediate review"], ["Under review", text(statistics, "underReview", "pendingReview", "openAlerts"), "Pending analyst action"], ["Confirmed fraud", text(statistics, "confirmedFraud", "confirmedFraudCount"), "Escalated cases"]].map(([label, metric, detail]) => <article key={label} className="rounded-2xl border border-[#e8eaed] bg-white px-5 py-4"><p className="text-[11px] text-[#606a73]">{label}</p><p className="mt-1 text-[27px] font-semibold">{metric}</p><p className="mt-2 text-[10px] text-[#9299a0]">{detail}</p></article>)}</section>
+  <section className="grid items-start gap-4 xl:grid-cols-[minmax(0,1.45fr)_minmax(320px,0.95fr)]"><article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 sm:p-6"><div className="mb-5"><h2 className="text-sm font-semibold">Flagged claims</h2><p className="mt-1 text-[11px] text-[#9299a0]">Risk-scored claims requiring investigation</p></div><div className="overflow-x-auto rounded-xl border border-[#e3e6e9]"><table className="w-full min-w-155 border-collapse text-left"><thead className="bg-[#fbfcfd] text-[9px] uppercase text-[#6d7780]"><tr>{["Claim ID", "Patient", "Provider", "Risk", "Status", "Date"].map((heading) => <th key={heading} className="px-3 py-3 font-medium">{heading}</th>)}</tr></thead><tbody className="text-[11px] text-[#3b4249]">{alerts.length === 0 ? <tr><td colSpan={6} className="px-3 py-10 text-center text-[#9299a0]">No recent fraud alerts.</td></tr> : alerts.map((alert) => <tr key={idOf(alert)} className="border-t border-[#e9ebed]"><td className="px-3 py-3 font-semibold">{text(alert, "claimId", "id")}</td><td className="px-3 py-3">{text(alert, "patientName", "patient", "memberName")}</td><td className="px-3 py-3">{text(alert, "providerName", "provider")}</td><td className="px-3 py-3">{text(alert, "severity", "riskLevel", "risk")}</td><td className="px-3 py-3">{text(alert, "status")}</td><td className="px-3 py-3">{text(alert, "createdAt", "timestamp", "date")}</td></tr>)}</tbody></table></div></article>
+        <div className="space-y-4"><article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 sm:p-6"><h2 className="text-sm font-semibold">High-risk patient scores</h2>{patients.length === 0 ? <p className="mt-5 text-sm text-[#9299a0]">No high-risk patients returned.</p> : <><select value={selectedPatient} onChange={(event) => setSelectedPatient(Number(event.target.value))} className="mt-4 w-full rounded-lg border border-[#e4e7ea] bg-white px-2 py-2 text-xs">{patients.map((patient, index) => <option key={index} value={index}>{text(patient, "patientName", "name", "patientId")}</option>)}</select><p className="mt-6 text-center text-5xl font-semibold">{score(selected)}</p><p className="mt-2 text-center text-xs text-[#707981]">{text(selected, "detail", "reason", "explanation")}</p></>}</article><article className="rounded-2xl border border-[#e7e9ec] bg-white p-5 sm:p-6"><h2 className="text-sm font-semibold">Risk score statistics</h2><div className="mt-4 space-y-3 text-xs text-[#65707a]">{Object.entries(riskStatistics ?? {}).slice(0, 6).map(([key, item]) => <div key={key} className="flex justify-between border-b border-[#edf0f2] pb-2"><span>{key}</span><strong className="text-[#343b42]">{String(item)}</strong></div>)}</div></article></div></section></>}
+  </div></div></DashboardLayout>;
 }

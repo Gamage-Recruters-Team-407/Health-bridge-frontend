@@ -3,6 +3,8 @@
 import React, { useState, useMemo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Bed, BedStatus, WardType, PatientInfo, DepartmentOccupancy, BedOverviewStats } from '@/types/bed';
+import { departmentService } from '@/services/departmentService';
+import { Department } from '@/types/department';
 import {
   Bed as BedIcon,
   CheckCircle2,
@@ -43,6 +45,7 @@ export default function BedManagementPage() {
   // Backend Stats & Occupancy
   const [backendStats, setBackendStats] = useState<BedOverviewStats | null>(null);
   const [deptOccupancies, setDeptOccupancies] = useState<DepartmentOccupancy[]>([]);
+  const [departments, setDepartments] = useState<Department[]>([]);
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -126,6 +129,26 @@ export default function BedManagementPage() {
     fetchBedData();
   }, [fetchBedData]);
 
+  // Fetch Department List from Backend API
+  React.useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const data = await departmentService.getAll();
+        if (data && Array.isArray(data) && data.length > 0) {
+          setDepartments(data);
+        }
+      } catch (err) {
+        console.warn('Backend department list fetch failed for bed management, using fallback:', err);
+      }
+    };
+    fetchDepartments();
+  }, []);
+
+  // Dynamic Ward/Department Tabs from Backend
+  const availableWards = useMemo(() => {
+    return departments.map((d) => d.name).filter(Boolean);
+  }, [departments]);
+
   // Compute Overall Stats (Fallback to local memo if backendStats is null)
   const stats = useMemo(() => {
     if (backendStats) {
@@ -194,12 +217,12 @@ export default function BedManagementPage() {
 
     const newPatient: PatientInfo = {
       id: allocateForm.patientId || `PID-${Math.floor(10000 + Math.random() * 90000)}`,
-      firstName: allocateForm.firstName || 'New',
-      lastName: allocateForm.lastName || 'Patient',
-      dob: '01 Jan 1990',
-      age: 34,
+      firstName: allocateForm.firstName || '',
+      lastName: allocateForm.lastName || '',
+      dob: '',
+      age: 0,
       gender: 'Male',
-      assignedDoctor: allocateForm.assignedDoctor || 'Dr. Nimal Perera',
+      assignedDoctor: allocateForm.assignedDoctor || '',
       admissionDate: allocateForm.admissionDate,
       expDischarge: allocateForm.expDischarge,
       admissionNotes: allocateForm.admissionNotes
@@ -426,7 +449,7 @@ export default function BedManagementPage() {
               placeholder="Search beds, patients..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 bg-slate-100/80 focus:bg-white text-xs rounded-full border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+              className="w-full pl-10 pr-4 py-2 bg-slate-100/80 focus:bg-white text-xs font-semibold text-slate-900 placeholder:text-slate-400 rounded-full border border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none transition-all"
             />
           </div>
 
@@ -505,26 +528,24 @@ export default function BedManagementPage() {
 
         {/* Ward Navigation Tabs */}
         <div className="border-b border-slate-200 flex items-center gap-6 overflow-x-auto scrollbar-none text-xs font-bold text-slate-500">
-          {(['ICU', 'General Ward', 'Emergency Ward', 'Cardiology', 'Pediatrics', 'Maternity'] as WardType[]).map(
-            (ward) => (
-              <button
-                key={ward}
-                type="button"
-                onClick={() => {
-                  setSelectedWard(ward);
-                  setCurrentPage(1);
-                }}
-                className={`pb-3.5 transition-colors relative shrink-0 ${
-                  selectedWard === ward ? 'text-blue-700 font-extrabold' : 'hover:text-slate-800'
-                }`}
-              >
-                {ward}
-                {selectedWard === ward && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-full"></span>
-                )}
-              </button>
-            )
-          )}
+          {availableWards.map((ward) => (
+            <button
+              key={ward}
+              type="button"
+              onClick={() => {
+                setSelectedWard(ward);
+                setCurrentPage(1);
+              }}
+              className={`pb-3.5 transition-colors relative shrink-0 ${
+                selectedWard === ward ? 'text-blue-700 font-extrabold' : 'hover:text-slate-800'
+              }`}
+            >
+              {ward}
+              {selectedWard === ward && (
+                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-700 rounded-full"></span>
+              )}
+            </button>
+          ))}
         </div>
 
         {/* Active Ward Section Title */}
@@ -744,7 +765,8 @@ export default function BedManagementPage() {
         {/* Pagination Footer */}
         <div className="px-4 py-4 bg-white rounded-2xl border border-slate-200/80 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">
           <div>
-            Showing 1-{filteredBeds.length} of 48 beds
+            Showing {filteredBeds.length === 0 ? 0 : (currentPage - 1) * itemsPerPage + 1} to{' '}
+            {Math.min(currentPage * itemsPerPage, filteredBeds.length)} of {filteredBeds.length} beds
           </div>
 
           <div className="flex items-center gap-1">
@@ -883,18 +905,14 @@ export default function BedManagementPage() {
                 {/* Assigned Doctor */}
                 <div>
                   <label className="block text-slate-500 font-semibold mb-1">Assigned Doctor</label>
-                  <select
+                  <input
+                    type="text"
+                    placeholder="e.g. Dr. Jane Smith"
                     value={allocateForm.assignedDoctor}
                     onChange={(e) => setAllocateForm({ ...allocateForm, assignedDoctor: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white"
+                    className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none"
                     required
-                  >
-                    <option value="">Select Doctor...</option>
-                    <option value="Dr. Nimal Perera">Dr. Nimal Perera</option>
-                    <option value="Dr. Sarah Fernando">Dr. Sarah Fernando</option>
-                    <option value="Dr. Ayesha Silva">Dr. Ayesha Silva</option>
-                    <option value="Dr. Smith">Dr. Smith</option>
-                  </select>
+                  />
                 </div>
 
                 {/* Admission Date & Exp. Discharge */}
@@ -1012,16 +1030,16 @@ export default function BedManagementPage() {
                     <label className="block text-slate-500 font-semibold mb-1">Destination Ward *</label>
                     <select
                       value={transferForm.destinationWard}
-                      onChange={(e) => setTransferForm({ ...transferForm, destinationWard: e.target.value as any })}
+                      onChange={(e) => setTransferForm({ ...transferForm, destinationWard: e.target.value })}
                       className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white"
                       required
                     >
                       <option value="">Select ward</option>
-                      <option value="General Ward">General Ward</option>
-                      <option value="ICU">ICU</option>
-                      <option value="Emergency Ward">Emergency Ward</option>
-                      <option value="Cardiology">Cardiology</option>
-                      <option value="Pediatrics">Pediatrics</option>
+                      {availableWards.map((ward) => (
+                        <option key={ward} value={ward}>
+                          {ward}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -1174,15 +1192,14 @@ export default function BedManagementPage() {
                   <label className="block text-slate-600 font-semibold mb-1">Ward *</label>
                   <select
                     value={addBedForm.ward}
-                    onChange={(e) => setAddBedForm({ ...addBedForm, ward: e.target.value as WardType })}
+                    onChange={(e) => setAddBedForm({ ...addBedForm, ward: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
                   >
-                    <option value="ICU">ICU</option>
-                    <option value="General Ward">General Ward</option>
-                    <option value="Emergency Ward">Emergency Ward</option>
-                    <option value="Cardiology">Cardiology</option>
-                    <option value="Pediatrics">Pediatrics</option>
-                    <option value="Maternity">Maternity</option>
+                    {availableWards.map((ward) => (
+                      <option key={ward} value={ward}>
+                        {ward}
+                      </option>
+                    ))}
                   </select>
                 </div>
               </div>

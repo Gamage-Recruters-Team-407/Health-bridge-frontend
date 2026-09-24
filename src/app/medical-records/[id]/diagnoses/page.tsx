@@ -444,13 +444,17 @@ export default function DiagnosisManagementPage({
   );
 
 
+  const isDoctor =
+    currentUser?.role
+    === "DOCTOR";
+
+
   const canModify =
     Boolean(
-      currentUser?.role
-      === "DOCTOR"
+      isDoctor
       && medicalRecord
       && medicalRecord.doctorId
-      === currentUser.id
+      === currentUser?.id
     );
 
 
@@ -576,6 +580,18 @@ export default function DiagnosisManagementPage({
 
         setError(
           "Diagnosis name and diagnosed date are required."
+        );
+
+        return;
+      }
+
+
+      if (
+        diagnosedDate > today()
+      ) {
+
+        setError(
+          "Diagnosed date cannot be in the future."
         );
 
         return;
@@ -818,7 +834,18 @@ export default function DiagnosisManagementPage({
             href={
               detailsHref
             }
-            className="
+            className={
+              isDoctor
+                ? `
+              inline-flex
+              items-center
+              gap-2
+              text-sm
+              font-semibold
+              text-teal-600
+              hover:text-teal-700
+            `
+                : `
               inline-flex
               items-center
               gap-2
@@ -826,7 +853,8 @@ export default function DiagnosisManagementPage({
               font-semibold
               text-blue-600
               hover:text-blue-700
-            "
+            `
+            }
           >
             <ArrowLeft
               className="
@@ -849,7 +877,20 @@ export default function DiagnosisManagementPage({
           >
 
             <div
-              className="
+              className={
+              isDoctor
+                ? `
+                flex
+                h-12
+                w-12
+                shrink-0
+                items-center
+                justify-center
+                rounded-2xl
+                bg-teal-50
+                text-teal-600
+              `
+                : `
                 flex
                 h-12
                 w-12
@@ -859,7 +900,8 @@ export default function DiagnosisManagementPage({
                 rounded-2xl
                 bg-indigo-50
                 text-indigo-600
-              "
+              `
+            }
             >
               <Stethoscope
                 className="
@@ -1022,13 +1064,23 @@ export default function DiagnosisManagementPage({
             >
 
               <Loader2
-                className="
+                className={
+              isDoctor
+                ? `
+                  mx-auto
+                  h-8
+                  w-8
+                  animate-spin
+                  text-teal-600
+                `
+                : `
                   mx-auto
                   h-8
                   w-8
                   animate-spin
                   text-indigo-600
-                "
+                `
+            }
               />
 
 
@@ -1171,14 +1223,25 @@ export default function DiagnosisManagementPage({
               {canModify && (
 
                 <section
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    rounded-2xl
+                    border
+                    border-teal-100
+                    bg-white
+                    p-5
+                    shadow-sm
+                  `
+                : `
                     rounded-2xl
                     border
                     border-indigo-100
                     bg-white
                     p-5
                     shadow-sm
-                  "
+                  `
+            }
                 >
 
                   <div
@@ -1299,7 +1362,22 @@ export default function DiagnosisManagementPage({
                             )
                         }
                         placeholder="e.g. Essential Hypertension"
-                        className="
+                        className={
+              isDoctor
+                ? `
+                          w-full
+                          rounded-xl
+                          border
+                          border-slate-200
+                          px-3
+                          py-2.5
+                          text-sm
+                          outline-none
+                          focus:border-teal-500
+                          focus:ring-2
+                          focus:ring-teal-100
+                        `
+                : `
                           w-full
                           rounded-xl
                           border
@@ -1311,7 +1389,8 @@ export default function DiagnosisManagementPage({
                           focus:border-indigo-500
                           focus:ring-2
                           focus:ring-indigo-100
-                        "
+                        `
+            }
                       />
 
                     </div>
@@ -1338,6 +1417,9 @@ export default function DiagnosisManagementPage({
                         value={
                           diagnosedDate
                         }
+                        max={
+                          today()
+                        }
                         onChange={
                           (
                             event
@@ -1346,7 +1428,22 @@ export default function DiagnosisManagementPage({
                               event.target.value
                             )
                         }
-                        className="
+                        className={
+              isDoctor
+                ? `
+                          w-full
+                          rounded-xl
+                          border
+                          border-slate-200
+                          px-3
+                          py-2.5
+                          text-sm
+                          outline-none
+                          focus:border-teal-500
+                          focus:ring-2
+                          focus:ring-teal-100
+                        `
+                : `
                           w-full
                           rounded-xl
                           border
@@ -1358,7 +1455,8 @@ export default function DiagnosisManagementPage({
                           focus:border-indigo-500
                           focus:ring-2
                           focus:ring-indigo-100
-                        "
+                        `
+            }
                       />
 
                     </div>
@@ -1392,7 +1490,23 @@ export default function DiagnosisManagementPage({
                               event.target.value
                             )
                         }
-                        className="
+                        className={
+              isDoctor
+                ? `
+                          w-full
+                          rounded-xl
+                          border
+                          border-slate-200
+                          bg-white
+                          px-3
+                          py-2.5
+                          text-sm
+                          outline-none
+                          focus:border-teal-500
+                          focus:ring-2
+                          focus:ring-teal-100
+                        `
+                : `
                           w-full
                           rounded-xl
                           border
@@ -1405,7 +1519,8 @@ export default function DiagnosisManagementPage({
                           focus:border-indigo-500
                           focus:ring-2
                           focus:ring-indigo-100
-                        "
+                        `
+            }
                       >
 
                         <option value="">
@@ -1467,7 +1582,24 @@ export default function DiagnosisManagementPage({
                             )
                         }
                         placeholder="Additional diagnosis details..."
-                        className="
+                        className={
+              isDoctor
+                ? `
+                          w-full
+                          resize-y
+                          rounded-xl
+                          border
+                          border-slate-200
+                          px-3
+                          py-2.5
+                          text-sm
+                          leading-6
+                          outline-none
+                          focus:border-teal-500
+                          focus:ring-2
+                          focus:ring-teal-100
+                        `
+                : `
                           w-full
                           resize-y
                           rounded-xl
@@ -1481,7 +1613,8 @@ export default function DiagnosisManagementPage({
                           focus:border-indigo-500
                           focus:ring-2
                           focus:ring-indigo-100
-                        "
+                        `
+            }
                       />
 
                     </div>
@@ -1502,7 +1635,26 @@ export default function DiagnosisManagementPage({
                             .trim()
                           || !diagnosedDate
                         }
-                        className="
+                        className={
+              isDoctor
+                ? `
+                          inline-flex
+                          items-center
+                          justify-center
+                          gap-2
+                          rounded-xl
+                          bg-teal-600
+                          px-5
+                          py-2.5
+                          text-sm
+                          font-semibold
+                          text-white
+                          transition
+                          hover:bg-teal-700
+                          disabled:cursor-not-allowed
+                          disabled:opacity-50
+                        `
+                : `
                           inline-flex
                           items-center
                           justify-center
@@ -1518,7 +1670,8 @@ export default function DiagnosisManagementPage({
                           hover:bg-indigo-700
                           disabled:cursor-not-allowed
                           disabled:opacity-50
-                        "
+                        `
+            }
                       >
 
                         {submitting
@@ -1591,11 +1744,19 @@ export default function DiagnosisManagementPage({
                 >
 
                   <Stethoscope
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      h-5
+                      w-5
+                      text-teal-600
+                    `
+                : `
                       h-5
                       w-5
                       text-indigo-600
-                    "
+                    `
+            }
                   />
 
 
@@ -1611,7 +1772,18 @@ export default function DiagnosisManagementPage({
 
 
                   <span
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      rounded-full
+                      bg-teal-50
+                      px-2.5
+                      py-1
+                      text-xs
+                      font-bold
+                      text-teal-700
+                    `
+                : `
                       rounded-full
                       bg-indigo-50
                       px-2.5
@@ -1619,7 +1791,8 @@ export default function DiagnosisManagementPage({
                       text-xs
                       font-bold
                       text-indigo-700
-                    "
+                    `
+            }
                   >
                     {diagnoses.length}
                   </span>
@@ -1696,13 +1869,23 @@ export default function DiagnosisManagementPage({
                               key={
                                 diagnosis.id
                               }
-                              className="
+                              className={
+              isDoctor
+                ? `
+                                rounded-2xl
+                                border
+                                border-teal-100
+                                bg-teal-50/50
+                                p-4
+                              `
+                : `
                                 rounded-2xl
                                 border
                                 border-indigo-100
                                 bg-indigo-50/50
                                 p-4
-                              "
+                              `
+            }
                             >
 
                               <div
@@ -1717,10 +1900,17 @@ export default function DiagnosisManagementPage({
                                 <div>
 
                                   <h3
-                                    className="
+                                    className={
+              isDoctor
+                ? `
+                                      font-bold
+                                      text-teal-950
+                                    `
+                : `
                                       font-bold
                                       text-indigo-950
-                                    "
+                                    `
+            }
                                   >
                                     {
                                       diagnosis.diagnosisName
@@ -1729,11 +1919,19 @@ export default function DiagnosisManagementPage({
 
 
                                   <p
-                                    className="
+                                    className={
+              isDoctor
+                ? `
+                                      mt-1
+                                      text-xs
+                                      text-teal-500
+                                    `
+                : `
                                       mt-1
                                       text-xs
                                       text-indigo-500
-                                    "
+                                    `
+            }
                                   >
                                     {formatDate(
                                       diagnosis.diagnosedDate
@@ -1746,7 +1944,19 @@ export default function DiagnosisManagementPage({
                                 {diagnosis.severity && (
 
                                   <span
-                                    className="
+                                    className={
+              isDoctor
+                ? `
+                                      rounded-full
+                                      bg-white
+                                      px-2.5
+                                      py-1
+                                      text-[10px]
+                                      font-bold
+                                      uppercase
+                                      text-teal-600
+                                    `
+                : `
                                       rounded-full
                                       bg-white
                                       px-2.5
@@ -1755,7 +1965,8 @@ export default function DiagnosisManagementPage({
                                       font-bold
                                       uppercase
                                       text-indigo-600
-                                    "
+                                    `
+            }
                                   >
                                     {
                                       diagnosis.severity
@@ -1769,12 +1980,21 @@ export default function DiagnosisManagementPage({
                               {diagnosis.description && (
 
                                 <p
-                                  className="
+                                  className={
+              isDoctor
+                ? `
+                                    mt-3
+                                    text-sm
+                                    leading-6
+                                    text-teal-700
+                                  `
+                : `
                                     mt-3
                                     text-sm
                                     leading-6
                                     text-indigo-700
-                                  "
+                                  `
+            }
                                 >
                                   {
                                     diagnosis.description
@@ -1788,7 +2008,18 @@ export default function DiagnosisManagementPage({
                                 && (
 
                                   <div
-                                    className="
+                                    className={
+              isDoctor
+                ? `
+                                      mt-4
+                                      flex
+                                      flex-wrap
+                                      gap-2
+                                      border-t
+                                      border-teal-100
+                                      pt-3
+                                    `
+                : `
                                       mt-4
                                       flex
                                       flex-wrap
@@ -1796,7 +2027,8 @@ export default function DiagnosisManagementPage({
                                       border-t
                                       border-indigo-100
                                       pt-3
-                                    "
+                                    `
+            }
                                   >
 
                                     <button
@@ -1807,7 +2039,24 @@ export default function DiagnosisManagementPage({
                                             diagnosis
                                           )
                                       }
-                                      className="
+                                      className={
+              isDoctor
+                ? `
+                                        inline-flex
+                                        items-center
+                                        gap-1.5
+                                        rounded-lg
+                                        border
+                                        border-teal-200
+                                        bg-white
+                                        px-3
+                                        py-2
+                                        text-xs
+                                        font-semibold
+                                        text-teal-700
+                                        hover:bg-teal-50
+                                      `
+                : `
                                         inline-flex
                                         items-center
                                         gap-1.5
@@ -1821,7 +2070,8 @@ export default function DiagnosisManagementPage({
                                         font-semibold
                                         text-indigo-700
                                         hover:bg-indigo-50
-                                      "
+                                      `
+            }
                                     >
                                       <Pencil
                                         className="

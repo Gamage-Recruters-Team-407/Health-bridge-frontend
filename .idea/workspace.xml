@@ -5,11 +5,20 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="3cab0e9f-9e0f-4444-b079-bec21acedba7" name="Changes" comment="">
+<<<<<<< HEAD
+      <change afterPath="$PROJECT_DIR$/src/app/pharmacy/inventory/inventory/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/app/pharmacy/dashboard/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/pharmacy/dashboard/page.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/components/ui/Sidebar.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/components/ui/Sidebar.tsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/lib/auth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/lib/auth.ts" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/services/pharmacyService.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/services/pharmacyService.ts" afterDir="false" />
+=======
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/app/appointments/[id]/page.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/app/appointments/[id]/page.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/features/doctor/components/DoctorAppointmentManager.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/doctor/components/DoctorAppointmentManager.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/features/doctor/components/DoctorShell.tsx" beforeDir="false" afterPath="$PROJECT_DIR$/src/features/doctor/components/DoctorShell.tsx" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/src/hooks/useAuth.ts" beforeDir="false" afterPath="$PROJECT_DIR$/src/hooks/useAuth.ts" afterDir="false" />
+>>>>>>> 86968a85e262a531503ab17e9f003d686fa4e5e1
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -30,6 +39,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
+<<<<<<< HEAD
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;ASKED_SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;SHARE_PROJECT_CONFIGURATION_FILES&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;feature/pharmacy&quot;,
+    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;D:/Gamage Work/Healthbridge/Health-bridge-frontend&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;ts.external.directory.path&quot;: &quot;D:\\Gamage Work\\Healthbridge\\Health-bridge-frontend\\node_modules\\typescript\\lib&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+=======
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ASKED_SHARE_PROJECT_CONFIGURATION_FILES": "true",
@@ -47,6 +75,7 @@
     "vue.rearranger.settings.migration": "true"
   }
 }]]></component>
+>>>>>>> 86968a85e262a531503ab17e9f003d686fa4e5e1
   <component name="RecentsManager">
     <key name="MoveFile.RECENT_KEYS">
       <recent name="D:\Gamage Work\Healthbridge\Health-bridge-frontend\src\app\pharmacy\dashboard" />
@@ -72,6 +101,10 @@
       <workItem from="1789274800508" duration="1403000" />
       <workItem from="1789447236731" duration="5779000" />
       <workItem from="1789533765941" duration="587000" />
+<<<<<<< HEAD
+      <workItem from="1789620164369" duration="1926000" />
+=======
+>>>>>>> 86968a85e262a531503ab17e9f003d686fa4e5e1
     </task>
     <servers />
   </component>
