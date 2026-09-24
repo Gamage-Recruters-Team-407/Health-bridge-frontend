@@ -43,6 +43,7 @@ export interface LabTestOption {
   id: string;
   code: string;
   name: string;
+  shortName: string;
   panel: string;
   price: number;
   turnaround: string;
@@ -55,6 +56,7 @@ export const LAB_TEST_OPTIONS: LabTestOption[] = [
     id: "CBC",
     code: "LB-101",
     name: "Complete Blood Count (CBC / FBC)",
+    shortName: "CBC / FBC",
     panel: "Hematology",
     price: 1500,
     turnaround: "2 - 4 Hours",
@@ -65,6 +67,7 @@ export const LAB_TEST_OPTIONS: LabTestOption[] = [
     id: "LIPID_GLUCOSE",
     code: "LB-204",
     name: "Fasting Blood Sugar & Lipid Profile",
+    shortName: "Lipid Profile & Glucose",
     panel: "Biochemistry",
     price: 2800,
     turnaround: "4 - 6 Hours",
@@ -75,6 +78,7 @@ export const LAB_TEST_OPTIONS: LabTestOption[] = [
     id: "THYROID_PANEL",
     code: "LB-315",
     name: "Comprehensive Thyroid Panel (TSH, FT3, FT4)",
+    shortName: "Thyroid Panel (TSH/FT3/FT4)",
     panel: "Endocrinology",
     price: 4200,
     turnaround: "Same Day",
@@ -85,6 +89,7 @@ export const LAB_TEST_OPTIONS: LabTestOption[] = [
     id: "LFT_KFT",
     code: "LB-422",
     name: "Liver (LFT) & Kidney (KFT) Function Screening",
+    shortName: "Liver & Kidney (LFT/KFT)",
     panel: "Organ Function",
     price: 5600,
     turnaround: "6 - 8 Hours",
@@ -95,6 +100,7 @@ export const LAB_TEST_OPTIONS: LabTestOption[] = [
     id: "EXECUTIVE_HEALTH",
     code: "LB-580",
     name: "Full Body Executive Diagnostic & Wellness Screen",
+    shortName: "Full Body Executive Diagnostic",
     panel: "Advanced Diagnostic",
     price: 7800,
     turnaround: "24 Hours",
@@ -170,7 +176,7 @@ export default function PaymentsPage() {
     if (tests.length === 1) {
       setDescription(`Laboratory Test - ${tests[0].name}`);
     } else if (tests.length > 1) {
-      setDescription(`Laboratory Tests (${tests.length}): ${tests.map((t) => t.name).join(", ")}`);
+      setDescription(`Laboratory Tests (${tests.length}): ${tests.map((t) => t.shortName).join(", ")}`);
     } else {
       setDescription("Laboratory Test");
     }
@@ -789,13 +795,33 @@ export default function PaymentsPage() {
                       <Lock className="w-3 h-3" /> Fixed
                     </span>
                   </div>
-                  <input
-                    type="text"
-                    readOnly
-                    disabled
-                    value={description}
-                    className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-100/90 text-slate-800 font-semibold cursor-not-allowed select-none"
-                  />
+                  {category === "LAB_TEST" && selectedLabTests.length > 1 ? (
+                    <div className="w-full p-2.5 rounded-2xl border border-slate-200 bg-slate-100/90 flex flex-wrap items-center gap-1.5 min-h-[52px]">
+                      <span className="text-xs font-bold text-blue-700 mr-1 shrink-0">
+                        {selectedLabTests.length} Tests Selected:
+                      </span>
+                      {selectedLabTests.map((t) => (
+                        <span
+                          key={t.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-2xs"
+                        >
+                          <span className="font-bold">{t.shortName}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-blue-600 font-mono font-bold">
+                            RS {t.price.toLocaleString()}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      readOnly
+                      disabled
+                      value={description}
+                      className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-100/90 text-slate-800 font-semibold cursor-not-allowed select-none"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -985,17 +1011,58 @@ export default function PaymentsPage() {
             </div>
 
             {/* Payment Summary Box */}
-            <div className="my-6 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-left max-w-md mx-auto">
-              <div>
-                <div className="text-xs text-slate-500 font-medium">Service</div>
-                <div className="text-sm font-bold text-slate-900 truncate">{description}</div>
-                <div className="text-xs text-slate-400 font-mono mt-0.5">{maskedCard}</div>
+            {category === "LAB_TEST" && selectedLabTests.length > 1 ? (
+              <div className="my-6 rounded-2xl bg-slate-50 border border-slate-200/90 text-left max-w-lg mx-auto overflow-hidden shadow-sm">
+                <div className="p-3.5 bg-blue-50/70 border-b border-blue-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-900">
+                      Laboratory Tests ({selectedLabTests.length} Tests)
+                    </span>
+                  </div>
+                  <span className="text-sm font-black text-blue-700 font-mono">
+                    Total: RS {Number(amount).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="p-3 space-y-2 max-h-48 overflow-y-auto divide-y divide-slate-100">
+                  {selectedLabTests.map((t) => (
+                    <div key={t.id} className="pt-2 first:pt-0 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                        <span className="font-semibold text-slate-800 truncate">{t.name}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600 shrink-0 font-bold">
+                          {t.code}
+                        </span>
+                      </div>
+                      <span className="font-bold text-slate-700 font-mono shrink-0">
+                        RS {t.price.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="px-3.5 py-2.5 bg-slate-100/60 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+                  <span>Card Used: <span className="font-mono text-slate-700 font-semibold">{maskedCard}</span></span>
+                  <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Verified Order
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-slate-500 font-medium">Total Due</div>
-                <div className="text-lg font-black text-blue-600">RS {Number(amount).toLocaleString()}</div>
+            ) : (
+              <div className="my-6 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-left max-w-lg mx-auto shadow-sm">
+                <div className="min-w-0 flex-1 pr-4">
+                  <div className="text-xs text-slate-500 font-medium">Service</div>
+                  <div className="text-sm font-bold text-slate-900 truncate">{description}</div>
+                  <div className="text-xs text-slate-400 font-mono mt-0.5">{maskedCard}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-slate-500 font-medium">Total Due</div>
+                  <div className="text-lg font-black text-blue-600">RS {Number(amount).toLocaleString()}</div>
+                </div>
               </div>
-            </div>
+            )}
 
             <form onSubmit={handleConfirmOtp} className="space-y-6 max-w-md mx-auto">
               {/* 6 Digit Input Group */}
@@ -1095,9 +1162,9 @@ export default function PaymentsPage() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Service Description</span>
-                <span className="text-sm font-semibold text-slate-900">
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-xs text-slate-500 shrink-0 mt-0.5">Service Description</span>
+                <span className="text-sm font-semibold text-slate-900 text-right min-w-0 flex-1 break-words">
                   {confirmedPayment.description}
                 </span>
               </div>
