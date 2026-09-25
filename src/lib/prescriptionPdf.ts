@@ -41,7 +41,16 @@ const WHITE: [number, number, number] = [255, 255, 255];
  */
 export async function generatePrescriptionPdf(prescription: Prescription): Promise<void> {
   const qrPayload = buildQrPayload(prescription);
-  const qrDataUrl = await QRCode.toDataURL(qrPayload, { margin: 1, width: 240 });
+  // ✅ FIXED: margin was 1 module — well below the minimum 4-module "quiet zone"
+  // the QR spec requires. With too little blank border, phone cameras can't
+  // lock onto the QR's finder patterns and report "no data found" even though
+  // the code is technically valid. Bumped width too, for a sharper image before
+  // it gets scaled down onto the page.
+  const qrDataUrl = await QRCode.toDataURL(qrPayload, {
+    margin: 4,
+    width: 320,
+    errorCorrectionLevel: "H",
+  });
 
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
@@ -74,7 +83,7 @@ export async function generatePrescriptionPdf(prescription: Prescription): Promi
   y += 24;
 
   // ---------- Info blocks + QR ----------
-  const qrSize = 110;
+  const qrSize = 120; // ✅ bumped slightly for extra scan reliability now that the quiet zone is fixed
   const gap = 16;
   const infoAreaWidth = pageWidth - marginX * 2 - qrSize - gap;
   const colWidth = (infoAreaWidth - gap) / 2;
@@ -105,10 +114,10 @@ export async function generatePrescriptionPdf(prescription: Prescription): Promi
     prescription.diagnosis,
   ]);
 
-  infoBlock(col2X, ["PRESCRIBED BY", "DATE ISSUED", "VALID UNTIL"], [
+  // ✅ FIXED: "VALID UNTIL" removed from the printed PDF per request.
+  infoBlock(col2X, ["PRESCRIBED BY", "DATE ISSUED"], [
     prescription.doctorName,
     prescription.createdAt ? new Date(prescription.createdAt).toLocaleDateString() : "-",
-    prescription.validUntil ? new Date(prescription.validUntil).toLocaleDateString() : "-",
   ]);
 
   doc.addImage(qrDataUrl, "PNG", qrX, y, qrSize, qrSize);
