@@ -1,13 +1,41 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { prescriptionService } from "@/services/prescriptionService";
 import { Prescription } from "@/types/prescription";
 import { useAuth } from "@/hooks/useAuth";
-import { FileText, Download, Eye, Pencil, Trash2, Search, Plus, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
+import ConfirmDialog from "@/components/ui/ConfirmDialog";
+import {
+  FileText,
+  Download,
+  Eye,
+  Pencil,
+  Trash2,
+  Search,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  Loader2,
+  X,
+} from "lucide-react";
 
 const ITEMS_PER_PAGE = 5;
+
+function StatusBadge({ status }: { status?: string }) {
+  const normalized = (status || "ACTIVE").toUpperCase();
+  const styles: Record<string, string> = {
+    ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-100",
+    COMPLETED: "bg-blue-50 text-blue-700 ring-blue-100",
+    CANCELLED: "bg-rose-50 text-rose-700 ring-rose-100",
+  };
+  const style = styles[normalized] || "bg-slate-100 text-slate-600 ring-slate-200";
+  return (
+    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${style}`}>
+      {normalized}
+    </span>
+  );
+}
 
 export default function PrescriptionsPage() {
   const { user } = useAuth();
@@ -16,6 +44,8 @@ export default function PrescriptionsPage() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  // ✅ FIXED: delete now goes through a themed ConfirmDialog instead of window.confirm
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user?.id) {
@@ -31,7 +61,7 @@ export default function PrescriptionsPage() {
     try {
       setLoading(true);
       let data: Prescription[] = [];
-      
+
       if (user?.role === "DOCTOR") {
         data = await prescriptionService.getPrescriptionsByDoctorId(user.id);
       } else if (user?.role === "PATIENT") {
@@ -39,7 +69,7 @@ export default function PrescriptionsPage() {
       } else {
         data = await prescriptionService.getAllPrescriptions();
       }
-      
+
       setPrescriptions(data);
     } catch (error) {
       console.error("Error fetching prescriptions:", error);
@@ -48,12 +78,13 @@ export default function PrescriptionsPage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm("Are you sure you want to delete this prescription?")) return;
-    setDeletingId(id);
+  const handleConfirmDelete = async () => {
+    if (!confirmDeleteId) return;
+    setDeletingId(confirmDeleteId);
     try {
-      await prescriptionService.deletePrescription(id);
-      setPrescriptions((prev) => prev.filter((p) => p.id !== id));
+      await prescriptionService.deletePrescription(confirmDeleteId);
+      setPrescriptions((prev) => prev.filter((p) => p.id !== confirmDeleteId));
+      setConfirmDeleteId(null);
     } catch (error) {
       alert("Failed to delete prescription.");
     } finally {
@@ -61,15 +92,21 @@ export default function PrescriptionsPage() {
     }
   };
 
-  const filtered = prescriptions.filter((p) =>
-    p.patientName.toLowerCase().includes(search.toLowerCase()) ||
-    p.prescriptionNumber.toLowerCase().includes(search.toLowerCase())
-  );
-  
+  const filtered = useMemo(() => {
+    const term = search.trim().toLowerCase();
+    if (!term) return prescriptions;
+    return prescriptions.filter(
+      (p) =>
+        p.patientName?.toLowerCase().includes(term) ||
+        p.prescriptionNumber?.toLowerCase().includes(term) ||
+        p.doctorName?.toLowerCase().includes(term)
+    );
+  }, [prescriptions, search]);
+
   const indexOfLast = currentPage * ITEMS_PER_PAGE;
   const indexOfFirst = indexOfLast - ITEMS_PER_PAGE;
   const currentItems = filtered.slice(indexOfFirst, indexOfLast);
-  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
 
   useEffect(() => {
     setCurrentPage(1);
@@ -82,6 +119,8 @@ export default function PrescriptionsPage() {
       </div>
     );
   }
+
+  const prescriptionBeingDeleted = prescriptions.find((p) => p.id === confirmDeleteId);
 
   return (
     <div className="space-y-6">
@@ -100,15 +139,31 @@ export default function PrescriptionsPage() {
         )}
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-        <input
-          type="text"
-          placeholder="Search patient or Rx number..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-        />
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="relative max-w-md flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by patient, doctor, or Rx number..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+          />
+          {search && (
+            <button
+              type="button"
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              aria-label="Clear search"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+        <p className="text-xs font-medium text-slate-500">
+          Showing <span className="font-bold text-slate-700">{filtered.length}</span> of{" "}
+          <span className="font-bold text-slate-700">{prescriptions.length}</span> prescriptions
+        </p>
       </div>
 
       <div className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
@@ -117,11 +172,11 @@ export default function PrescriptionsPage() {
             <FileText className="h-12 w-12 text-slate-300" />
             <h3 className="mt-4 text-sm font-semibold text-slate-900">No prescriptions found</h3>
             <p className="mt-1 text-xs text-slate-500">
-              {user?.role === "PATIENT"
+              {search
+                ? "No prescriptions match your search."
+                : user?.role === "PATIENT"
                 ? "You don't have any prescriptions yet."
-                : prescriptions.length === 0
-                ? "No prescriptions in the system."
-                : "No prescriptions match your search."}
+                : "No prescriptions in the system."}
             </p>
           </div>
         ) : (
@@ -131,7 +186,10 @@ export default function PrescriptionsPage() {
                 <tr>
                   <th className="px-6 py-4 font-semibold">Rx Number</th>
                   <th className="px-6 py-4 font-semibold">Patient</th>
-                  <th className="px-6 py-4 font-semibold">Date</th>
+                  <th className="px-6 py-4 font-semibold">Doctor</th>
+                  <th className="px-6 py-4 font-semibold">Status</th>
+                  <th className="px-6 py-4 font-semibold">Date Issued</th>
+                  <th className="px-6 py-4 font-semibold">Valid Until</th>
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
                 </tr>
               </thead>
@@ -140,7 +198,14 @@ export default function PrescriptionsPage() {
                   <tr key={p.id} className="transition hover:bg-slate-50/80">
                     <td className="px-6 py-4 font-medium text-slate-900">{p.prescriptionNumber}</td>
                     <td className="px-6 py-4 text-slate-600">{p.patientName}</td>
+                    <td className="px-6 py-4 text-slate-600">{p.doctorName || "-"}</td>
+                    <td className="px-6 py-4">
+                      <StatusBadge status={p.status} />
+                    </td>
                     <td className="px-6 py-4 text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-slate-500">
+                      {p.validUntil ? new Date(p.validUntil).toLocaleDateString() : "-"}
+                    </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <Link
@@ -167,7 +232,7 @@ export default function PrescriptionsPage() {
                               <Pencil className="h-4 w-4" />
                             </Link>
                             <button
-                              onClick={() => handleDelete(p.id)}
+                              onClick={() => setConfirmDeleteId(p.id)}
                               disabled={deletingId === p.id}
                               className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
                               title="Delete"
@@ -188,7 +253,7 @@ export default function PrescriptionsPage() {
             </table>
           </div>
         )}
-        
+
         {totalPages > 1 && (
           <div className="flex items-center justify-between border-t border-slate-200 px-6 py-4">
             <p className="text-xs text-slate-500">
@@ -213,6 +278,19 @@ export default function PrescriptionsPage() {
           </div>
         )}
       </div>
+
+      <ConfirmDialog
+        isOpen={!!confirmDeleteId}
+        title="Delete this prescription?"
+        message={
+          prescriptionBeingDeleted
+            ? `This will permanently remove ${prescriptionBeingDeleted.prescriptionNumber} for ${prescriptionBeingDeleted.patientName}. This action cannot be undone.`
+            : "This action cannot be undone."
+        }
+        isLoading={!!deletingId}
+        onCancel={() => setConfirmDeleteId(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 }
