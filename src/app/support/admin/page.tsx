@@ -1,5 +1,5 @@
 "use client";
-
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
@@ -164,11 +164,28 @@ export default function AdminTicketsPage() {
     >
       {/* Left: ticket list pane */}
       <div className="flex w-[380px] shrink-0 flex-col border-r border-[#E1DFDD] bg-white">
-        <div className="mb-1 px-4 pt-3">
-          <h1 className="text-[15px] font-semibold text-[#242424]">Support tickets</h1>
-          <p className="mt-0.5 text-xs text-[#616161]">All tickets raised by patients across the platform.</p>
-        </div>
-            
+   <div className="flex items-center gap-3">
+  {/* Back + Title */}
+  <button
+    onClick={() => window.history.back()}
+    className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+    aria-label="Go back"
+  >
+    <ArrowLeft size={22} />
+  </button>
+
+  <h1 className="text-[15px] font-semibold text-[#242424]">
+    All Support Tickets
+  </h1>
+
+  {/* Support Documents */}
+  <Link
+    href="/support/admin/document"
+    className="ml-auto inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+  >
+    Support Documents
+  </Link>
+</div>   
         {/* Search Input Bar */}
         <div className="px-4 pt-2">
           <div className="relative flex items-center">
@@ -401,12 +418,7 @@ export default function AdminTicketsPage() {
               <p className="text-sm text-[#9A9A9A]">No feedback submitted.</p>
             )}
 
-            <Link
-  href="/support/admin/document"
-  className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700"
->
-  Support Documents
-</Link>
+            
 
           </div>
         </aside>

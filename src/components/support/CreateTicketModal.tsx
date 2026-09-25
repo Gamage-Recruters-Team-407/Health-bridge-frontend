@@ -2,6 +2,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { TICKET_CATEGORIES } from "@/constants/support";
 import { PaperclipIcon, XIcon } from "./icons";
 
@@ -32,6 +33,7 @@ export default function CreateTicketModal({
   const [error, setError] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const router = useRouter();
 
   const reset = () => {
     setSubject("");
@@ -72,6 +74,7 @@ export default function CreateTicketModal({
       );
 
       reset();
+      router.push("/support/patient");
     } catch (e) {
       setError(
         e instanceof Error ? e.message : "Failed to create ticket."

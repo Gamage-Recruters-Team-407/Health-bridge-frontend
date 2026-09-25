@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import Navbar from "@/components/ui/Navbar";
+import Sidebar from "@/components/ui/Sidebar";
 import {
   getAllSupportDocuments,
   uploadSupportDocument,
@@ -122,6 +124,7 @@ export default function SupportDocumentsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
+      
       <div className="mx-auto max-w-5xl">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
