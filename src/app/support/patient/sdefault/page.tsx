@@ -158,7 +158,7 @@ return (
     <div className="ml-64 min-h-screen">
 
       {/* Navbar */}
-     
+       <Navbar/>
 
       {/* Main Content */}
       <main className="p-6">
@@ -174,7 +174,7 @@ return (
               <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-md shadow-slate-200/50 ring-1 ring-slate-900/5">
 
                 {/* Header banner */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-[#0F6CBD] via-[#1B84D6] to-[#2E9BF0] px-6 py-8 sm:px-8">
+                <div className="relative overflow-hidden bg-gradient-to-br from-[#0F6CBD] via-[#1B84D6] to-[#2E9BF0] px-6 py-3 sm:px-8">
 
                   <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-sm" />
 
@@ -399,6 +399,7 @@ return (
                   </svg>
 
                 </Link>
+                
 
 
                 {/* Create Ticket Card */}

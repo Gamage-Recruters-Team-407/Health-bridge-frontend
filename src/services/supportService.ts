@@ -164,6 +164,18 @@ export function submitTicketFeedback(
   }).then(normalizeTicketFeedback);
 }
 
+
+export interface PublicFeedback {
+  userName: string;
+  rating: number;
+  comment?: string | null;
+  submittedAt?: string | null;
+}
+
+export function getPublicFeedback() {
+  return request<PublicFeedback[]>("/api/tickets/feedback/public");
+}
+
 // ---------- Admin endpoints ----------
 
 export function getAllTickets() {

@@ -170,7 +170,7 @@ setSelectedId((current) =>
   return (
       <div className="min-h-screen bg-slate-50">
       {/* Navbar spans full width, on top */}
-     
+   
     <div
       className="flex h-screen bg-white text-[#242424]"
       style={{ fontFamily: "'Segoe UI', Roboto, system-ui, sans-serif" }}
@@ -329,13 +329,7 @@ setSelectedId((current) =>
                       This conversation is closed. Create a new ticket if you need more help.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setModalOpen(true)}
-                    className="shrink-0 rounded-md bg-[#0F6CBD] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#0B5A9F]"
-                  >
-                    Create new ticket
-                  </button>
+               
                 </div>
 
                 <form onSubmit={handleFeedbackSubmit} className="mt-4 border-t border-emerald-200 pt-4">
