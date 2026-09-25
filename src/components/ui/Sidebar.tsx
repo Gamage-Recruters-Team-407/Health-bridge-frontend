@@ -26,6 +26,15 @@ import {
   ClipboardCheck,
   Video,
   LifeBuoy,
+  Building2,
+  Bed,
+  Wrench,
+  UserCog,
+  ClipboardList,
+  Plus,
+  AlertTriangle,
+  CalendarClock,
+  Truck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -62,6 +71,9 @@ const getNavGroups = (role: string): NavGroup[] => {
 
   // Admin & Super Admin
   if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
+    const isAdmin = roleUpper === "ADMIN";
+    const isSuperAdmin = roleUpper === "SUPER_ADMIN";
+
     return [
       {
         groupTitle: "Overview",
@@ -78,6 +90,13 @@ const getNavGroups = (role: string): NavGroup[] => {
           // ✅ FIXED: Compliance moved outside billing
           { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
+          ...(isAdmin
+            ? [
+                { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
+                { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
+                { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
+              ]
+            : []),
         ],
       },
       {
@@ -90,6 +109,9 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "System Admin",
         items: [
           { title: "Users", href: "/admin/users", icon: Users },
+          ...(isSuperAdmin
+            ? [{ title: "Staff Management", href: "/hospital-admin/staff-management", icon: UserCog }]
+            : []),
           { title: "Settings", href: "/admin/settings", icon: Settings },
           { title: "Support", href: "/support/admin", icon: LifeBuoy },
         ],
@@ -131,39 +153,33 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Telemedicine", href: "/telemedicine/history", icon: Video },
           { title: "Prescriptions", href: "/prescriptions", icon: FileText },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
+          { title: "Lab Reports", href: "/patient/lab-reports", icon: TestTube2 },
           { title: "Insurance", href: "/patient/insurance", icon: ShieldAlert },
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
+          { title: "Support", href: "/support/patient", icon: LifeBuoy },
         ],
       },
     ];
   }
 
-  // Pharmacist
-  // if (roleUpper === "PHARMACIST") {
-  //   return [
-  //     {
-  //       groupTitle: "Pharmacy",
-  //       items: [
-  //         { title: "Dashboard", href: "/pharmacist/dashboard", icon: LayoutDashboard },
-  //         { title: "Prescriptions", href: "/prescriptions", icon: FileText },
-  //         { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
-  //         { title: "Sales", href: "/pharmacy/sales", icon: TrendingUp },
-  //       ],
-  //     },
-  //   ];
-  // }
+
   // Pharmacist
   if (roleUpper === "PHARMACIST") {
     return [
       {
         groupTitle: "Pharmacy",
         items: [
-          { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
-          { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: FileText },
-          { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
-          { title: "Sales", href: "/pharmacy/orders", icon: TrendingUp },
+          { title: "Pharmacy Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
+          { title: "Prescription", href: "/pharmacy/prescriptions", icon: FileText },
+          { title: "Order Management", href: "/pharmacy/orders", icon: ClipboardList },
+          { title: "Medicine Inventory", href: "/pharmacy/inventory", icon: Pill },
+          { title: "Add/ Edit Medicine", href: "/pharmacy/medicines/new", icon: Plus },
+          { title: "Low Stock Alerts", href: "/pharmacy/inventory/low-stock", icon: AlertTriangle },
+          { title: "Expiry Management", href: "/pharmacy/inventory/expiry", icon: CalendarClock },
+          { title: "Deliveries", href: "/pharmacy/deliveries", icon: Truck },
+          { title: "Reports", href: "/pharmacy/reports", icon: FileSpreadsheet },
         ],
       },
     ];

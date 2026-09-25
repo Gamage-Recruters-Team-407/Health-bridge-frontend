@@ -1,51 +1,154 @@
 // src/app/pharmacy/prescriptions/page.tsx
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { prescriptionService } from "@/services/prescriptionService";
-import type { Prescription } from "@/types/prescription";
+import { getPharmacyPrescriptions } from "@/services/pharmacyService";
 
-const STATUS_STYLES: Record<Prescription["status"], string> = {
-    active: "bg-blue-50 text-blue-700",
-    completed: "bg-green-50 text-green-700",
-    cancelled: "bg-red-50 text-red-600",
+interface RawPrescriptionData {
+    id?: string;
+    prescriptionNumber?: string;
+    rxId?: string;
+    patientName?: string;
+    recipientName?: string;
+    doctorName?: string;
+    doctor?: {
+        name?: string;
+    };
+    date?: string;
+    createdAt?: string;
+    status?: string;
+    items?: unknown[];
+    [key: string]: unknown;
+}
+
+type PrescriptionQueueItem = {
+    id: string;
+    prescriptionNumber: string;
+    patientName: string;
+    doctorName: string;
+    date: string;
+    status: "active" | "completed" | "cancelled";
+    itemsCount: number;
 };
 
-const STATUS_LABELS: Record<Prescription["status"], string> = {
+const STATUS_STYLES: Record<string, string> = {
+    active: "bg-blue-50 text-blue-700 border border-blue-200/50",
+    completed: "bg-emerald-50 text-emerald-700 border border-emerald-200/50",
+    cancelled: "bg-rose-50 text-rose-700 border border-rose-200/50",
+};
+
+const STATUS_LABELS: Record<string, string> = {
     active: "Active",
     completed: "Dispensed",
     cancelled: "Cancelled",
 };
 
-type FilterTab = "all" | Prescription["status"];
+type FilterTab = "all" | "active" | "completed" | "cancelled";
 
 export default function PrescriptionQueuePage() {
-    const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+    const [prescriptions, setPrescriptions] = useState<PrescriptionQueueItem[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
     const [tab, setTab] = useState<FilterTab>("all");
 
     useEffect(() => {
-        let cancelled = false;
+        let isMounted = true;
 
-        async function load() {
+        async function loadData() {
             try {
                 setLoading(true);
-                const data = await prescriptionService.getAllPrescriptions();
-                if (!cancelled) setPrescriptions(data);
+                setError(null);
+                const res = await getPharmacyPrescriptions();
+
+                if (!isMounted) return;
+
+                let rawList: RawPrescriptionData[] = [];
+                if (Array.isArray(res)) {
+                    rawList = res as unknown as RawPrescriptionData[];
+                } else if (res && typeof res === "object" && "data" in res) {
+                    rawList = (res as { data: unknown }).data as RawPrescriptionData[];
+                }
+
+                const formatted: PrescriptionQueueItem[] = rawList.map((p, idx) => {
+                    const rawStatus = (p.status || "active").toLowerCase();
+                    let statusVal: "active" | "completed" | "cancelled" = "active";
+                    if (rawStatus === "completed" || rawStatus === "dispensed" || rawStatus === "delivered") {
+                        statusVal = "completed";
+                    } else if (rawStatus === "cancelled" || rawStatus === "rejected") {
+                        statusVal = "cancelled";
+                    }
+
+                    return {
+                        id: p.id || `rx-${idx}`,
+                        prescriptionNumber: p.prescriptionNumber || p.rxId || `RX-${idx + 100}`,
+                        patientName: p.patientName || p.recipientName || "Registered Patient",
+                        doctorName: p.doctorName || (p.doctor?.name ? `Dr. ${p.doctor.name}` : "Assigned Doctor"),
+                        date: p.date || p.createdAt || new Date().toISOString(),
+                        status: statusVal,
+                        itemsCount: Array.isArray(p.items) ? p.items.length : 1,
+                    };
+                });
+
+                setPrescriptions(formatted);
             } catch (err) {
-                if (!cancelled) setError(err instanceof Error ? err.message : "Failed to load prescriptions");
+                if (isMounted) {
+                    setError(err instanceof Error ? err.message : "Failed to load prescriptions from backend");
+                }
             } finally {
-                if (!cancelled) setLoading(false);
+                if (isMounted) {
+                    setLoading(false);
+                }
             }
         }
 
-        void load();
+        void loadData();
+
         return () => {
-            cancelled = true;
+            isMounted = false;
         };
+    }, []);
+
+    const handleRefresh = useCallback(async () => {
+        try {
+            setLoading(true);
+            setError(null);
+            const res = await getPharmacyPrescriptions();
+
+            let rawList: RawPrescriptionData[] = [];
+            if (Array.isArray(res)) {
+                rawList = res as unknown as RawPrescriptionData[];
+            } else if (res && typeof res === "object" && "data" in res) {
+                rawList = (res as { data: unknown }).data as RawPrescriptionData[];
+            }
+
+            const formatted: PrescriptionQueueItem[] = rawList.map((p, idx) => {
+                const rawStatus = (p.status || "active").toLowerCase();
+                let statusVal: "active" | "completed" | "cancelled" = "active";
+                if (rawStatus === "completed" || rawStatus === "dispensed" || rawStatus === "delivered") {
+                    statusVal = "completed";
+                } else if (rawStatus === "cancelled" || rawStatus === "rejected") {
+                    statusVal = "cancelled";
+                }
+
+                return {
+                    id: p.id || `rx-${idx}`,
+                    prescriptionNumber: p.prescriptionNumber || p.rxId || `RX-${idx + 100}`,
+                    patientName: p.patientName || p.recipientName || "Registered Patient",
+                    doctorName: p.doctorName || (p.doctor?.name ? `Dr. ${p.doctor.name}` : "Assigned Doctor"),
+                    date: p.date || p.createdAt || new Date().toISOString(),
+                    status: statusVal,
+                    itemsCount: Array.isArray(p.items) ? p.items.length : 1,
+                };
+            });
+
+            setPrescriptions(formatted);
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to load prescriptions from backend");
+        } finally {
+            setLoading(false);
+        }
     }, []);
 
     const counts = useMemo(
@@ -71,26 +174,54 @@ export default function PrescriptionQueuePage() {
 
     return (
         <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
-            {/* Header */}
-            <div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Prescription queue</h1>
-                <p className="text-xs text-slate-500 mt-0.5">Review, verify, and dispense patient prescriptions.</p>
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">Prescription queue</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">Review, verify, and dispense doctor prescriptions.</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => void handleRefresh()}
+                    className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm"
+                >
+                    Refresh
+                </button>
             </div>
 
             {error && (
                 <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
-                    Couldn&apos;t load prescriptions: {error}
+                    Failed to load prescriptions: {error}
                 </div>
             )}
 
-            {/* Summary KPI cards */}
+            {/* Summary KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <SummaryCard label="Active" value={loading ? "…" : counts.active} tone="amber" />
-                <SummaryCard label="Dispensed" value={loading ? "…" : counts.completed} tone="green" />
-                <SummaryCard label="Cancelled" value={loading ? "…" : counts.cancelled} tone="red" />
+                <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="mb-2 flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
+                        <span className="text-xs font-medium text-slate-500">Active</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">{loading ? "…" : counts.active}</div>
+                </div>
+
+                <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="mb-2 flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                        <span className="text-xs font-medium text-slate-500">Dispensed</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">{loading ? "…" : counts.completed}</div>
+                </div>
+
+                <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="mb-2 flex items-center gap-2">
+                        <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
+                        <span className="text-xs font-medium text-slate-500">Cancelled</span>
+                    </div>
+                    <div className="text-2xl font-bold text-slate-900">{loading ? "…" : counts.cancelled}</div>
+                </div>
             </div>
 
-            {/* Search + Tabs */}
+            {/* Filter Tabs + Search */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
                 <div className="flex gap-1 bg-slate-100 p-1.5 rounded-xl w-full sm:w-auto text-xs">
                     {(["all", "active", "completed", "cancelled"] as FilterTab[]).map((t) => (
@@ -109,7 +240,6 @@ export default function PrescriptionQueuePage() {
                     ))}
                 </div>
 
-                {/* Clear Search Input */}
                 <div className="relative w-full sm:w-80">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +250,7 @@ export default function PrescriptionQueuePage() {
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        placeholder="Search patient name, Rx ID..."
+                        placeholder="Search patient, Rx ID, doctor..."
                         className="w-full pl-9 pr-8 py-2 text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                     />
                     {search && (
@@ -128,7 +258,6 @@ export default function PrescriptionQueuePage() {
                             type="button"
                             onClick={() => setSearch("")}
                             className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 hover:text-slate-600"
-                            title="Clear search"
                         >
                             ✕
                         </button>
@@ -136,7 +265,7 @@ export default function PrescriptionQueuePage() {
                 </div>
             </div>
 
-            {/* Prescription List Table */}
+            {/* Prescription Queue Table */}
             <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-slate-200/80">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs text-slate-600">
@@ -154,16 +283,13 @@ export default function PrescriptionQueuePage() {
                         {loading ? (
                             <tr>
                                 <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
-                                    <div className="flex items-center justify-center gap-2">
-                                        <span className="h-4 w-4 rounded-full border-2 border-blue-600 border-t-transparent animate-spin" />
-                                        Loading prescriptions…
-                                    </div>
+                                    Loading prescriptions…
                                 </td>
                             </tr>
                         ) : filtered.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
-                                    No prescriptions found.
+                                    No prescriptions found. Once a doctor submits a prescription, it will appear here.
                                 </td>
                             </tr>
                         ) : (
@@ -190,7 +316,7 @@ export default function PrescriptionQueuePage() {
                                             href={`/pharmacy/prescriptions/${p.id}`}
                                             className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 transition"
                                         >
-                                            View
+                                            View & Dispense
                                         </Link>
                                     </td>
                                 </tr>
@@ -200,27 +326,6 @@ export default function PrescriptionQueuePage() {
                     </table>
                 </div>
             </div>
-        </div>
-    );
-}
-
-function SummaryCard({
-                         label,
-                         value,
-                         tone,
-                     }: {
-    label: string;
-    value: number | string;
-    tone: "amber" | "green" | "red";
-}) {
-    const dot = { amber: "bg-amber-400", green: "bg-green-400", red: "bg-red-400" }[tone];
-    return (
-        <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
-            <div className="mb-2 flex items-center gap-2">
-                <span className={`h-2.5 w-2.5 rounded-full ${dot}`} aria-hidden />
-                <span className="text-xs font-medium text-slate-500">{label}</span>
-            </div>
-            <div className="text-2xl font-bold text-slate-900">{value}</div>
         </div>
     );
 }

@@ -1,106 +1,135 @@
 // src/app/pharmacy/inventory/expiry/page.tsx
 "use client";
 
-import React, { useState, useEffect, useMemo, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Search, RefreshCw } from "lucide-react";
 import { usePharmacyId } from "@/hooks/usePharmacyId";
-import { getInventoryByPharmacy } from "@/services/pharmacyService";
+import { getInventoryByPharmacy, getAllMedicines, updateStock } from "@/services/pharmacyService";
+import type { InventoryItem, Medicine } from "@/types/pharmacy";
 
-type InventoryRecord = {
-    id?: string;
-    quantity?: number;
-    stock?: number;
-    expiryDate?: string;
-    name?: string;
-    medicineName?: string;
-    batchNumber?: string;
-    batchNo?: string;
-    category?: string;
-    unitPrice?: number;
-    price?: number;
-    medicine?: {
-        name?: string;
-        category?: string;
-    };
-};
-
-interface ProcessedExpiryItem {
+interface ExpiryItem {
     id: string;
-    name: string;
-    batchNo: string;
+    medicineId?: string;
+    medicineName: string;
+    manufacturer: string;
+    batchNumber: string;
     stock: number;
-    expiryDate: string;
-    daysLeft: number;
-    status: "Critical" | "Warning" | "Good";
-    category: string;
     unitPrice: number;
-}
-
-function calculateDaysLeft(dateStr?: string): number {
-    if (!dateStr) return 999;
-    const exp = new Date(dateStr).getTime();
-    const now = new Date().getTime();
-    const diffTime = exp - now;
-    return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-}
-
-function getStatus(days: number): "Critical" | "Warning" | "Good" {
-    if (days <= 30) return "Critical";
-    if (days <= 60) return "Warning";
-    return "Good";
-}
-
-function formatDate(dateStr?: string): string {
-    if (!dateStr) return "N/A";
-    const d = new Date(dateStr);
-    return isNaN(d.getTime())
-        ? dateStr
-        : d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+    expiryDateStr: string;
+    daysLeft: number;
+    status: "Critical" | "Warning" | "Expired" | "Safe";
 }
 
 export default function ExpiryManagementPage() {
     const { pharmacyId, loading: pharmacyLoading } = usePharmacyId();
-    const [searchTerm, setSearchTerm] = useState("");
-    const [inventoryList, setInventoryList] = useState<InventoryRecord[]>([]);
-    const [isFetching, setIsFetching] = useState(false);
-    const [selectedBatchId, setSelectedBatchId] = useState<string | null>(null);
+    const [items, setItems] = useState<ExpiryItem[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [search, setSearch] = useState("");
+    const [selectedItem, setSelectedItem] = useState<ExpiryItem | null>(null);
+    const [actionLoading, setActionLoading] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
 
-        async function loadData() {
-            if (!pharmacyId) return;
+        async function fetchExpiryData() {
+            if (!pharmacyId) {
+                if (isMounted) setLoading(false);
+                return;
+            }
 
             try {
-                setIsFetching(true);
-                const res = await getInventoryByPharmacy(pharmacyId);
+                if (isMounted) {
+                    setLoading(true);
+                    setError(null);
+                }
+
+                const [invRes, medRes] = await Promise.all([
+                    getInventoryByPharmacy(pharmacyId).catch(() => [] as InventoryItem[]),
+                    getAllMedicines().catch(() => [] as Medicine[]),
+                ]);
 
                 if (!isMounted) return;
 
-                let data: InventoryRecord[] = [];
-                if (Array.isArray(res)) {
-                    data = res as unknown as InventoryRecord[];
-                } else if (res && typeof res === "object" && "data" in res) {
-                    data = (res as { data: unknown }).data as InventoryRecord[];
-                }
+                const rawInv = Array.isArray(invRes)
+                    ? invRes
+                    : ((invRes as unknown as { data?: InventoryItem[] })?.data || []);
+                const rawMeds = Array.isArray(medRes)
+                    ? medRes
+                    : ((medRes as unknown as { data?: Medicine[] })?.data || []);
 
-                setInventoryList(data);
-                if (data.length > 0 && data[0]?.id) {
-                    setSelectedBatchId(data[0].id);
-                }
+                const medMap = new Map<string, Medicine>();
+                rawMeds.forEach((m) => {
+                    if (m.id) medMap.set(m.id, m);
+                });
+
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const formatted: ExpiryItem[] = rawInv
+                    .map((item, idx) => {
+                        const med = item.medicineId ? medMap.get(item.medicineId) : undefined;
+                        const name = med?.name || (item as unknown as { medicineName?: string }).medicineName || `Medicine ${idx + 1}`;
+                        const mfg = med?.manufacturer || "Pharmaceuticals";
+                        const price = Number(med?.unitPrice ?? 10);
+                        const stock = item.quantity ?? 0;
+                        const batch = item.batchNumber || `BAT-${idx + 100}`;
+
+                        const expRaw = item.expiryDate || (item as unknown as { expiry?: string }).expiry;
+                        let daysLeft = 999;
+                        let expDisplay = "—";
+
+                        if (expRaw) {
+                            const expDate = new Date(expRaw);
+                            expDate.setHours(0, 0, 0, 0);
+                            const diffTime = expDate.getTime() - today.getTime();
+                            daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                            expDisplay = expDate.toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                            });
+                        }
+
+                        let status: ExpiryItem["status"] = "Safe";
+                        if (daysLeft <= 0) {
+                            status = "Expired";
+                        } else if (daysLeft <= 30) {
+                            status = "Critical";
+                        } else if (daysLeft <= 60) {
+                            status = "Warning";
+                        }
+
+                        return {
+                            id: item.id || `exp-${idx}`,
+                            medicineId: item.medicineId,
+                            medicineName: name,
+                            manufacturer: mfg,
+                            batchNumber: batch,
+                            stock,
+                            unitPrice: price,
+                            expiryDateStr: expDisplay,
+                            daysLeft,
+                            status,
+                        };
+                    })
+                    .sort((a, b) => a.daysLeft - b.daysLeft);
+
+                setItems(formatted);
+                setSelectedItem((prev) => prev ?? formatted[0] ?? null);
             } catch (err) {
                 if (isMounted) {
-                    console.error("Failed to load inventory for expiry management:", err);
+                    setError(err instanceof Error ? err.message : "Failed to load expiry data");
                 }
             } finally {
                 if (isMounted) {
-                    setIsFetching(false);
+                    setLoading(false);
                 }
             }
         }
 
-        if (!pharmacyLoading && pharmacyId) {
-            void loadData();
+        if (!pharmacyLoading) {
+            void fetchExpiryData();
         }
 
         return () => {
@@ -110,265 +139,382 @@ export default function ExpiryManagementPage() {
 
     const handleRefresh = useCallback(async () => {
         if (!pharmacyId) return;
+
         try {
-            setIsFetching(true);
-            const res = await getInventoryByPharmacy(pharmacyId);
-            let data: InventoryRecord[] = [];
-            if (Array.isArray(res)) {
-                data = res as unknown as InventoryRecord[];
-            } else if (res && typeof res === "object" && "data" in res) {
-                data = (res as { data: unknown }).data as InventoryRecord[];
-            }
-            setInventoryList(data);
+            setLoading(true);
+            setError(null);
+
+            const [invRes, medRes] = await Promise.all([
+                getInventoryByPharmacy(pharmacyId).catch(() => [] as InventoryItem[]),
+                getAllMedicines().catch(() => [] as Medicine[]),
+            ]);
+
+            const rawInv = Array.isArray(invRes)
+                ? invRes
+                : ((invRes as unknown as { data?: InventoryItem[] })?.data || []);
+            const rawMeds = Array.isArray(medRes)
+                ? medRes
+                : ((medRes as unknown as { data?: Medicine[] })?.data || []);
+
+            const medMap = new Map<string, Medicine>();
+            rawMeds.forEach((m) => {
+                if (m.id) medMap.set(m.id, m);
+            });
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+
+            const formatted: ExpiryItem[] = rawInv
+                .map((item, idx) => {
+                    const med = item.medicineId ? medMap.get(item.medicineId) : undefined;
+                    const name = med?.name || (item as unknown as { medicineName?: string }).medicineName || `Medicine ${idx + 1}`;
+                    const mfg = med?.manufacturer || "Pharmaceuticals";
+                    const price = Number(med?.unitPrice ?? 10);
+                    const stock = item.quantity ?? 0;
+                    const batch = item.batchNumber || `BAT-${idx + 100}`;
+
+                    const expRaw = item.expiryDate || (item as unknown as { expiry?: string }).expiry;
+                    let daysLeft = 999;
+                    let expDisplay = "—";
+
+                    if (expRaw) {
+                        const expDate = new Date(expRaw);
+                        expDate.setHours(0, 0, 0, 0);
+                        const diffTime = expDate.getTime() - today.getTime();
+                        daysLeft = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                        expDisplay = expDate.toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                            year: "numeric",
+                        });
+                    }
+
+                    let status: ExpiryItem["status"] = "Safe";
+                    if (daysLeft <= 0) {
+                        status = "Expired";
+                    } else if (daysLeft <= 30) {
+                        status = "Critical";
+                    } else if (daysLeft <= 60) {
+                        status = "Warning";
+                    }
+
+                    return {
+                        id: item.id || `exp-${idx}`,
+                        medicineId: item.medicineId,
+                        medicineName: name,
+                        manufacturer: mfg,
+                        batchNumber: batch,
+                        stock,
+                        unitPrice: price,
+                        expiryDateStr: expDisplay,
+                        daysLeft,
+                        status,
+                    };
+                })
+                .sort((a, b) => a.daysLeft - b.daysLeft);
+
+            setItems(formatted);
+            setSelectedItem((prev) => prev ?? formatted[0] ?? null);
         } catch (err) {
-            console.error("Failed to refresh:", err);
+            setError(err instanceof Error ? err.message : "Failed to load expiry data");
         } finally {
-            setIsFetching(false);
+            setLoading(false);
         }
     }, [pharmacyId]);
 
-    const loading = pharmacyLoading || isFetching;
+    const metrics = useMemo(() => {
+        const expiringIn30 = items.filter((i) => i.daysLeft > 0 && i.daysLeft <= 30).length;
+        const expiringIn60 = items.filter((i) => i.daysLeft > 30 && i.daysLeft <= 60).length;
+        const expired = items.filter((i) => i.daysLeft <= 0).length;
+        const valueAtRisk = items
+            .filter((i) => i.daysLeft <= 60)
+            .reduce((sum, item) => sum + item.stock * item.unitPrice, 0);
 
-    const processedData: ProcessedExpiryItem[] = useMemo(() => {
-        return inventoryList.map((item) => {
-            const days = calculateDaysLeft(item.expiryDate);
-            const medName = item.medicineName || item.name || item.medicine?.name || "Medicine";
-            const batchNumber = item.batchNumber || item.batchNo || `BATCH-${item.id?.slice(0, 5) || "001"}`;
-            const stockCount = item.quantity ?? item.stock ?? 0;
-            const categoryName = item.category || item.medicine?.category || "Pharmaceuticals";
-            const priceVal = item.unitPrice ?? item.price ?? 0;
+        return { expiringIn30, expiringIn60, expired, valueAtRisk };
+    }, [items]);
 
-            return {
-                id: item.id || "",
-                name: medName,
-                batchNo: batchNumber,
-                stock: stockCount,
-                expiryDate: formatDate(item.expiryDate),
-                daysLeft: days,
-                status: getStatus(days),
-                category: categoryName,
-                unitPrice: priceVal
-            };
+    const filtered = useMemo(() => {
+        const query = search.toLowerCase();
+        return items.filter((i) => {
+            return (
+                !query ||
+                i.medicineName.toLowerCase().includes(query) ||
+                i.batchNumber.toLowerCase().includes(query) ||
+                i.manufacturer.toLowerCase().includes(query)
+            );
         });
-    }, [inventoryList]);
+    }, [items, search]);
 
-    const selectedBatch = useMemo(() => {
-        return processedData.find((item) => item.id === selectedBatchId) || processedData[0] || null;
-    }, [processedData, selectedBatchId]);
-
-    const kpis = useMemo(() => {
-        let exp30 = 0;
-        let exp60 = 0;
-        let expired = 0;
-        let valueAtRisk = 0;
-
-        processedData.forEach((item) => {
-            if (item.daysLeft <= 0) {
-                expired += 1;
-                valueAtRisk += item.stock * (item.unitPrice || 10);
-            } else if (item.daysLeft <= 30) {
-                exp30 += 1;
-                valueAtRisk += item.stock * (item.unitPrice || 10);
-            } else if (item.daysLeft <= 60) {
-                exp60 += 1;
-            }
-        });
-
-        return { exp30, exp60, expired, valueAtRisk };
-    }, [processedData]);
-
-    const filteredData = processedData.filter((item) =>
-        item.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.batchNo.toLowerCase().includes(searchTerm.toLowerCase())
-    );
+    const handleQuarantineDispose = async () => {
+        if (!selectedItem) return;
+        try {
+            setActionLoading(true);
+            await updateStock(selectedItem.id, { quantity: 0 });
+            await handleRefresh();
+            alert(`Batch ${selectedItem.batchNumber} has been successfully quarantined/disposed.`);
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to update batch status");
+        } finally {
+            setActionLoading(false);
+        }
+    };
 
     return (
-        <div className="min-h-screen bg-slate-50/60 p-6 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Expiry Management</h1>
-                    <p className="text-sm text-slate-500">Monitor medicine expiry dates, batch risks, and manage disposal actions.</p>
+                    <h1 className="text-xl font-bold text-slate-900 tracking-tight">Expiry Management</h1>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        Monitor medicine expiry dates, batch risks, and manage disposal actions.
+                    </p>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2">
                     <button
+                        type="button"
                         onClick={() => void handleRefresh()}
-                        disabled={!pharmacyId || loading}
-                        className="flex items-center gap-2 px-3 py-2 border border-slate-200 bg-white rounded-lg text-sm text-slate-600 hover:bg-slate-50 shadow-sm disabled:opacity-50"
+                        disabled={loading}
+                        className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition"
                     >
-                        <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} /> Refresh
+                        <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 rounded-lg text-sm font-medium text-white hover:bg-blue-700 transition shadow-sm">
+                    <button
+                        type="button"
+                        onClick={() => setSearch("")}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 shadow-sm transition"
+                    >
                         Review Queue
                     </button>
                 </div>
             </div>
 
-            {/* KPI Overviews */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Expiring in 30 Days</span>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl font-bold text-slate-900">{kpis.exp30}</span>
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-red-50 text-red-700">Immediate Action</span>
+            {error && (
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-sm">
+                    {error}
+                </div>
+            )}
+
+            {/* KPI Cards Row */}
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expiring in 30 Days</span>
+                        <span className="text-[10px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/50">
+              Immediate Action
+            </span>
                     </div>
+                    <div className="text-3xl font-bold text-slate-900 mt-3">{loading ? "…" : metrics.expiringIn30}</div>
                 </div>
 
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Expiring in 60 Days</span>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl font-bold text-slate-900">{kpis.exp60}</span>
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-amber-50 text-amber-700">Attention</span>
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expiring in 60 Days</span>
+                        <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/50">
+              Attention
+            </span>
                     </div>
+                    <div className="text-3xl font-bold text-slate-900 mt-3">{loading ? "…" : metrics.expiringIn60}</div>
                 </div>
 
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Expired Medicines</span>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl font-bold text-slate-900">{kpis.expired}</span>
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-rose-50 text-rose-700">Quarantined</span>
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expired Medicines</span>
+                        <span className="text-[10px] font-medium text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
+              Quarantined
+            </span>
                     </div>
+                    <div className="text-3xl font-bold text-slate-900 mt-3">{loading ? "…" : metrics.expired}</div>
                 </div>
 
-                <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm">
-                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">Stock Value at Risk</span>
-                    <div className="mt-3 flex items-baseline justify-between">
-                        <span className="text-3xl font-bold text-slate-900">LKR {kpis.valueAtRisk.toLocaleString()}</span>
-                        <span className="inline-flex px-2 py-0.5 rounded text-xs font-medium bg-blue-50 text-blue-700">Estimated</span>
+                <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80">
+                    <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Stock Value at Risk</span>
+                        <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
+              Estimated
+            </span>
+                    </div>
+                    <div className="text-3xl font-bold text-slate-900 mt-3">
+                        LKR {loading ? "…" : metrics.valueAtRisk.toLocaleString()}
                     </div>
                 </div>
             </div>
 
-            {/* Main Content */}
-            <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-                {/* Table */}
-                <div className="xl:col-span-2 bg-white rounded-xl border border-slate-200/80 shadow-sm flex flex-col">
-                    <div className="p-4 border-b border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-4">
-                        <h2 className="text-base font-semibold text-slate-900">Expiry Inventory</h2>
-                        <div className="relative flex-1 sm:w-64">
-                            <Search className="absolute left-3 top-2.5 h-4 w-4 text-slate-400" />
+            {/* Main Grid */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Table Section */}
+                <div className="lg:col-span-2 space-y-4">
+                    <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <h2 className="text-sm font-bold text-slate-900">Expiry Inventory</h2>
+
+                        {/* Fully visible Search Box */}
+                        <div className="relative w-full sm:w-80">
+                            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <Search className="w-4 h-4" />
+                            </div>
                             <input
                                 type="text"
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
                                 placeholder="Search batch or medicine..."
-                                className="w-full pl-9 pr-4 py-1.5 text-sm bg-slate-50 border border-slate-200 rounded-lg outline-none focus:ring-1 focus:ring-blue-500"
-                                value={searchTerm}
-                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="w-full pl-10 pr-9 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                             />
+                            {search && (
+                                <button
+                                    type="button"
+                                    onClick={() => setSearch("")}
+                                    className="absolute inset-y-0 right-0 pr-3 flex items-center text-xs text-slate-400 hover:text-slate-600"
+                                >
+                                    ✕
+                                </button>
+                            )}
                         </div>
                     </div>
 
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left text-sm text-slate-600">
-                            <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase">
-                            <tr>
-                                <th className="py-3 px-4">Medicine Details</th>
-                                <th className="py-3 px-4">Batch No</th>
-                                <th className="py-3 px-4 text-center">Stock</th>
-                                <th className="py-3 px-4">Expiry Date</th>
-                                <th className="py-3 px-4 text-center">Days Left</th>
-                                <th className="py-3 px-4 text-center">Status</th>
-                                <th className="py-3 px-4 text-right">Action</th>
-                            </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-100">
-                            {loading ? (
+                    <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-200/80">
+                        <div className="overflow-x-auto">
+                            <table className="w-full text-left text-xs text-slate-600">
+                                <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] uppercase tracking-wider text-slate-400">
                                 <tr>
-                                    <td colSpan={7} className="text-center py-8 text-slate-400">Loading inventory data...</td>
+                                    <th className="px-5 py-4 font-semibold">Medicine Details</th>
+                                    <th className="px-5 py-4 font-semibold">Batch No</th>
+                                    <th className="px-5 py-4 font-semibold">Stock</th>
+                                    <th className="px-5 py-4 font-semibold">Expiry Date</th>
+                                    <th className="px-5 py-4 font-semibold">Days Left</th>
+                                    <th className="px-5 py-4 font-semibold text-center">Status</th>
+                                    <th className="px-5 py-4 font-semibold text-right">Action</th>
                                 </tr>
-                            ) : filteredData.length === 0 ? (
-                                <tr>
-                                    <td colSpan={7} className="text-center py-8 text-slate-400">No inventory records found.</td>
-                                </tr>
-                            ) : (
-                                filteredData.map((item) => (
-                                    <tr
-                                        key={item.id}
-                                        onClick={() => setSelectedBatchId(item.id)}
-                                        className={`hover:bg-slate-50 cursor-pointer transition ${selectedBatch?.id === item.id ? "bg-blue-50/40" : ""}`}
-                                    >
-                                        <td className="py-3.5 px-4 font-medium text-slate-900">
-                                            {item.name}
-                                            <div className="text-xs text-slate-400 font-normal">{item.category}</div>
-                                        </td>
-                                        <td className="py-3.5 px-4 font-mono text-xs">{item.batchNo}</td>
-                                        <td className="py-3.5 px-4 text-center font-medium">{item.stock}</td>
-                                        <td className="py-3.5 px-4 text-xs">{item.expiryDate}</td>
-                                        <td className="py-3.5 px-4 text-center">
-                        <span className={`font-semibold ${item.daysLeft <= 30 ? "text-red-600" : "text-amber-600"}`}>
-                          {item.daysLeft <= 0 ? "Expired" : `${item.daysLeft}d`}
-                        </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-center">
-                        <span className={`inline-flex px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            item.status === "Critical"
-                                ? "bg-red-100 text-red-700"
-                                : item.status === "Warning"
-                                    ? "bg-amber-100 text-amber-700"
-                                    : "bg-emerald-100 text-emerald-700"
-                        }`}>
-                          {item.status}
-                        </span>
-                                        </td>
-                                        <td className="py-3.5 px-4 text-right">
-                                            <button className="text-xs font-medium text-blue-600 hover:text-blue-800">
-                                                Inspect
-                                            </button>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                                            <div className="flex items-center justify-center gap-2">
+                                                <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                                                Checking medicine expiry dates…
+                                            </div>
                                         </td>
                                     </tr>
-                                ))
-                            )}
-                            </tbody>
-                        </table>
+                                ) : filtered.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={7} className="px-5 py-12 text-center text-slate-400">
+                                            No medicine batches match your search criteria.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    filtered.map((item) => (
+                                        <tr
+                                            key={item.id}
+                                            onClick={() => setSelectedItem(item)}
+                                            className={`cursor-pointer transition ${
+                                                selectedItem?.id === item.id ? "bg-blue-50/50" : "hover:bg-slate-50/60"
+                                            }`}
+                                        >
+                                            <td className="px-5 py-4">
+                                                <p className="font-semibold text-slate-900">{item.medicineName}</p>
+                                                <span className="text-[10px] text-slate-400">{item.manufacturer}</span>
+                                            </td>
+                                            <td className="px-5 py-4 font-mono text-slate-600">{item.batchNumber}</td>
+                                            <td className="px-5 py-4 font-semibold text-slate-800">{item.stock}</td>
+                                            <td className="px-5 py-4 text-slate-500">{item.expiryDateStr}</td>
+                                            <td className="px-5 py-4 font-bold text-rose-600">
+                                                {item.daysLeft <= 0 ? "Expired" : `${item.daysLeft}d`}
+                                            </td>
+                                            <td className="px-5 py-4 text-center">
+                          <span
+                              className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                                  item.status === "Critical"
+                                      ? "bg-rose-50 text-rose-700 border border-rose-200/50"
+                                      : item.status === "Warning"
+                                          ? "bg-amber-50 text-amber-700 border border-amber-200/50"
+                                          : item.status === "Expired"
+                                              ? "bg-rose-100 text-rose-800"
+                                              : "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                              }`}
+                          >
+                            {item.status}
+                          </span>
+                                            </td>
+                                            <td className="px-5 py-4 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        setSelectedItem(item);
+                                                    }}
+                                                    className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                                >
+                                                    Inspect
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
 
-                {/* Right Info Section */}
+                {/* Right Rules & Inspection Panel */}
                 <div className="space-y-6">
-                    <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-                        <h3 className="font-semibold text-slate-900 text-sm border-b border-slate-100 pb-3">Expiry Rules & Alerts</h3>
-                        <div className="space-y-3 text-sm">
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Early Warning</span>
-                                <span className="font-medium text-slate-900">60 Days</span>
+                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-3">
+                        <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">Expiry Rules & Alerts</h3>
+                        <div className="space-y-2.5 text-xs">
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <span className="text-slate-500">Early Warning</span>
+                                <span className="font-semibold text-slate-800">60 Days</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Critical Warning</span>
-                                <span className="font-medium text-red-600">30 Days</span>
+                            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                                <span className="text-slate-500">Critical Warning</span>
+                                <span className="font-semibold text-rose-600">30 Days</span>
                             </div>
-                            <div className="flex justify-between">
-                                <span className="text-slate-600">Dispensing Block</span>
-                                <span className="font-medium text-slate-900">0 Days (Expired)</span>
+                            <div className="flex items-center justify-between">
+                                <span className="text-slate-500">Dispensing Block</span>
+                                <span className="font-semibold text-slate-800">0 Days (Expired)</span>
                             </div>
                         </div>
                     </div>
 
-                    <div className="bg-white p-5 rounded-xl border border-slate-200/80 shadow-sm space-y-4">
-                        <h3 className="font-semibold text-slate-900 text-sm">Selected Batch Inspection</h3>
-                        {selectedBatch ? (
-                            <div className="space-y-3 text-xs">
-                                <div className="p-3 bg-slate-50 rounded-lg space-y-1">
-                                    <div className="flex justify-between font-semibold text-slate-900">
-                                        <span>{selectedBatch.name}</span>
-                                        <span className={selectedBatch.status === "Critical" ? "text-red-600" : "text-amber-600"}>
-                      {selectedBatch.status}
-                    </span>
-                                    </div>
-                                    <p className="text-slate-500">Batch: {selectedBatch.batchNo}</p>
-                                    <p className="text-slate-500">Stock: {selectedBatch.stock} units | Exp: {selectedBatch.expiryDate}</p>
-                                </div>
-                                <div className="flex gap-2 pt-2">
-                                    <button className="flex-1 py-1.5 text-xs font-medium border border-slate-200 rounded-lg text-slate-700 hover:bg-slate-50">
-                                        Return to Supplier
-                                    </button>
-                                    <button className="flex-1 py-1.5 text-xs font-medium bg-red-600 text-white rounded-lg hover:bg-red-700">
-                                        Quarantine / Dispose
-                                    </button>
-                                </div>
+                    {selectedItem && (
+                        <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-4">
+                            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                                <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider">
+                                    Selected Batch Inspection
+                                </h3>
+                                <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/50">
+                  {selectedItem.status}
+                </span>
                             </div>
-                        ) : (
-                            <p className="text-xs text-slate-400">Select an item from the list to view details.</p>
-                        )}
-                    </div>
+
+                            <div className="text-xs space-y-1">
+                                <p className="font-bold text-sm text-slate-900">{selectedItem.medicineName}</p>
+                                <p className="text-slate-500">
+                                    Batch: <span className="font-mono text-slate-700">{selectedItem.batchNumber}</span>
+                                </p>
+                                <p className="text-slate-500">
+                                    Stock: <span className="font-semibold text-slate-800">{selectedItem.stock} units</span> | Exp: {selectedItem.expiryDateStr}
+                                </p>
+                            </div>
+
+                            <div className="space-y-2 pt-2">
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={() => alert(`Return process initiated for Batch ${selectedItem.batchNumber}`)}
+                                    className="w-full py-2.5 px-3 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition"
+                                >
+                                    Return to Supplier
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={actionLoading}
+                                    onClick={() => void handleQuarantineDispose()}
+                                    className="w-full py-2.5 px-3 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-sm transition disabled:opacity-50"
+                                >
+                                    {actionLoading ? "Processing..." : "Quarantine / Dispose"}
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>
