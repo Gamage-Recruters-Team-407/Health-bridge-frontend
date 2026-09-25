@@ -7,6 +7,7 @@ import { getStoredUser, clearAuthData, AuthUser, AUTH_CHANGE_EVENT } from "@/lib
 import Link from "next/link";
 import api from "@/lib/axios";
 import { labReportService } from "@/services/labReportService";
+import { insuranceService } from "@/services/insuranceService";
 
 export default function PatientDashboardPage() {
   const router = useRouter();
@@ -16,6 +17,7 @@ export default function PatientDashboardPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [labReports, setLabReports] = useState<any[]>([]);
   const [activePrescriptions, setActivePrescriptions] = useState<number>(0);
+  const [insuranceMessagesCount, setInsuranceMessagesCount] = useState<number>(0);
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -56,6 +58,11 @@ export default function PatientDashboardPage() {
           .then((data: any) => setActivePrescriptions(data.length))
           .catch(err => console.error(err))
           .finally(() => setLoading(false));
+
+      // Fetch Live Insurance Messages
+      insuranceService.getUnreadMessagesCount()
+          .then(count => setInsuranceMessagesCount(count))
+          .catch(() => setInsuranceMessagesCount(0));
     };
 
     // Initial fetch
@@ -88,7 +95,6 @@ export default function PatientDashboardPage() {
   // Dynamic Metric Calculations
   const upcomingAppointmentsCount = appointments.filter(a => a.status === 'UPCOMING' || a.status === 'BOOKED').length;
   const labReportsCount = labReports.length;
-  const insuranceMessagesCount = 0; // Placeholder until Backend Developer 17 builds the messaging endpoint
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -204,7 +210,7 @@ export default function PatientDashboardPage() {
                 <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500 leading-tight">New messages<br/>from Insuarance</span>
+                <span className="text-xs text-zinc-500 leading-tight">New messages<br/>from Insurance</span>
                 <span className="text-2xl font-bold text-zinc-950 leading-none">{insuranceMessagesCount}</span>
               </div>
             </div>
