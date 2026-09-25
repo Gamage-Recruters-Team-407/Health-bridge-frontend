@@ -91,9 +91,12 @@ export default function RegisterPage() {
         router.push(targetPath);
       }, 1000);
     } catch (err: any) {
-      const message =
+      let message =
         err.response?.data?.message ||
         "Registration failed. Please check your information.";
+      if (typeof message === "string" && message.toLowerCase().includes("operation successful")) {
+        message = "Operation unsuccessful";
+      }
       setError(message);
     } finally {
       setLoading(false);

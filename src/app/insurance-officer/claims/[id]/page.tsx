@@ -216,40 +216,6 @@ export default function ClaimDetailsPage() {
           </div>
         </div>
 
-        {/* Tab Sub-Navigation (Matching Suite Design) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Reports
-          </Link>
-        </div>
-
         {/* Feedback Banners */}
         {successMessage && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
@@ -353,7 +319,7 @@ export default function ClaimDetailsPage() {
                   Submitted: <strong className="text-slate-800">{submittedDateStr}</strong>
                 </p>
                 <p className="text-slate-500">
-                  Amount: <strong className="text-slate-900 text-sm">${(claim.claimAmount || 0).toFixed(2)}</strong>
+                  Amount: <strong className="text-slate-900 text-sm">Rs. ${(claim.claimAmount || 0).toFixed(2)}</strong>
                 </p>
                 <p className="text-slate-500 flex items-center gap-1.5">
                   Status:{" "}
@@ -397,7 +363,7 @@ export default function ClaimDetailsPage() {
                       <td className="py-3 px-4 font-medium text-slate-800">{item.description}</td>
                       <td className="py-3 px-4 font-mono text-slate-500">{item.code}</td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        ${item.amount.toFixed(2)}
+                        Rs. {item.amount.toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -406,7 +372,7 @@ export default function ClaimDetailsPage() {
                       Total Requested Claim
                     </td>
                     <td className="py-3 px-4 text-right text-blue-600 font-extrabold text-sm">
-                      ${(claim.claimAmount || 0).toFixed(2)}
+                      Rs. ${(claim.claimAmount || 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
@@ -490,9 +456,9 @@ export default function ClaimDetailsPage() {
                         : "Reviewed by claims specialist"}
                     </p>
                     <p className="text-slate-400 text-[11px]">{reviewedDateStr} · {reviewedTimeStr}</p>
-                    {claim.status === "APPROVED" && claim.approvedAmount !== undefined && (
+                    {claim.status === "APPROVED" && claim.approvedAmount != null && (
                       <p className="text-emerald-600 font-semibold text-[11px]">
-                        Settlement authorized: ${claim.approvedAmount.toFixed(2)}
+                        Settlement authorized: Rs. {Number(claim.approvedAmount).toFixed(2)}
                       </p>
                     )}
                     {claim.status === "REJECTED" && claim.rejectionReason && (

@@ -13,6 +13,14 @@ export const insuranceService = {
     const res: any = await api.get(`${BASE}/claims/my`);
     return Array.isArray(res) ? res : (res?.data ?? []);
   },
+  getUnreadMessagesCount: async (): Promise<number> => {
+    try {
+      const res: any = await api.get(`${BASE}/messages/unread-count`);
+      return typeof res === 'number' ? res : (res?.count ?? 0);
+    } catch (error) {
+      return 0; // Fails safely to 0 if backend is ever offline
+    }
+  },
   submitClaim: async (
     claim: { policyId: string; treatmentDescription: string; claimAmount: number },
     documents: File[]
