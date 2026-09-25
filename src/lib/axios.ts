@@ -19,7 +19,12 @@ interface ApiErrorPayload {
 export function getApiErrorMessage(error: unknown, fallback = "Something went wrong"): string {
     if (axios.isAxiosError<ApiErrorPayload>(error)) {
         const payload = error.response?.data;
-        if (payload?.message) return payload.message;
+        if (payload?.message) {
+            if (payload.message.toLowerCase().includes("operation successful")) {
+                return "Operation unsuccessful";
+            }
+            return payload.message;
+        }
         if (payload?.errors && !Array.isArray(payload.errors)) {
             const firstError = Object.values(payload.errors)[0];
             if (firstError) return firstError;
