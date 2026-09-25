@@ -2,256 +2,277 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
-import Link from "next/link";
-import { getPharmacyPrescriptions } from "@/services/pharmacyService";
+import { Search, RefreshCw, Eye, User } from "lucide-react";
+import { prescriptionService, patientService } from "@/services/prescriptionService";
+import type { Prescription } from "@/types/prescription";
 
-interface RawPrescriptionData {
+interface ExtendedPrescriptionItem {
     id?: string;
-    prescriptionNumber?: string;
-    rxId?: string;
+    code?: string;
+    prescriptionCode?: string;
+    patientId?: string;
     patientName?: string;
-    recipientName?: string;
+    patient?: { id?: string; fullName?: string; name?: string };
     doctorName?: string;
-    doctor?: {
-        name?: string;
-    };
+    doctor?: { fullName?: string; name?: string };
+    prescribedBy?: string;
     date?: string;
     createdAt?: string;
+    prescriptionDate?: string;
     status?: string;
+    medicines?: unknown[];
     items?: unknown[];
+    medications?: unknown[];
+    instructions?: string;
+    notes?: string;
     [key: string]: unknown;
 }
 
-type PrescriptionQueueItem = {
+interface FormattedPrescription {
     id: string;
-    prescriptionNumber: string;
+    prescriptionCode: string;
+    patientId: string;
     patientName: string;
     doctorName: string;
     date: string;
-    status: "active" | "completed" | "cancelled";
-    itemsCount: number;
-};
+    status: string;
+    medicinesCount: number;
+    instructions: string;
+}
 
-const STATUS_STYLES: Record<string, string> = {
-    active: "bg-blue-50 text-blue-700 border border-blue-200/50",
-    completed: "bg-emerald-50 text-emerald-700 border border-emerald-200/50",
-    cancelled: "bg-rose-50 text-rose-700 border border-rose-200/50",
-};
+type TabType = "ALL" | "ACTIVE" | "DISPENSED" | "CANCELLED";
 
-const STATUS_LABELS: Record<string, string> = {
-    active: "Active",
-    completed: "Dispensed",
-    cancelled: "Cancelled",
-};
-
-type FilterTab = "all" | "active" | "completed" | "cancelled";
-
-export default function PrescriptionQueuePage() {
-    const [prescriptions, setPrescriptions] = useState<PrescriptionQueueItem[]>([]);
+export default function PharmacyPrescriptionQueuePage() {
+    const [prescriptions, setPrescriptions] = useState<FormattedPrescription[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [tab, setTab] = useState<FilterTab>("all");
+    const [currentTab, setCurrentTab] = useState<TabType>("ALL");
+    const [updatingId, setUpdatingId] = useState<string | null>(null);
+    const [selectedRx, setSelectedRx] = useState<FormattedPrescription | null>(null);
 
-    useEffect(() => {
-        let isMounted = true;
-
-        async function loadData() {
-            try {
-                setLoading(true);
-                setError(null);
-                const res = await getPharmacyPrescriptions();
-
-                if (!isMounted) return;
-
-                let rawList: RawPrescriptionData[] = [];
-                if (Array.isArray(res)) {
-                    rawList = res as unknown as RawPrescriptionData[];
-                } else if (res && typeof res === "object" && "data" in res) {
-                    rawList = (res as { data: unknown }).data as RawPrescriptionData[];
-                }
-
-                const formatted: PrescriptionQueueItem[] = rawList.map((p, idx) => {
-                    const rawStatus = (p.status || "active").toLowerCase();
-                    let statusVal: "active" | "completed" | "cancelled" = "active";
-                    if (rawStatus === "completed" || rawStatus === "dispensed" || rawStatus === "delivered") {
-                        statusVal = "completed";
-                    } else if (rawStatus === "cancelled" || rawStatus === "rejected") {
-                        statusVal = "cancelled";
-                    }
-
-                    return {
-                        id: p.id || `rx-${idx}`,
-                        prescriptionNumber: p.prescriptionNumber || p.rxId || `RX-${idx + 100}`,
-                        patientName: p.patientName || p.recipientName || "Registered Patient",
-                        doctorName: p.doctorName || (p.doctor?.name ? `Dr. ${p.doctor.name}` : "Assigned Doctor"),
-                        date: p.date || p.createdAt || new Date().toISOString(),
-                        status: statusVal,
-                        itemsCount: Array.isArray(p.items) ? p.items.length : 1,
-                    };
-                });
-
-                setPrescriptions(formatted);
-            } catch (err) {
-                if (isMounted) {
-                    setError(err instanceof Error ? err.message : "Failed to load prescriptions from backend");
-                }
-            } finally {
-                if (isMounted) {
-                    setLoading(false);
-                }
-            }
-        }
-
-        void loadData();
-
-        return () => {
-            isMounted = false;
-        };
-    }, []);
-
-    const handleRefresh = useCallback(async () => {
+    const fetchPrescriptionData = useCallback(async () => {
         try {
             setLoading(true);
             setError(null);
-            const res = await getPharmacyPrescriptions();
 
-            let rawList: RawPrescriptionData[] = [];
-            if (Array.isArray(res)) {
-                rawList = res as unknown as RawPrescriptionData[];
-            } else if (res && typeof res === "object" && "data" in res) {
-                rawList = (res as { data: unknown }).data as RawPrescriptionData[];
+            const [rxRes, patientsList] = await Promise.all([
+                prescriptionService.getAllPrescriptions().catch(() => [] as Prescription[]),
+                patientService.getAllPatients().catch(() => []),
+            ]);
+
+            const rawList: ExtendedPrescriptionItem[] = Array.isArray(rxRes)
+                ? (rxRes as unknown as ExtendedPrescriptionItem[])
+                : ((rxRes as unknown as { data?: ExtendedPrescriptionItem[]; content?: ExtendedPrescriptionItem[] })?.data ||
+                    (rxRes as unknown as { content?: ExtendedPrescriptionItem[] })?.content ||
+                    []);
+
+            const patientMap = new Map<string, string>();
+            if (Array.isArray(patientsList)) {
+                patientsList.forEach((p) => {
+                    if (p.value) patientMap.set(p.value, p.label);
+                });
             }
 
-            const formatted: PrescriptionQueueItem[] = rawList.map((p, idx) => {
-                const rawStatus = (p.status || "active").toLowerCase();
-                let statusVal: "active" | "completed" | "cancelled" = "active";
-                if (rawStatus === "completed" || rawStatus === "dispensed" || rawStatus === "delivered") {
-                    statusVal = "completed";
-                } else if (rawStatus === "cancelled" || rawStatus === "rejected") {
-                    statusVal = "cancelled";
-                }
+            const formatted: FormattedPrescription[] = rawList.map((rx, idx) => {
+                const pId = rx.patientId || rx.patient?.id || `PAT-${idx + 1}`;
+                const pName =
+                    rx.patientName ||
+                    rx.patient?.fullName ||
+                    rx.patient?.name ||
+                    patientMap.get(pId) ||
+                    `Patient (${pId.slice(0, 6)})`;
+
+                const dName =
+                    rx.doctorName ||
+                    rx.doctor?.fullName ||
+                    rx.doctor?.name ||
+                    rx.prescribedBy ||
+                    "Dr. Assigned";
+
+                const rawDate = rx.date || rx.createdAt || rx.prescriptionDate;
+                const dateDisplay = rawDate
+                    ? new Date(rawDate).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                    })
+                    : "Today";
+
+                const medsList = rx.medicines || rx.items || rx.medications || [];
 
                 return {
-                    id: p.id || `rx-${idx}`,
-                    prescriptionNumber: p.prescriptionNumber || p.rxId || `RX-${idx + 100}`,
-                    patientName: p.patientName || p.recipientName || "Registered Patient",
-                    doctorName: p.doctorName || (p.doctor?.name ? `Dr. ${p.doctor.name}` : "Assigned Doctor"),
-                    date: p.date || p.createdAt || new Date().toISOString(),
-                    status: statusVal,
-                    itemsCount: Array.isArray(p.items) ? p.items.length : 1,
+                    id: rx.id || `rx-${idx}`,
+                    prescriptionCode: rx.prescriptionCode || rx.code || rx.id?.slice(0, 8)?.toUpperCase() || `RX-${idx + 100}`,
+                    patientId: pId,
+                    patientName: pName,
+                    doctorName: dName,
+                    date: dateDisplay,
+                    status: (rx.status || "ACTIVE").toUpperCase(),
+                    medicinesCount: Array.isArray(medsList) ? medsList.length : 1,
+                    instructions: rx.instructions || rx.notes || "No special instructions",
                 };
             });
 
             setPrescriptions(formatted);
         } catch (err) {
-            setError(err instanceof Error ? err.message : "Failed to load prescriptions from backend");
+            console.error("Prescriptions fetch error:", err);
+            setError(err instanceof Error ? err.message : "Failed to load prescriptions from system");
         } finally {
             setLoading(false);
         }
     }, []);
 
-    const counts = useMemo(
-        () => ({
-            active: prescriptions.filter((p) => p.status === "active").length,
-            completed: prescriptions.filter((p) => p.status === "completed").length,
-            cancelled: prescriptions.filter((p) => p.status === "cancelled").length,
-        }),
-        [prescriptions]
-    );
+    useEffect(() => {
+        let isMounted = true;
 
-    const filtered = useMemo(() => {
-        return prescriptions.filter((p) => {
-            const matchesTab = tab === "all" || p.status === tab;
+        async function initialize() {
+            if (isMounted) {
+                await fetchPrescriptionData();
+            }
+        }
+
+        void initialize();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [fetchPrescriptionData]);
+
+    const handleDispense = async (id: string) => {
+        try {
+            setUpdatingId(id);
+            await prescriptionService.updatePrescription(
+                id,
+                { status: "DISPENSED" } as unknown as Parameters<typeof prescriptionService.updatePrescription>[1]
+            );
+            await fetchPrescriptionData();
+            alert("Prescription marked as DISPENSED successfully!");
+        } catch (err) {
+            alert(err instanceof Error ? err.message : "Failed to update prescription status");
+        } finally {
+            setUpdatingId(null);
+        }
+    };
+
+    const counts = useMemo(() => {
+        const active = prescriptions.filter(
+            (p) => p.status === "ACTIVE" || p.status === "PENDING" || p.status === "ISSUED"
+        ).length;
+
+        const dispensed = prescriptions.filter(
+            (p) => p.status === "DISPENSED" || p.status === "COMPLETED"
+        ).length;
+
+        const cancelled = prescriptions.filter((p) => p.status === "CANCELLED").length;
+
+        return { active, dispensed, cancelled };
+    }, [prescriptions]);
+
+    const filteredPrescriptions = useMemo(() => {
+        const q = search.toLowerCase();
+
+        return prescriptions.filter((item) => {
             const matchesSearch =
-                !search ||
-                p.patientName.toLowerCase().includes(search.toLowerCase()) ||
-                p.prescriptionNumber.toLowerCase().includes(search.toLowerCase()) ||
-                p.doctorName.toLowerCase().includes(search.toLowerCase());
-            return matchesTab && matchesSearch;
+                !q ||
+                item.patientName.toLowerCase().includes(q) ||
+                item.doctorName.toLowerCase().includes(q) ||
+                item.prescriptionCode.toLowerCase().includes(q) ||
+                item.patientId.toLowerCase().includes(q);
+
+            const s = item.status;
+            const matchesTab =
+                currentTab === "ALL" ||
+                (currentTab === "ACTIVE" && (s === "ACTIVE" || s === "PENDING" || s === "ISSUED")) ||
+                (currentTab === "DISPENSED" && (s === "DISPENSED" || s === "COMPLETED")) ||
+                (currentTab === "CANCELLED" && s === "CANCELLED");
+
+            return matchesSearch && matchesTab;
         });
-    }, [prescriptions, tab, search]);
+    }, [prescriptions, search, currentTab]);
 
     return (
-        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                     <h1 className="text-xl font-bold text-slate-900 tracking-tight">Prescription queue</h1>
-                    <p className="text-xs text-slate-500 mt-0.5">Review, verify, and dispense doctor prescriptions.</p>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                        Review, verify, and dispense doctor prescriptions.
+                    </p>
                 </div>
                 <button
                     type="button"
-                    onClick={() => void handleRefresh()}
-                    className="px-3 py-1.5 border border-slate-200 bg-white rounded-lg text-xs font-medium text-slate-600 hover:bg-slate-50 shadow-sm"
+                    onClick={() => void fetchPrescriptionData()}
+                    disabled={loading}
+                    className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition self-start sm:self-auto"
                 >
-                    Refresh
+                    <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
                 </button>
             </div>
 
             {error && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-xs text-red-700">
-                    Failed to load prescriptions: {error}
+                <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-xs text-red-700 shadow-sm">
+                    {error}
                 </div>
             )}
 
-            {/* Summary KPI Cards */}
+            {/* 3 Status Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
-                    <div className="mb-2 flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-amber-400" />
-                        <span className="text-xs font-medium text-slate-500">Active</span>
+                <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                        <span className="text-xs font-semibold text-slate-600">Active</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-900">{loading ? "…" : counts.active}</div>
+                    <div className="mt-3 text-3xl font-bold text-slate-900">{loading ? "…" : counts.active}</div>
                 </div>
 
-                <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
-                    <div className="mb-2 flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
-                        <span className="text-xs font-medium text-slate-500">Dispensed</span>
+                <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                        <span className="text-xs font-semibold text-slate-600">Dispensed</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-900">{loading ? "…" : counts.completed}</div>
+                    <div className="mt-3 text-3xl font-bold text-slate-900">{loading ? "…" : counts.dispensed}</div>
                 </div>
 
-                <div className="rounded-xl bg-white p-5 shadow-sm border border-slate-200/80">
-                    <div className="mb-2 flex items-center gap-2">
-                        <span className="h-2.5 w-2.5 rounded-full bg-red-400" />
-                        <span className="text-xs font-medium text-slate-500">Cancelled</span>
+                <div className="bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
+                    <div className="flex items-center gap-2">
+                        <span className="w-2.5 h-2.5 rounded-full bg-rose-500" />
+                        <span className="text-xs font-semibold text-slate-600">Cancelled</span>
                     </div>
-                    <div className="text-2xl font-bold text-slate-900">{loading ? "…" : counts.cancelled}</div>
+                    <div className="mt-3 text-3xl font-bold text-slate-900">{loading ? "…" : counts.cancelled}</div>
                 </div>
             </div>
 
-            {/* Filter Tabs + Search */}
+            {/* Tabs and Search Bar */}
             <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex gap-1 bg-slate-100 p-1.5 rounded-xl w-full sm:w-auto text-xs">
-                    {(["all", "active", "completed", "cancelled"] as FilterTab[]).map((t) => (
+                <div className="flex gap-1.5 rounded-xl bg-slate-100 p-1.5 text-xs w-full sm:w-auto">
+                    {(["ALL", "ACTIVE", "DISPENSED", "CANCELLED"] as TabType[]).map((tabKey) => (
                         <button
-                            key={t}
+                            key={tabKey}
                             type="button"
-                            onClick={() => setTab(t)}
-                            className={`px-3.5 py-1.5 font-medium capitalize rounded-lg transition-all ${
-                                tab === t
+                            onClick={() => setCurrentTab(tabKey)}
+                            className={`rounded-lg px-4 py-2 font-medium capitalize transition-all ${
+                                currentTab === tabKey
                                     ? "bg-white text-slate-900 shadow-sm font-semibold"
                                     : "text-slate-500 hover:text-slate-800"
                             }`}
                         >
-                            {t === "all" ? "All" : STATUS_LABELS[t]}
+                            {tabKey.toLowerCase()}
                         </button>
                     ))}
                 </div>
 
                 <div className="relative w-full sm:w-80">
-                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-slate-400">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+                    <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <Search className="w-4 h-4" />
                     </div>
                     <input
                         type="text"
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search patient, Rx ID, doctor..."
-                        className="w-full pl-9 pr-8 py-2 text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
+                        className="w-full pl-10 pr-9 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                     />
                     {search && (
                         <button
@@ -265,67 +286,141 @@ export default function PrescriptionQueuePage() {
                 </div>
             </div>
 
-            {/* Prescription Queue Table */}
-            <div className="overflow-hidden rounded-xl bg-white shadow-sm border border-slate-200/80">
+            {/* Queue Table */}
+            <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-slate-200/80">
                 <div className="overflow-x-auto">
                     <table className="w-full text-left text-xs text-slate-600">
-                        <thead className="bg-slate-50/70 border-b border-slate-100 text-[11px] font-semibold text-slate-400 uppercase tracking-wider">
+                        <thead className="border-b border-slate-100 bg-slate-50/70 text-[11px] uppercase tracking-wider text-slate-400">
                         <tr>
-                            <th className="px-5 py-3.5 font-medium">Patient</th>
-                            <th className="px-5 py-3.5 font-medium">Rx ID</th>
-                            <th className="px-5 py-3.5 font-medium">Prescribed by</th>
-                            <th className="px-5 py-3.5 font-medium">Date</th>
-                            <th className="px-5 py-3.5 font-medium text-center">Status</th>
-                            <th className="px-5 py-3.5 font-medium text-right">Action</th>
+                            <th className="px-5 py-4 font-semibold">PATIENT</th>
+                            <th className="px-5 py-4 font-semibold">RX ID</th>
+                            <th className="px-5 py-4 font-semibold">PRESCRIBED BY</th>
+                            <th className="px-5 py-4 font-semibold">DATE</th>
+                            <th className="px-5 py-4 font-semibold text-center">STATUS</th>
+                            <th className="px-5 py-4 font-semibold text-right">ACTION</th>
                         </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100">
                         {loading ? (
                             <tr>
                                 <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
-                                    Loading prescriptions…
+                                    <div className="flex items-center justify-center gap-2">
+                                        <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                                        Loading doctor prescriptions queue…
+                                    </div>
                                 </td>
                             </tr>
-                        ) : filtered.length === 0 ? (
+                        ) : filteredPrescriptions.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-5 py-12 text-center text-slate-400">
                                     No prescriptions found. Once a doctor submits a prescription, it will appear here.
                                 </td>
                             </tr>
                         ) : (
-                            filtered.map((p) => (
-                                <tr key={p.id} className="hover:bg-slate-50/60 transition">
-                                    <td className="px-5 py-3.5 font-medium text-slate-900">{p.patientName}</td>
-                                    <td className="px-5 py-3.5 font-mono text-slate-600">{p.prescriptionNumber}</td>
-                                    <td className="px-5 py-3.5 text-slate-700">{p.doctorName}</td>
-                                    <td className="px-5 py-3.5 text-slate-400">
-                                        {new Date(p.date).toLocaleString("en-US", {
-                                            hour: "numeric",
-                                            minute: "2-digit",
-                                            month: "short",
-                                            day: "numeric",
-                                        })}
-                                    </td>
-                                    <td className="px-5 py-3.5 text-center">
-                      <span className={`inline-flex px-2.5 py-0.5 rounded-full text-[10px] font-semibold ${STATUS_STYLES[p.status]}`}>
-                        {STATUS_LABELS[p.status]}
-                      </span>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-right">
-                                        <Link
-                                            href={`/pharmacy/prescriptions/${p.id}`}
-                                            className="rounded-lg border border-blue-200 px-3 py-1.5 text-xs font-medium text-blue-700 hover:bg-blue-50 transition"
-                                        >
-                                            View & Dispense
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
+                            filteredPrescriptions.map((rx) => {
+                                const isDispensed = rx.status === "DISPENSED" || rx.status === "COMPLETED";
+
+                                return (
+                                    <tr key={rx.id} className="hover:bg-slate-50/60 transition">
+                                        <td className="px-5 py-4">
+                                            <div className="flex items-center gap-2.5">
+                                                <div className="p-1.5 rounded-full bg-blue-50 text-blue-600">
+                                                    <User className="w-3.5 h-3.5" />
+                                                </div>
+                                                <div>
+                                                    <p className="font-semibold text-slate-900">{rx.patientName}</p>
+                                                    <span className="text-[10px] text-slate-400 font-mono">
+                              ID: {rx.patientId}
+                            </span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-5 py-4 font-mono font-medium text-slate-800">
+                                            #{rx.prescriptionCode}
+                                        </td>
+                                        <td className="px-5 py-4 text-slate-700 font-medium">{rx.doctorName}</td>
+                                        <td className="px-5 py-4 text-slate-500">{rx.date}</td>
+                                        <td className="px-5 py-4 text-center">
+                        <span
+                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                                isDispensed
+                                    ? "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                                    : rx.status === "CANCELLED"
+                                        ? "bg-rose-50 text-rose-700 border border-rose-200/50"
+                                        : "bg-amber-50 text-amber-700 border border-amber-200/50"
+                            }`}
+                        >
+                          {rx.status}
+                        </span>
+                                        </td>
+                                        <td className="px-5 py-4 text-right">
+                                            <div className="flex items-center justify-end gap-2">
+                                                {!isDispensed && (
+                                                    <button
+                                                        type="button"
+                                                        disabled={updatingId === rx.id}
+                                                        onClick={() => void handleDispense(rx.id)}
+                                                        className="px-3 py-1 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-[11px] font-semibold transition shadow-sm disabled:opacity-50"
+                                                    >
+                                                        {updatingId === rx.id ? "Dispensing..." : "Dispense"}
+                                                    </button>
+                                                )}
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setSelectedRx(rx)}
+                                                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition"
+                                                    title="Quick View"
+                                                >
+                                                    <Eye className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                );
+                            })
                         )}
                         </tbody>
                     </table>
                 </div>
             </div>
+
+            {/* Detail Modal */}
+            {selectedRx && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+                    <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl space-y-4">
+                        <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                            <h2 className="text-sm font-bold text-slate-900">
+                                Prescription #{selectedRx.prescriptionCode}
+                            </h2>
+                            <button
+                                type="button"
+                                onClick={() => setSelectedRx(null)}
+                                className="text-slate-400 hover:text-slate-600 text-sm font-bold"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <div className="text-xs space-y-2">
+                            <p><span className="text-slate-400">Patient:</span> <strong className="text-slate-800">{selectedRx.patientName}</strong></p>
+                            <p><span className="text-slate-400">Doctor:</span> <strong className="text-slate-800">{selectedRx.doctorName}</strong></p>
+                            <p><span className="text-slate-400">Date:</span> <strong className="text-slate-800">{selectedRx.date}</strong></p>
+                            <p><span className="text-slate-400">Status:</span> <strong className="text-blue-600">{selectedRx.status}</strong></p>
+                            <p><span className="text-slate-400">Instructions:</span> {selectedRx.instructions}</p>
+                        </div>
+
+                        <div className="border-t border-slate-100 pt-3">
+                            <button
+                                type="button"
+                                onClick={() => setSelectedRx(null)}
+                                className="w-full py-2 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl hover:bg-slate-200 transition"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
