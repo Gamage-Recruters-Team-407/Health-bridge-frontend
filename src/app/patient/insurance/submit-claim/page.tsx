@@ -154,7 +154,7 @@ export default function SubmitClaimPage() {
     }
     if (Number(claimAmount) > remainingLimit) {
       showError(
-        `Claim amount exceeds your remaining policy coverage of $${remainingLimit.toFixed(2)}.`
+        `Claim amount exceeds your remaining policy coverage of Rs. ${remainingLimit.toFixed(2)}.`
       );
       return;
     }
@@ -334,10 +334,10 @@ export default function SubmitClaimPage() {
               {/* Row 4: Estimated Amount */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Estimated Amount ($) <span className="text-red-500">*</span>
+                  Estimated Amount (Rs.) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">Rs.</span>
                   <input
                     type="number"
                     step="0.01"
@@ -346,13 +346,13 @@ export default function SubmitClaimPage() {
                     placeholder="0.00"
                     value={claimAmount}
                     onChange={(e) => setClaimAmount(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full pl-9 pr-4 py-2 text-xs font-bold text-slate-900 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 text-xs font-bold text-slate-900 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
                 {claimAmount !== "" && Number(claimAmount) > 0 && (
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Claim Amount: <strong className="text-slate-700">${Number(claimAmount).toFixed(2)}</strong>
+                    Claim Amount: <strong className="text-slate-700">Rs. {Number(claimAmount).toFixed(2)}</strong>
                   </p>
                 )}
               </div>
@@ -402,7 +402,7 @@ export default function SubmitClaimPage() {
                     <div className="pt-1 border-t border-blue-200/60 flex justify-between items-center text-[11px]">
                       <span className="text-slate-600">Remaining limit:</span>
                       <span className="font-extrabold text-blue-900">
-                        ${remainingLimit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        Rs. {remainingLimit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
