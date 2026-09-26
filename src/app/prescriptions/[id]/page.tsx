@@ -6,8 +6,9 @@ import { prescriptionService } from "@/services/prescriptionService";
 import QRCodeDisplay from "@/components/prescription/QRCodeDisplay";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { Prescription } from "@/types/prescription";
-import { buildQrPayload } from "@/lib/prescriptionPdf";
+import { buildQrPayload, generatePrescriptionPdf } from "@/lib/prescriptionPdf"; // ✅ generatePrescriptionPdf import කරගන්න
 import { useAuth } from "@/hooks/useAuth";
+import api from "@/lib/axios"; // ✅ Doctor ගේ branch එක ගේන්න api එක import කරගන්න
 import { Download, ArrowLeft, Calendar, Pencil, Trash2, Loader2 } from "lucide-react";
 
 function StatusBadge({ status }: { status?: string }) {
@@ -32,13 +33,29 @@ export default function PrescriptionDetailsPage() {
   const id = params.id as string;
   const [data, setData] = useState<Prescription | null>(null);
   const [loading, setLoading] = useState(true);
-  // ✅ NEW: Edit + Delete are now available from the details page too (doctor only),
-  // not just the list page — delete uses the same themed ConfirmDialog.
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  
+  // ✅ NEW: Doctor ගේ Hospital (Branch) name එක තියාගන්න state එකක්
+  const [doctorBranch, setDoctorBranch] = useState<string>("Health Bridge Hospital");
 
   useEffect(() => {
-    prescriptionService.getPrescriptionById(id).then(setData).finally(() => setLoading(false));
+    prescriptionService.getPrescriptionById(id).then((prescriptionData) => {
+      setData(prescriptionData);
+      
+      // ✅ Doctor කෙනාගේ Profile එක අරගෙන branch (Hospital name) එක ගේනවා
+      if (prescriptionData.doctorId) {
+        api.get(`/users/profile/${prescriptionData.doctorId}`)
+          .then((res: any) => {
+            if (res.branch) {
+              setDoctorBranch(res.branch);
+            }
+          })
+          .catch(() => {
+            setDoctorBranch("Health Bridge Hospital"); // Fallback name
+          });
+      }
+    }).finally(() => setLoading(false));
   }, [id]);
 
   const handleDelete = async () => {
@@ -52,7 +69,13 @@ export default function PrescriptionDetailsPage() {
     }
   };
 
-  if (loading) return <div className="flex min-h-64 items-center justify-center">Loading...</div>;
+  const handleDownload = async () => {
+    if (!data) return;
+    // ✅ PDF එක හදද්දී doctorBranch එකත් එක්ක යවනවා
+    await generatePrescriptionPdf(data, doctorBranch);
+  };
+
+  if (loading) return <div className="flex min-h-64 items-center justify-center"><Loader2 className="h-6 w-6 animate-spin text-blue-600" /></div>;
   if (!data) return <div className="text-center text-red-600">Prescription not found</div>;
 
   const qrValue = buildQrPayload(data);
@@ -77,9 +100,12 @@ export default function PrescriptionDetailsPage() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Link href={`/prescriptions/${id}/download`} className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700">
+            <button
+              onClick={handleDownload}
+              className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700"
+            >
               <Download className="w-4 h-4" /> Download PDF
-            </Link>
+            </button>
             {isDoctor && (
               <>
                 <Link href={`/prescriptions/${id}/edit`} className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-amber-50 hover:text-amber-700 hover:border-amber-200">
@@ -148,7 +174,12 @@ export default function PrescriptionDetailsPage() {
             <div className="mt-4 space-y-4">
               <div><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Name</p><p className="mt-1 text-sm font-semibold text-slate-900">{data.patientName}</p></div>
               <div className="border-t border-slate-100 pt-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Phone</p><p className="mt-1 text-sm font-semibold text-slate-900">{data.patientPhone}</p></div>
-              <div className="border-t border-slate-100 pt-4"><p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Prescribed By</p><p className="mt-1 text-sm font-semibold text-slate-900">{data.doctorName}</p></div>
+              <div className="border-t border-slate-100 pt-4">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Prescribed By</p>
+                <p className="mt-1 text-sm font-semibold text-slate-900">{data.doctorName}</p>
+                {/* ✅ Frontend එකේ පෙන්නනකොත් Hospital name එකත් පෙන්නනවා */}
+                {doctorBranch && <p className="text-xs text-slate-500">{doctorBranch}</p>}
+              </div>
             </div>
           </div>
         </div>
