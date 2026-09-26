@@ -150,7 +150,7 @@ export default function PatientDashboardPage() {
               <span>Notifications</span>
             </Link>
             <Link
-                href="/support/patient"
+                href="/support/patient/sdefault"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold shadow-sm transition"
             >
               <HeadphonesIcon className="w-4 h-4" />

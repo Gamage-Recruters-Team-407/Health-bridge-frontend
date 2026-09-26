@@ -17,6 +17,9 @@ import CreateTicketModal from "@/components/support/CreateTicketModal";
 import ChatBubble from "@/components/support/ChatBubble";
 import ReplyComposer from "@/components/support/ReplyComposer";
 import { PlusIcon } from "@/components/support/icons";
+import Navbar from "@/components/ui/Navbar";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 function formatListDate(iso: string) {
   return new Date(iso).toLocaleDateString(undefined, { month: "numeric", day: "numeric", year: "numeric" });
@@ -165,22 +168,40 @@ setSelectedId((current) =>
   }, [tickets, query]);
 
   return (
+      <div className="min-h-screen bg-slate-50">
+      {/* Navbar spans full width, on top */}
+   
     <div
       className="flex h-screen bg-white text-[#242424]"
       style={{ fontFamily: "'Segoe UI', Roboto, system-ui, sans-serif" }}
     >
+
+  
       {/* Left: message list pane */}
       <div className="flex w-[380px] shrink-0 flex-col border-r border-[#E1DFDD] bg-white">
         <div className="flex items-center justify-between border-b border-[#E1DFDD] px-4 pt-3">
-          <span className="border-b-2 border-[#0F6CBD] pb-2 text-sm font-medium text-[#242424]">All tickets</span>
-          <button
-            onClick={() => setModalOpen(true)}
-            title="New ticket"
-            className="mb-2 flex items-center gap-1 rounded-md px-2 py-1 text-[#0F6CBD] hover:bg-[#F0F6FC]"
-          >
-            <PlusIcon className="h-4 w-4" />
-          </button>
-        </div>
+  {/* Back Button */}
+  <button
+    onClick={() => window.history.back()}
+    className="inline-flex items-center rounded-lg p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+    aria-label="Go back"
+  >
+    <ArrowLeft size={20} />
+  </button>
+
+  {/* Title */}
+  <span className="border-b-2 border-[#0F6CBD] pb-3 text-sm font-medium text-[#242424]">
+    All Tickets
+  </span>
+
+  {/* New Ticket Button */}
+  <Link
+    href="/support/patient/sdefault"
+    className="mb-1 inline-flex items-center rounded-lg bg-[#0F6CBD] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0F6CBD] focus:ring-offset-2"
+  >
+    + New Ticket
+  </Link>
+</div>
 
         <div className="px-3 py-2">
           <div className="flex items-center gap-2 rounded-md bg-[#F5F5F5] px-3 py-1.5">
@@ -260,39 +281,33 @@ setSelectedId((current) =>
 
         {selectedId && !loadingTicket && !ticketError && ticket && (
           <>
-            <div className="flex items-center justify-between border-b border-[#E1DFDD] px-6 py-3">
-              <h1 className="truncate text-base font-semibold text-[#242424]">{ticket.subject || "Untitled ticket"}</h1>
-              <StatusBadge status={ticket.status} />
+            <div className="border-b border-[#E1DFDD] px-6 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex items-center gap-1">
+  <p className="text-xs font-semibold uppercase tracking-wide text-[#0F6CBD]">
+    {ticket.category}
+  </p>
+
+  <span className="text-xs font-semibold text-[#424242]">:</span>
+
+  <h1 className="text-base font-semibold text-[#242424]">
+    {ticket.subject || "Untitled ticket"}
+  </h1>
+</div>
+                <StatusBadge status={ticket.status} />
+              </div>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#424242]">{ticket.description}</p>
+              {ticket.attachmentUrl && (
+                <a href={ticket.attachmentUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ticket.attachmentUrl} alt="Ticket attachment" className="max-h-10 rounded-md border border-[#E1DFDD]" />
+                </a>
+              )}
+              <p className="mt-2 text-xs text-[#616161]">Opened {new Date(ticket.createdAt).toLocaleString()}</p>
             </div>
 
-            <div className="flex items-center justify-between border-b border-[#E1DFDD] bg-[#FAF9F8] px-6 py-3">
-              <div className="flex items-center gap-3">
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-[#0F6CBD]/10 text-sm font-semibold text-[#0F6CBD]">
-                  {(ticket.userName || "Y").slice(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-[#242424]">{ticket.userName || "You"}</p>
-                  <p className="text-xs text-[#616161]">To: Support team</p>
-                </div>
-              </div>
-              <span className="text-xs text-[#616161]">{new Date(ticket.createdAt).toLocaleString()}</span>
-            </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="border-b border-[#EDEBE9] px-6 py-4">
-                <ChatBubble
-                  reply={{
-                    id: "original",
-                    senderId: ticket.userId,
-                    senderName: ticket.userName,
-                    senderRole: "USER",
-                    message: ticket.description,
-                    imageUrl: ticket.attachmentUrl,
-                    createdAt: ticket.createdAt,
-                  }}
-                  isOwn={true}
-                />
-              </div>
               {ticket.replies.map((r) => (
                 <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
                   <ChatBubble
@@ -314,13 +329,7 @@ setSelectedId((current) =>
                       This conversation is closed. Create a new ticket if you need more help.
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setModalOpen(true)}
-                    className="shrink-0 rounded-md bg-[#0F6CBD] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#0B5A9F]"
-                  >
-                    Create new ticket
-                  </button>
+               
                 </div>
 
                 <form onSubmit={handleFeedbackSubmit} className="mt-4 border-t border-emerald-200 pt-4">
@@ -374,7 +383,7 @@ setSelectedId((current) =>
         )}
       </div>
 
-      <CreateTicketModal open={modalOpen} onClose={() => setModalOpen(false)} onCreate={handleCreate} />
+    </div>
     </div>
   );
 }

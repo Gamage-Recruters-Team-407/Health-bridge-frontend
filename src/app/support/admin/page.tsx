@@ -1,7 +1,8 @@
 "use client";
-
+import { ArrowLeft } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import {
   getAllTickets,
   getTicketByIdForAdmin,
@@ -163,11 +164,28 @@ export default function AdminTicketsPage() {
     >
       {/* Left: ticket list pane */}
       <div className="flex w-[380px] shrink-0 flex-col border-r border-[#E1DFDD] bg-white">
-        <div className="mb-1 px-4 pt-3">
-          <h1 className="text-[15px] font-semibold text-[#242424]">Support tickets</h1>
-          <p className="mt-0.5 text-xs text-[#616161]">All tickets raised by patients across the platform.</p>
-        </div>
+   <div className="flex items-center gap-3">
+  {/* Back + Title */}
+  <button
+    onClick={() => window.history.back()}
+    className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+    aria-label="Go back"
+  >
+    <ArrowLeft size={22} />
+  </button>
 
+  <h1 className="text-[15px] font-semibold text-[#242424]">
+    All Support Tickets
+  </h1>
+
+  {/* Support Documents */}
+  <Link
+    href="/support/admin/document"
+    className="ml-auto inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-blue-700"
+  >
+    Support Documents
+  </Link>
+</div>   
         {/* Search Input Bar */}
         <div className="px-4 pt-2">
           <div className="relative flex items-center">
@@ -278,33 +296,25 @@ export default function AdminTicketsPage() {
 
         {selectedId && !loadingTicket && !ticketError && ticket && (
           <>
-            <div className="flex items-center justify-between border-b border-[#E1DFDD] px-6 py-3">
-              <h2 className="truncate text-base font-semibold text-[#242424]">
-                <span className="text-blue-600">{ticket.category}</span>
-                {" : "}
-                {ticket.subject}
-              </h2>
-              <StatusBadge status={ticket.status} />
-            </div>
-            <div className="border-b border-[#E1DFDD] bg-[#FAF9F8] px-6 py-2 text-xs text-[#616161]">
-              Opened {new Date(ticket.createdAt).toLocaleString()}
+            <div className="border-b border-[#B8D8F5] bg-[#EAF4FF] px-6 py-4">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-[#0F6CBD]">{ticket.category}</p>
+                  <h2 className="mt-1 text-base font-semibold text-[#242424]">{ticket.subject || "Untitled ticket"}</h2>
+                </div>
+                <StatusBadge status={ticket.status} />
+              </div>
+              <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-[#424242]">{ticket.description}</p>
+              {ticket.attachmentUrl && (
+                <a href={ticket.attachmentUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={ticket.attachmentUrl} alt="Ticket attachment" className="max-h-10 rounded-md border border-[#E1DFDD]" />
+                </a>
+              )}
+              <p className="mt-2 text-xs text-[#616161]">Opened {new Date(ticket.createdAt).toLocaleString()}</p>
             </div>
 
             <div className="flex-1 overflow-y-auto">
-              <div className="border-b border-[#EDEBE9] px-6 py-4">
-                <ChatBubble
-                  reply={{
-                    id: "original",
-                    senderId: ticket.userId,
-                    senderName: ticket.userName,
-                    senderRole: "USER",
-                    message: ticket.description,
-                    imageUrl: ticket.attachmentUrl,
-                    createdAt: ticket.createdAt,
-                  }}
-                  isOwn={false}
-                />
-              </div>
               {ticket.replies.map((r) => (
                 <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
                   <ChatBubble
@@ -376,6 +386,7 @@ export default function AdminTicketsPage() {
               </a>
             </div>
           )}
+      
 
           <div className="border-t border-[#E1DFDD] pt-4">
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#616161]">Patient feedback</h3>
@@ -406,6 +417,9 @@ export default function AdminTicketsPage() {
             ) : (
               <p className="text-sm text-[#9A9A9A]">No feedback submitted.</p>
             )}
+
+            
+
           </div>
         </aside>
       )}

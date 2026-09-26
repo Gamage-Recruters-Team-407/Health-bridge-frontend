@@ -158,7 +158,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
-          { title: "Support", href: "/support/patient", icon: LifeBuoy },
+          { title: "Support", href: "/support/patient/sdefault", icon: LifeBuoy },
         ],
       },
     ];

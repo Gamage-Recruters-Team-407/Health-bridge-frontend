@@ -1,6 +1,10 @@
 import { Ticket, TicketStatus, TicketSummary } from "@/types/support";
 
-const API_BASE = "http://localhost:8088";
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8088"
+).replace(/\/api\/?$/, "");
 
 // Get JWT token from localStorage
 function getToken(): string | null {
@@ -35,7 +39,18 @@ async function request<T>(
     throw new Error(message);
   }
 
-  return res.json();
+  const payload = await res.json();
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    payload.success === true &&
+    Object.prototype.hasOwnProperty.call(payload, "data")
+  ) {
+    return payload.data as T;
+  }
+
+  return payload as T;
 }
 
 function normalizeTicketFeedback(ticket: Ticket): Ticket {
@@ -57,6 +72,27 @@ function normalizeTicketFeedback(ticket: Ticket): Ticket {
   );
 
   return { ...ticket, feedback };
+}
+
+function normalizeTicketSummaryFeedback(summary: TicketSummary): TicketSummary {
+  const raw = summary as TicketSummary & {
+    supportFeedback?: TicketSummary["feedback"];
+    rating?: number | null;
+    comment?: string | null;
+    feedbackSubmittedAt?: string | null;
+  };
+
+  const feedback = raw.feedback ?? raw.supportFeedback ?? (
+    raw.feedbackRating != null || raw.rating != null
+      ? {
+          rating: raw.feedbackRating ?? raw.rating ?? 0,
+          comment: raw.feedbackComment ?? raw.comment ?? null,
+          createdAt: raw.feedbackCreatedAt ?? raw.feedbackSubmittedAt ?? undefined,
+        }
+      : null
+  );
+
+  return { ...summary, feedback };
 }
 
 // ---------- User endpoints ----------
@@ -128,10 +164,24 @@ export function submitTicketFeedback(
   }).then(normalizeTicketFeedback);
 }
 
+
+export interface PublicFeedback {
+  userName: string;
+  rating: number;
+  comment?: string | null;
+  submittedAt?: string | null;
+}
+
+export function getPublicFeedback() {
+  return request<PublicFeedback[]>("/api/tickets/feedback/public");
+}
+
 // ---------- Admin endpoints ----------
 
 export function getAllTickets() {
-  return request<TicketSummary[]>("/api/admin/tickets");
+  return request<TicketSummary[]>("/api/admin/tickets").then((summaries) =>
+    summaries.map(normalizeTicketSummaryFeedback)
+  );
 }
 
 export function getTicketByIdForAdmin(id: string) {
