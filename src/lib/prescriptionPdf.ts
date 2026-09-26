@@ -7,9 +7,7 @@ import { Prescription } from "@/types/prescription";
 /**
  * ✅ FIX: single source of truth for the QR payload.
  * Both the on-screen QR (details page) and the downloaded PDF now call this
- * function, so scanning either one shows the SAME, real prescription data —
- * prescription number, patient, doctor, date and status — instead of a bare
- * "PRESCRIPTION:RX-XXXX" string.
+ * function, so scanning either one shows the SAME, real prescription data.
  */
 export function buildQrPayload(p: Prescription): string {
   const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-";
@@ -23,7 +21,7 @@ export function buildQrPayload(p: Prescription): string {
   ].join("\n");
 }
 
-// Palette kept in sync with the app's Tailwind theme (blue-600 / slate / emerald)
+// Palette kept in sync with the app's Tailwind theme
 const BRAND: [number, number, number] = [37, 99, 235];
 const SLATE_900: [number, number, number] = [15, 23, 42];
 const SLATE_500: [number, number, number] = [100, 116, 139];
@@ -35,19 +33,12 @@ const WHITE: [number, number, number] = [255, 255, 255];
 
 /**
  * ✅ FIX: proper single-page prescription PDF, generated entirely in the browser.
- * Brand header, patient/doctor info block with the QR next to it, a real
- * bordered medicines table, a notes box, and a footer — everything laid out
- * and lined up neatly instead of the old loose paragraph dump.
+ * Includes Doctor's Hospital/Branch name as requested.
  */
-export async function generatePrescriptionPdf(prescription: Prescription): Promise<void> {
+export async function generatePrescriptionPdf(prescription: Prescription, doctorBranch?: string): Promise<void> {
   const qrPayload = buildQrPayload(prescription);
-  // ✅ FIXED: margin was 1 module — well below the minimum 4-module "quiet zone"
-  // the QR spec requires. With too little blank border, phone cameras can't
-  // lock onto the QR's finder patterns and report "no data found" even though
-  // the code is technically valid. Bumped width too, for a sharper image before
-  // it gets scaled down onto the page.
   const qrDataUrl = await QRCode.toDataURL(qrPayload, {
-    margin: 4,
+    margin: 4, // ✅ Fixed: minimum 4-module quiet zone for reliable scanning
     width: 320,
     errorCorrectionLevel: "H",
   });
@@ -83,19 +74,21 @@ export async function generatePrescriptionPdf(prescription: Prescription): Promi
   y += 24;
 
   // ---------- Info blocks + QR ----------
-  const qrSize = 120; // ✅ bumped slightly for extra scan reliability now that the quiet zone is fixed
+  const qrSize = 120;
   const gap = 16;
   const infoAreaWidth = pageWidth - marginX * 2 - qrSize - gap;
   const colWidth = (infoAreaWidth - gap) / 2;
   const col1X = marginX;
   const col2X = marginX + colWidth + gap;
   const qrX = pageWidth - marginX - qrSize;
-  const blockHeight = 96;
+  
+  // ✅ Increased blockHeight to 110 to comfortably fit 3 rows (Patient, Phone, Diagnosis / Doctor, Branch, Date)
+  const blockHeight = 110;
 
   const infoBlock = (x: number, labels: string[], values: (string | undefined)[]) => {
     doc.setFillColor(...SLATE_100);
     doc.roundedRect(x, y, colWidth, blockHeight, 6, 6, "F");
-    let ly = y + 20;
+    let ly = y + 16; // ✅ Adjusted starting Y for better vertical spacing
     labels.forEach((label, i) => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
@@ -104,7 +97,7 @@ export async function generatePrescriptionPdf(prescription: Prescription): Promi
       doc.setFontSize(10.5);
       doc.setTextColor(...SLATE_900);
       doc.text(values[i] || "-", x + 12, ly + 14, { maxWidth: colWidth - 24 });
-      ly += 26;
+      ly += 28; // ✅ Adjusted row height
     });
   };
 
@@ -114,9 +107,10 @@ export async function generatePrescriptionPdf(prescription: Prescription): Promi
     prescription.diagnosis,
   ]);
 
-  // ✅ FIXED: "VALID UNTIL" removed from the printed PDF per request.
-  infoBlock(col2X, ["PRESCRIBED BY", "DATE ISSUED"], [
+  // ✅ ADDED: Hospital / Branch name to the PDF
+  infoBlock(col2X, ["PRESCRIBED BY", "HOSPITAL / BRANCH", "DATE ISSUED"], [
     prescription.doctorName,
+    doctorBranch || "Health Bridge Hospital",
     prescription.createdAt ? new Date(prescription.createdAt).toLocaleDateString() : "-",
   ]);
 
