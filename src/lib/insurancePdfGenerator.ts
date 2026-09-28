@@ -716,7 +716,7 @@ export function generateClaimTrackingPdf(
   y -= 64;
 
   // Overview Information Box
-  doc.drawRect(40, y - 56, 515, 56, { fillColor: "#F8FAFC", strokeColor: "#E2E8F0" });
+  doc.drawRect(40, y - 70, 515, 70, { fillColor: "#F8FAFC", strokeColor: "#E2E8F0" });
   doc.drawText("CLAIM ADJUDICATION OVERVIEW", 50, y - 14, {
     font: "bold",
     size: 8.5,
@@ -766,14 +766,21 @@ export function generateClaimTrackingPdf(
   doc.drawText("Adjudication Date:", 240, y - 44, { font: "regular", size: 8, color: "#64748B" });
   doc.drawText(revDateStr, 345, y - 44, { font: "regular", size: 8, color: "#1E293B" });
 
-  doc.drawText("Policy Underwriter:", 430, y - 44, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText("Policy Carrier:", 430, y - 44, { font: "regular", size: 8, color: "#64748B" });
   doc.drawText(claim.providerName || policy?.providerName || "Ceylinco Life", 505, y - 44, {
     font: "bold",
     size: 7.5,
     color: "#1E293B",
   });
 
-  y -= 70;
+  // Row 3: Hospital & Branch
+  doc.drawText("Hospital Facility:", 50, y - 58, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(claim.hospitalName || "HealthBridge Hospital", 125, y - 58, { font: "bold", size: 8, color: "#1E293B" });
+
+  doc.drawText("Hospital Branch:", 240, y - 58, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(`${claim.branch || "Colombo"} Branch`, 345, y - 58, { font: "bold", size: 8, color: "#2563EB" });
+
+  y -= 84;
 
   // 3 KPI Cards Row
   const cardW = 165;

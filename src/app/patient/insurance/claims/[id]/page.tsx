@@ -454,6 +454,15 @@ export default function PatientClaimTrackingPage() {
 
               <div>
                 <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  Hospital & Branch
+                </span>
+                <p className="font-semibold text-slate-800 mt-0.5">
+                  {claim.hospitalName || "HealthBridge Hospital"} • {claim.branch || "Colombo"} Branch
+                </p>
+              </div>
+
+              <div>
+                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
                   Submission Date
                 </span>
                 <p className="font-medium text-slate-700 mt-0.5">

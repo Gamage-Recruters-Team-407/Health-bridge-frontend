@@ -400,11 +400,12 @@ export default function ClaimsListPage() {
                               <Building2 className="w-3 h-3 text-slate-400" />
                               <span>{c.providerName || "Standard Provider"}</span>
                             </div>
-                            {c.policyNumber && (
-                              <span className="text-[11px] text-slate-500 font-mono">
-                                #{c.policyNumber}
+                            <div className="flex items-center gap-1.5 text-[11px] text-slate-500 font-mono">
+                              {c.policyNumber && <span>#{c.policyNumber}</span>}
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-slate-100 text-slate-600 font-sans font-medium">
+                                {c.branch || "Colombo"} Branch
                               </span>
-                            )}
+                            </div>
                           </div>
                         </TableCell>
 

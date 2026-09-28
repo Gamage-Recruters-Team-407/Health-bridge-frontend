@@ -22,7 +22,13 @@ export const insuranceService = {
     }
   },
   submitClaim: async (
-    claim: { policyId: string; treatmentDescription: string; claimAmount: number },
+    claim: {
+      policyId: string;
+      treatmentDescription: string;
+      claimAmount: number;
+      hospitalName?: string;
+      branch?: string;
+    },
     documents: File[]
   ): Promise<InsuranceClaim> => {
     const formData = new FormData();

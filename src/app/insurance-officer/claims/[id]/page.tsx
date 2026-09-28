@@ -350,13 +350,19 @@ export default function ClaimDetailsPage() {
                 </p>
               </div>
 
-              {/* Column 2: Provider */}
+              {/* Column 2: Provider & Facility */}
               <div className="space-y-1.5">
                 <span className="font-bold text-slate-400 uppercase tracking-wider text-[11px]">
-                  Provider
+                  Provider & Facility
                 </span>
                 <p className="font-bold text-slate-800 text-sm">
                   {policy?.providerName || claim.providerName || "Ceylinco Life / BlueShield Health"}
+                </p>
+                <p className="text-slate-500">
+                  Facility: <span className="text-slate-800 font-medium">{claim.hospitalName || "HealthBridge Hospital"}</span>
+                </p>
+                <p className="text-slate-500">
+                  Branch: <span className="text-blue-600 font-semibold">{claim.branch || "Colombo"} Branch</span>
                 </p>
                 <p className="text-slate-500">
                   Policy #:{" "}
@@ -371,9 +377,6 @@ export default function ClaimDetailsPage() {
                     <span className="font-mono text-slate-700">{claim.policyNumber || claim.policyId}</span>
                   )}
                 </p>
-                <p className="text-slate-500">
-                  Plan: <span className="text-slate-700 font-medium">{policy?.policyType || "Comprehensive Gold Plus"}</span>
-                </p>
               </div>
 
               {/* Column 3: Claim Summary */}
@@ -385,7 +388,7 @@ export default function ClaimDetailsPage() {
                   Submitted: <strong className="text-slate-800">{submittedDateStr}</strong>
                 </p>
                 <p className="text-slate-500">
-                  Amount: <strong className="text-slate-900 text-sm">Rs. ${(claim.claimAmount || 0).toFixed(2)}</strong>
+                  Amount: <strong className="text-slate-900 text-sm">Rs. {(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong>
                 </p>
                 <p className="text-slate-500 flex items-center gap-1.5">
                   Status:{" "}
