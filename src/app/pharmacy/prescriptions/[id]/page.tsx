@@ -4,6 +4,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { Download, RefreshCw, CheckCircle, XCircle, ArrowLeft, User, FileText, Calendar } from "lucide-react";
+import { Sidebar } from "@/components/ui/Sidebar";
 import { prescriptionService } from "@/services/prescriptionService";
 import type { Prescription } from "@/types/prescription";
 
@@ -20,6 +21,9 @@ const STATUS_STYLES: Record<string, string> = {
 };
 
 export default function PrescriptionDetailPage() {
+    const [collapsed, setCollapsed] = useState(false);
+    const [mobileOpen, setMobileOpen] = useState(false);
+
     const params = useParams();
     const rawId = params?.id;
     const id = Array.isArray(rawId) ? rawId[0] : rawId;
@@ -107,196 +111,209 @@ export default function PrescriptionDetailPage() {
         }
     };
 
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-slate-50/50 p-6 flex items-center justify-center text-xs text-slate-500 gap-2">
-                <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
-                Loading prescription details...
-            </div>
-        );
-    }
-
-    if (error || !prescription) {
-        return (
-            <div className="m-6 rounded-2xl border border-red-200 bg-red-50 p-5 text-xs text-red-700 shadow-sm space-y-2">
-                <p className="font-semibold">Failed to load prescription</p>
-                <p>{error ?? "Prescription not found"}</p>
-                <button
-                    type="button"
-                    onClick={() => router.push("/pharmacy/prescriptions")}
-                    className="mt-2 text-xs font-semibold text-blue-600 hover:underline"
-                >
-                    Return to Queue
-                </button>
-            </div>
-        );
-    }
-
-    const rawPrescription = prescription as unknown as Record<string, unknown>;
-    const dateVal =
-        rawPrescription.date || rawPrescription.createdAt || rawPrescription.prescriptionDate;
-    const formattedDate = dateVal
-        ? new Date(String(dateVal)).toLocaleDateString("en-GB", {
-            day: "2-digit",
-            month: "short",
-            year: "numeric",
-        })
-        : "Not specified";
-
-    const currentStatus = String(prescription.status || "ACTIVE").toUpperCase();
-    const medicinesList = Array.isArray(rawPrescription.medicines)
-        ? (rawPrescription.medicines as Array<Record<string, unknown>>)
-        : Array.isArray(rawPrescription.items)
-            ? (rawPrescription.items as Array<Record<string, unknown>>)
-            : [];
-
     return (
-        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <div>
-                    <button
-                        type="button"
-                        onClick={() => router.push("/pharmacy/prescriptions")}
-                        className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 mb-2 transition"
-                    >
-                        <ArrowLeft className="w-3.5 h-3.5" /> Back to Prescription Queue
-                    </button>
-                    <div className="flex items-center gap-3">
-                        <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-                            Prescription #{prescription.id?.slice(0, 8).toUpperCase()}
-                        </h1>
-                        <span
-                            className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-                                STATUS_STYLES[currentStatus] || "bg-slate-100 text-slate-600"
-                            }`}
-                        >
-              {STATUS_LABELS[currentStatus] || currentStatus}
-            </span>
-                    </div>
-                    <p className="text-xs text-slate-400 mt-0.5">Reference ID: {prescription.id}</p>
-                </div>
+        <div className="flex min-h-screen bg-slate-50">
+            {/* 1. Main UI Sidebar */}
+            <Sidebar
+                userRole="PHARMACIST"
+                userName="Pharmacist"
+                collapsed={collapsed}
+                onToggleCollapse={() => setCollapsed(!collapsed)}
+                mobileOpen={mobileOpen}
+                onCloseMobile={() => setMobileOpen(false)}
+            />
 
-                <div className="flex items-center gap-2">
-                    <button
-                        type="button"
-                        onClick={() => void handleDownload()}
-                        disabled={downloading}
-                        className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:opacity-50"
-                    >
-                        <Download className="w-3.5 h-3.5" /> {downloading ? "Downloading..." : "Download PDF"}
-                    </button>
-                </div>
-            </div>
-
-            {actionError && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 shadow-sm">
-                    {actionError}
-                </div>
-            )}
-
-            {/* Grid Content */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                {/* Left 2 Columns: Information & Medicines */}
-                <div className="space-y-6 lg:col-span-2">
-                    {/* Patient & Doctor Meta */}
-                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80">
-                        <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                            <User className="w-4 h-4 text-blue-600" /> Consultation Information
-                        </h2>
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-xs">
-                            <div>
-                                <p className="text-slate-400">Patient Identifier</p>
-                                <p className="font-semibold text-slate-800 mt-0.5 font-mono">
-                                    {String(rawPrescription.patientId || prescription.patientId || "—")}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-slate-400">Doctor / Clinician</p>
-                                <p className="font-semibold text-slate-800 mt-0.5">
-                                    {String(rawPrescription.doctorName || rawPrescription.prescribedBy || "Dr. Assigned")}
-                                </p>
-                            </div>
-                            <div>
-                                <p className="text-slate-400">Prescription Date</p>
-                                <p className="font-semibold text-slate-800 mt-0.5 flex items-center gap-1">
-                                    <Calendar className="w-3.5 h-3.5 text-slate-400" /> {formattedDate}
-                                </p>
-                            </div>
+            {/* 2. Main Page Content View */}
+            <div className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+                <main className="p-6 space-y-6">
+                    {loading ? (
+                        <div className="min-h-[50vh] flex items-center justify-center text-xs text-slate-500 gap-2">
+                            <RefreshCw className="w-4 h-4 animate-spin text-blue-600" />
+                            Loading prescription details...
                         </div>
-                    </div>
+                    ) : error || !prescription ? (
+                        <div className="rounded-2xl border border-red-200 bg-red-50 p-5 text-xs text-red-700 shadow-sm space-y-2">
+                            <p className="font-semibold">Failed to load prescription</p>
+                            <p>{error ?? "Prescription not found"}</p>
+                            <button
+                                type="button"
+                                onClick={() => router.push("/pharmacy/prescriptions")}
+                                className="mt-2 text-xs font-semibold text-blue-600 hover:underline cursor-pointer"
+                            >
+                                Return to Queue
+                            </button>
+                        </div>
+                    ) : (() => {
+                        const rawPrescription = prescription as unknown as Record<string, unknown>;
+                        const dateVal =
+                            rawPrescription.date || rawPrescription.createdAt || rawPrescription.prescriptionDate;
+                        const formattedDate = dateVal
+                            ? new Date(String(dateVal)).toLocaleDateString("en-GB", {
+                                day: "2-digit",
+                                month: "short",
+                                year: "numeric",
+                            })
+                            : "Not specified";
 
-                    {/* Medicines List */}
-                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-4">
-                        <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
-                            <FileText className="w-4 h-4 text-blue-600" /> Prescribed Medications
-                        </h2>
+                        const currentStatus = String(prescription.status || "ACTIVE").toUpperCase();
+                        const medicinesList = Array.isArray(rawPrescription.medicines)
+                            ? (rawPrescription.medicines as Array<Record<string, unknown>>)
+                            : Array.isArray(rawPrescription.items)
+                                ? (rawPrescription.items as Array<Record<string, unknown>>)
+                                : [];
 
-                        {medicinesList.length === 0 ? (
-                            <p className="text-xs text-slate-400 py-4 text-center">
-                                No specific medicines attached to this record.
-                            </p>
-                        ) : (
-                            <div className="divide-y divide-slate-100">
-                                {medicinesList.map((med, index) => (
-                                    <div key={index} className="py-3 flex justify-between items-center text-xs">
-                                        <div>
-                                            <p className="font-bold text-slate-800">
-                                                {String(med.name || med.medicineName || `Medication #${index + 1}`)}
-                                            </p>
-                                            <p className="text-[11px] text-slate-400 mt-0.5">
-                                                {String(med.dosage || med.strength || "Standard dosage")} •{" "}
-                                                {String(med.frequency || "As directed")}
-                                            </p>
+                        return (
+                            <>
+                                {/* Header */}
+                                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                                    <div>
+                                        <button
+                                            type="button"
+                                            onClick={() => router.push("/pharmacy/prescriptions")}
+                                            className="flex items-center gap-1.5 text-xs font-medium text-slate-500 hover:text-slate-800 mb-2 transition cursor-pointer"
+                                        >
+                                            <ArrowLeft className="w-3.5 h-3.5" /> Back to Prescription Queue
+                                        </button>
+                                        <div className="flex items-center gap-3">
+                                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
+                                                Prescription #{prescription.id?.slice(0, 8).toUpperCase()}
+                                            </h1>
+                                            <span
+                                                className={`rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                                                    STATUS_STYLES[currentStatus] || "bg-slate-100 text-slate-600"
+                                                }`}
+                                            >
+                                                {STATUS_LABELS[currentStatus] || currentStatus}
+                                            </span>
                                         </div>
-                                        <div className="text-right">
-                      <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-lg text-xs">
-                        Qty: {String(med.quantity || 1)}
-                      </span>
+                                        <p className="text-xs text-slate-400 mt-0.5">Reference ID: {prescription.id}</p>
+                                    </div>
+
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            type="button"
+                                            onClick={() => void handleDownload()}
+                                            disabled={downloading}
+                                            className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition disabled:opacity-50 cursor-pointer"
+                                        >
+                                            <Download className="w-3.5 h-3.5" /> {downloading ? "Downloading..." : "Download PDF"}
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {actionError && (
+                                    <div className="rounded-xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 shadow-sm">
+                                        {actionError}
+                                    </div>
+                                )}
+
+                                {/* Grid Content */}
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                    {/* Left 2 Columns: Information & Medicines */}
+                                    <div className="space-y-6 lg:col-span-2">
+                                        {/* Patient & Doctor Meta */}
+                                        <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80">
+                                            <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+                                                <User className="w-4 h-4 text-blue-600" /> Consultation Information
+                                            </h2>
+                                            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-4 text-xs">
+                                                <div>
+                                                    <p className="text-slate-400">Patient Identifier</p>
+                                                    <p className="font-semibold text-slate-800 mt-0.5 font-mono">
+                                                        {String(rawPrescription.patientId || prescription.patientId || "—")}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-slate-400">Doctor / Clinician</p>
+                                                    <p className="font-semibold text-slate-800 mt-0.5">
+                                                        {String(rawPrescription.doctorName || rawPrescription.prescribedBy || "Dr. Assigned")}
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-slate-400">Prescription Date</p>
+                                                    <p className="font-semibold text-slate-800 mt-0.5 flex items-center gap-1">
+                                                        <Calendar className="w-3.5 h-3.5 text-slate-400" /> {formattedDate}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Medicines List */}
+                                        <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-4">
+                                            <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3 flex items-center gap-2">
+                                                <FileText className="w-4 h-4 text-blue-600" /> Prescribed Medications
+                                            </h2>
+
+                                            {medicinesList.length === 0 ? (
+                                                <p className="text-xs text-slate-400 py-4 text-center">
+                                                    No specific medicines attached to this record.
+                                                </p>
+                                            ) : (
+                                                <div className="divide-y divide-slate-100">
+                                                    {medicinesList.map((med, index) => (
+                                                        <div key={index} className="py-3 flex justify-between items-center text-xs">
+                                                            <div>
+                                                                <p className="font-bold text-slate-800">
+                                                                    {String(med.name || med.medicineName || `Medication #${index + 1}`)}
+                                                                </p>
+                                                                <p className="text-[11px] text-slate-400 mt-0.5">
+                                                                    {String(med.dosage || med.strength || "Standard dosage")} •{" "}
+                                                                    {String(med.frequency || "As directed")}
+                                                                </p>
+                                                            </div>
+                                                            <div className="text-right">
+                                                                <span className="font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded-lg text-xs">
+                                                                    Qty: {String(med.quantity || 1)}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {Boolean(rawPrescription.instructions) && (
+                                                <div className="mt-4 p-3 bg-slate-50 rounded-xl text-xs border border-slate-200/60">
+                                                    <span className="font-bold text-slate-700 block mb-1">Doctor&apos;s Instructions:</span>
+                                                    <p className="text-slate-600 leading-relaxed">{String(rawPrescription.instructions)}</p>
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
-                                ))}
-                            </div>
-                        )}
 
-                        {Boolean(rawPrescription.instructions) && (
-                            <div className="mt-4 p-3 bg-slate-50 rounded-xl text-xs border border-slate-200/60">
-                                <span className="font-bold text-slate-700 block mb-1">Doctor&apos;s Instructions:</span>
-                                <p className="text-slate-600 leading-relaxed">{String(rawPrescription.instructions)}</p>
-                            </div>
-                        )}
-                    </div>
-                </div>
+                                    {/* Right Column: Actions */}
+                                    <div className="space-y-6">
+                                        <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-4">
+                                            <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
+                                                Pharmacy Dispensing Actions
+                                            </h2>
 
-                {/* Right Column: Actions */}
-                <div className="space-y-6">
-                    <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-4">
-                        <h2 className="text-sm font-bold text-slate-900 border-b border-slate-100 pb-3">
-                            Pharmacy Dispensing Actions
-                        </h2>
+                                            <div className="space-y-2.5">
+                                                <button
+                                                    type="button"
+                                                    disabled={updating || currentStatus === "COMPLETED"}
+                                                    onClick={() => void handleUpdateStatus("COMPLETED")}
+                                                    className="w-full py-2.5 px-4 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                                                >
+                                                    <CheckCircle className="w-4 h-4" />
+                                                    {currentStatus === "COMPLETED" ? "Prescription Dispensed" : "Mark as Dispensed"}
+                                                </button>
 
-                        <div className="space-y-2.5">
-                            <button
-                                type="button"
-                                disabled={updating || currentStatus === "COMPLETED"}
-                                onClick={() => void handleUpdateStatus("COMPLETED")}
-                                className="w-full py-2.5 px-4 bg-emerald-600 text-white rounded-xl text-xs font-bold hover:bg-emerald-700 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                <CheckCircle className="w-4 h-4" />
-                                {currentStatus === "COMPLETED" ? "Prescription Dispensed" : "Mark as Dispensed"}
-                            </button>
-
-                            <button
-                                type="button"
-                                disabled={updating || currentStatus === "CANCELLED"}
-                                onClick={() => void handleUpdateStatus("CANCELLED")}
-                                className="w-full py-2.5 px-4 border border-rose-200 bg-rose-50 text-rose-700 rounded-xl text-xs font-semibold hover:bg-rose-100 transition disabled:opacity-50 flex items-center justify-center gap-2"
-                            >
-                                <XCircle className="w-4 h-4" /> Cancel Prescription
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                                                <button
+                                                    type="button"
+                                                    disabled={updating || currentStatus === "CANCELLED"}
+                                                    onClick={() => void handleUpdateStatus("CANCELLED")}
+                                                    className="w-full py-2.5 px-4 border border-rose-200 bg-rose-50 text-rose-700 rounded-xl text-xs font-semibold hover:bg-rose-100 transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
+                                                >
+                                                    <XCircle className="w-4 h-4" /> Cancel Prescription
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </>
+                        );
+                    })()}
+                </main>
             </div>
         </div>
     );
