@@ -4,52 +4,75 @@ import { useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 import { prescriptionService } from "@/services/prescriptionService";
 import { Prescription } from "@/types/prescription";
-import { Download, ArrowLeft, FileText } from "lucide-react";
+import { generatePrescriptionPdf } from "@/lib/prescriptionPdf";
+import { Download, ArrowLeft, FileText, Loader2 } from "lucide-react";
 
 export default function DownloadPrescriptionPage() {
   const params = useParams();
   const id = params.id as string;
   const [downloading, setDownloading] = useState(false);
   const [data, setData] = useState<Prescription | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    prescriptionService.getPrescriptionById(id).then(setData);
+    prescriptionService
+      .getPrescriptionById(id)
+      .then(setData)
+      .finally(() => setLoading(false));
   }, [id]);
 
   const handleDownload = async () => {
+    if (!data) return;
     setDownloading(true);
     try {
-      const blob = await prescriptionService.downloadPrescription(id);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `Prescription-${data?.prescriptionNumber || id}.pdf`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // ✅ FIXED: PDF is now built entirely in the browser (jsPDF) using the same
+      // prescription data shown on screen. The QR embedded in it carries real
+      // patient/doctor/date/status details, and the layout is a clean single page —
+      // no dependency on the backend's /download endpoint anymore.
+      await generatePrescriptionPdf(data);
     } catch (error) {
-      alert("Failed to download prescription.");
+      console.error(error);
+      alert("Failed to generate prescription PDF.");
     } finally {
       setDownloading(false);
     }
   };
 
-  if (!data) return <div className="flex min-h-64 items-center justify-center">Loading...</div>;
+  if (loading) {
+    return (
+      <div className="flex min-h-64 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (!data) return <div className="text-center text-red-600">Prescription not found</div>;
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
       <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50"><FileText className="h-8 w-8 text-blue-600" /></div>
+        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
+          <FileText className="h-8 w-8 text-blue-600" />
+        </div>
         <h1 className="mt-5 text-xl font-bold text-slate-900">Download Prescription</h1>
-        <p className="mt-2 text-sm text-slate-500">Prescription: <span className="font-semibold text-slate-700">{data.prescriptionNumber}</span></p>
+        <p className="mt-2 text-sm text-slate-500">
+          Prescription: <span className="font-semibold text-slate-700">{data.prescriptionNumber}</span>
+        </p>
         <p className="mt-1 text-xs text-slate-500">Includes Issue Date, QR Code, Medicines, and Instructions</p>
 
         <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-center">
-          <button onClick={handleDownload} disabled={downloading} className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50">
-            <Download className="h-4 w-4" /> {downloading ? "Downloading..." : "Download PDF"}
+          <button
+            onClick={handleDownload}
+            disabled={downloading}
+            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+          >
+            {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
+            {downloading ? "Generating..." : "Download PDF"}
           </button>
-          <Link href={`/prescriptions/${id}`} className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-6 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50">
+          <Link
+            href={`/prescriptions/${id}`}
+            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-6 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+          >
             <ArrowLeft className="h-4 w-4" /> Cancel
           </Link>
         </div>

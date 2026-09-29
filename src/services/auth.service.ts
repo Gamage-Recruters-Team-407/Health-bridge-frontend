@@ -15,6 +15,7 @@ export interface RegisterPayload {
   phoneNumber: string;
   password: string;
   confirmPassword?: string;
+  branch?: string;
 }
 
 export interface ForgotPasswordPayload {

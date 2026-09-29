@@ -2,18 +2,30 @@
 import { useState, useEffect } from "react";
 import { patientService, PatientOption, medicineService, MedicineOption } from "@/services/prescriptionService";
 import MedicineSelector from "./MedicineSelector";
-import { UserRound, Phone, Plus, Trash2, AlertTriangle, Loader2 } from "lucide-react";
+import { UserRound, Phone, Plus, Trash2, AlertTriangle, Loader2, Stethoscope } from "lucide-react";
 
 interface MedicineItem { medicineId: string; medicineName: string; dosage: string; frequency: string; duration: string; quantity: number; instructions: string; }
 interface Interaction { medicine1: string; medicine2: string; description: string; }
 
+const VALID_DAYS_OPTIONS = [7, 14, 30, 60, 90];
+const STATUS_OPTIONS = ["ACTIVE", "COMPLETED", "CANCELLED"];
+
 interface PrescriptionFormProps {
-  initialData?: { patientId: string; patientName: string; patientPhone: string; notes: string; items: MedicineItem[]; };
+  mode?: "create" | "edit";
+  initialData?: {
+    patientId: string;
+    patientName: string;
+    patientPhone: string;
+    diagnosis?: string;
+    notes: string;
+    status?: string;
+    items: MedicineItem[];
+  };
   onSubmit: (data: any) => void;
   isSubmitting: boolean;
 }
 
-export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }: PrescriptionFormProps) {
+export default function PrescriptionForm({ mode = "create", initialData, onSubmit, isSubmitting }: PrescriptionFormProps) {
   const [patients, setPatients] = useState<PatientOption[]>([]);
   const [medicines, setMedicines] = useState<MedicineOption[]>([]);
   const [loadingOptions, setLoadingOptions] = useState(true);
@@ -21,9 +33,13 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
   const [patientId, setPatientId] = useState(initialData?.patientId || "");
   const [patientName, setPatientName] = useState(initialData?.patientName || "");
   const [patientPhone, setPatientPhone] = useState(initialData?.patientPhone || "");
+  const [diagnosis, setDiagnosis] = useState(initialData?.diagnosis || "");
   const [notes, setNotes] = useState(initialData?.notes || "");
   const [items, setItems] = useState<MedicineItem[]>(initialData?.items || []);
   const [interactions, setInteractions] = useState<Interaction[]>([]);
+
+  const [validDays, setValidDays] = useState(30);
+  const [status, setStatus] = useState(initialData?.status || "ACTIVE");
 
   const [selectedMed, setSelectedMed] = useState("");
   const [selectedMedLabel, setSelectedMedLabel] = useState("");
@@ -46,6 +62,17 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
     fetchData();
   }, []);
 
+  useEffect(() => {
+    if (!initialData) return;
+    setPatientId(initialData.patientId || "");
+    setPatientName(initialData.patientName || "");
+    setPatientPhone(initialData.patientPhone || "");
+    setDiagnosis(initialData.diagnosis || "");
+    setNotes(initialData.notes || "");
+    setItems(initialData.items || []);
+    setStatus(initialData.status || "ACTIVE");
+  }, [initialData]);
+
   const checkInteractions = (newInts: string[], newName: string) => {
     const found: Interaction[] = [];
     items.forEach((item) => {
@@ -61,7 +88,7 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
     if (!selectedMed || !dosage || !frequency) return alert("Please fill medicine, dosage, and frequency!");
     const newInts = checkInteractions(selectedMedInteractions, selectedMedLabel);
     if (newInts.length > 0) setInteractions((prev) => [...prev, ...newInts]);
-    
+
     setItems([...items, { medicineId: selectedMed, medicineName: selectedMedLabel, dosage, frequency, duration, quantity, instructions }]);
     setSelectedMed(""); setSelectedMedLabel(""); setSelectedMedInteractions([]);
     setDosage(""); setFrequency(""); setDuration(""); setQuantity(1); setInstructions("");
@@ -71,11 +98,20 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
     e.preventDefault();
     if (items.length === 0) return alert("Add at least one medicine!");
     if (!patientId) return alert("Please select a patient from the database!");
-    
+
     const cleanPhone = patientPhone.replace(/\D/g, "");
     if (cleanPhone.length < 10) return alert("Please enter a valid 10-digit phone number!");
-    
-    onSubmit({ patientId, patientName, patientPhone: cleanPhone, notes, items });
+
+    onSubmit({
+      patientId,
+      patientName,
+      patientPhone: cleanPhone,
+      diagnosis,
+      notes,
+      items,
+      ...(mode === "create" ? { validDays } : {}),
+      ...(mode === "edit" ? { status } : {}),
+    });
   };
 
   return (
@@ -165,8 +201,8 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
             <div className="space-y-4">
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Select Patient *</label>
-                <select 
-                  value={patientId} 
+                <select
+                  value={patientId}
                   onChange={(e) => {
                     const selected = patients.find(p => p.value === e.target.value);
                     setPatientId(e.target.value);
@@ -174,11 +210,15 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
                     setPatientPhone(selected?.phone || "");
                   }}
                   className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  disabled={loadingOptions}
+                  disabled={loadingOptions || mode === "edit"}
                 >
                   <option value="">-- Search and Select Patient --</option>
-                  {patients.map(p => <option key={p.value} value={p.value}>{p.label} ({p.value})</option>)}
+                  {/* ✅ FIXED: ID එක පෙන්නන එක ඉවත් කරලා නම විතරක් පෙන්නන විදියට වෙනස් කළා */}
+                  {patients.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
+                {mode === "edit" && (
+                  <p className="mt-1 text-[10px] text-slate-400">Patient can't be changed once a prescription is issued.</p>
+                )}
               </div>
               {patientName && (
                 <div className="rounded-xl border border-blue-100 bg-blue-50/50 p-4">
@@ -191,6 +231,51 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
                   </div>
                 </div>
               )}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Diagnosis</label>
+                <div className="relative">
+                  <Stethoscope className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <input
+                    type="text"
+                    value={diagnosis}
+                    onChange={(e) => setDiagnosis(e.target.value)}
+                    placeholder="e.g., Acute upper respiratory infection"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+              </div>
+
+              {mode === "create" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Valid For</label>
+                  <select
+                    value={validDays}
+                    onChange={(e) => setValidDays(Number(e.target.value))}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    {VALID_DAYS_OPTIONS.map((d) => (
+                      <option key={d} value={d}>{d} days</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {mode === "edit" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
+                  <select
+                    value={status}
+                    onChange={(e) => setStatus(e.target.value)}
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  >
+                    {STATUS_OPTIONS.map((s) => (
+                      <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Doctor's Notes</label>
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Add any special instructions or clinical notes..." className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm leading-relaxed outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
@@ -199,7 +284,7 @@ export default function PrescriptionForm({ initialData, onSubmit, isSubmitting }
           </div>
           <button type="submit" disabled={isSubmitting || loadingOptions} className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2">
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : null}
-            {isSubmitting ? "Saving Prescription..." : "Save Prescription"}
+            {isSubmitting ? "Saving Prescription..." : mode === "edit" ? "Save Changes" : "Save Prescription"}
           </button>
         </div>
       </div>
