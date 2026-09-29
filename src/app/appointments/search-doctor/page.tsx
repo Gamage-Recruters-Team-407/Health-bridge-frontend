@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
 import { CalendarDays, Clock3, Hospital, Stethoscope, Users } from "lucide-react";
+import HospitalSelect from "@/components/forms/HospitalSelect";
 import AppointmentModuleShell from "@/components/appointment/AppointmentModuleShell";
 import { appointmentService } from "@/services/appointmentService";
 import type { DoctorSession, SessionSearchFilters, SessionStatus } from "@/types/appointment";
@@ -26,11 +27,12 @@ export default function SearchDoctorPage() {
   const submit = (event: FormEvent) => { event.preventDefault(); void load(form); };
   const clear = () => { setForm({}); void load(); };
 
-  return <AppointmentModuleShell title="Find a Doctor Session" subtitle="Search HealthBridge Hospital sessions by doctor, specialty, or date.">
+  return <AppointmentModuleShell title="Find a Doctor Session" subtitle="Search appointments across all hospital branches by doctor, specialty, branch, or date.">
     <form onSubmit={submit} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <label className="space-y-2"><span className="text-sm font-medium text-slate-700">Doctor</span><input value={form.doctorId ?? ""} onChange={e=>setForm({...form,doctorId:e.target.value})} placeholder="Doctor name or ID" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400" /></label>
         <label className="space-y-2"><span className="text-sm font-medium text-slate-700">Specialization</span><input value={form.specialization ?? ""} onChange={e=>setForm({...form,specialization:e.target.value})} placeholder="e.g. Cardiology" className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400" /></label>
+        <HospitalSelect value={form.hospitalId ?? ""} onChange={(hospitalId)=>setForm({...form,hospitalId})} />
         <label className="space-y-2"><span className="text-sm font-medium text-slate-700">Date</span><input type="date" min={today} value={form.date ?? ""} onChange={e=>setForm({...form,date:e.target.value})} className="w-full rounded-2xl border border-slate-200 px-4 py-3 text-sm outline-none focus:border-blue-400" /></label>
       </div>
       <div className="mt-5 flex flex-wrap gap-3"><button type="submit" className="rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Search Sessions</button><button type="button" onClick={clear} className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Clear</button></div>
