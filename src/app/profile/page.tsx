@@ -16,6 +16,7 @@ interface UserProfile {
   address?: string | null;
   bloodGroup?: string | null;
   emergencyContact?: string | null;
+  branch?: string | null;
   role?: string;
 }
 
@@ -106,6 +107,14 @@ export default function ProfilePage() {
                 <span className="text-gray-500">Role</span>
                 <span className="text-gray-800 font-medium">
                   {formatRole(user.role)}
+                </span>
+              </div>
+            )}
+            {user.branch && (
+              <div className="flex justify-between border-b pb-3">
+                <span className="text-gray-500">Branch</span>
+                <span className="text-gray-800 font-medium">
+                  {user.branch}
                 </span>
               </div>
             )}
