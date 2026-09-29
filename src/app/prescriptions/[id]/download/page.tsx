@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { prescriptionService } from "@/services/prescriptionService";
 import { Prescription } from "@/types/prescription";
 import { generatePrescriptionPdf } from "@/lib/prescriptionPdf";
+import api from "@/lib/axios";
 import { Download, ArrowLeft, FileText, Loader2 } from "lucide-react";
 
 export default function DownloadPrescriptionPage() {
@@ -13,11 +14,31 @@ export default function DownloadPrescriptionPage() {
   const [downloading, setDownloading] = useState(false);
   const [data, setData] = useState<Prescription | null>(null);
   const [loading, setLoading] = useState(true);
+  const [doctorBranch, setDoctorBranch] = useState<string>("Health Bridge Hospital");
 
   useEffect(() => {
     prescriptionService
       .getPrescriptionById(id)
-      .then(setData)
+      .then(async (prescriptionData) => {
+        setData(prescriptionData);
+        
+        if (prescriptionData.doctorId) {
+          try {
+            // ✅ FIXED: api.get already returns the data directly (due to interceptor)
+            const doctorProfile = await api.get<any>(`/users/profile/${prescriptionData.doctorId}`);
+            
+            // ✅ Access branch directly from the returned data object
+            if (doctorProfile && doctorProfile.branch) {
+              setDoctorBranch(doctorProfile.branch);
+              console.log("✅ Doctor branch loaded successfully:", doctorProfile.branch);
+            } else {
+              console.log("⚠️ No branch found in doctor profile:", doctorProfile);
+            }
+          } catch (err) {
+            console.error("❌ Failed to fetch doctor branch", err);
+          }
+        }
+      })
       .finally(() => setLoading(false));
   }, [id]);
 
@@ -25,11 +46,7 @@ export default function DownloadPrescriptionPage() {
     if (!data) return;
     setDownloading(true);
     try {
-      // ✅ FIXED: PDF is now built entirely in the browser (jsPDF) using the same
-      // prescription data shown on screen. The QR embedded in it carries real
-      // patient/doctor/date/status details, and the layout is a clean single page —
-      // no dependency on the backend's /download endpoint anymore.
-      await generatePrescriptionPdf(data);
+      await generatePrescriptionPdf(data, doctorBranch);
     } catch (error) {
       console.error(error);
       alert("Failed to generate prescription PDF.");
