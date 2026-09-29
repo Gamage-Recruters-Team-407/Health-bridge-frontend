@@ -8,7 +8,6 @@ interface MedicineItem { medicineId: string; medicineName: string; dosage: strin
 interface Interaction { medicine1: string; medicine2: string; description: string; }
 
 const VALID_DAYS_OPTIONS = [7, 14, 30, 60, 90];
-const STATUS_OPTIONS = ["ACTIVE", "COMPLETED", "CANCELLED"];
 
 interface PrescriptionFormProps {
   mode?: "create" | "edit";
@@ -18,7 +17,6 @@ interface PrescriptionFormProps {
     patientPhone: string;
     diagnosis?: string;
     notes: string;
-    status?: string;
     items: MedicineItem[];
   };
   onSubmit: (data: any) => void;
@@ -39,7 +37,6 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
   const [interactions, setInteractions] = useState<Interaction[]>([]);
 
   const [validDays, setValidDays] = useState(30);
-  const [status, setStatus] = useState(initialData?.status || "ACTIVE");
 
   const [selectedMed, setSelectedMed] = useState("");
   const [selectedMedLabel, setSelectedMedLabel] = useState("");
@@ -70,7 +67,6 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
     setDiagnosis(initialData.diagnosis || "");
     setNotes(initialData.notes || "");
     setItems(initialData.items || []);
-    setStatus(initialData.status || "ACTIVE");
   }, [initialData]);
 
   const checkInteractions = (newInts: string[], newName: string) => {
@@ -110,7 +106,6 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
       notes,
       items,
       ...(mode === "create" ? { validDays } : {}),
-      ...(mode === "edit" ? { status } : {}),
     });
   };
 
@@ -213,7 +208,6 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
                   disabled={loadingOptions || mode === "edit"}
                 >
                   <option value="">-- Search and Select Patient --</option>
-                  {/* ✅ FIXED: ID එක පෙන්නන එක ඉවත් කරලා නම විතරක් පෙන්නන විදියට වෙනස් කළා */}
                   {patients.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
                 </select>
                 {mode === "edit" && (
@@ -256,21 +250,6 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
                   >
                     {VALID_DAYS_OPTIONS.map((d) => (
                       <option key={d} value={d}>{d} days</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              {mode === "edit" && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Status</label>
-                  <select
-                    value={status}
-                    onChange={(e) => setStatus(e.target.value)}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  >
-                    {STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>{s.charAt(0) + s.slice(1).toLowerCase()}</option>
                     ))}
                   </select>
                 </div>
