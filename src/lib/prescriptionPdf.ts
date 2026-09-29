@@ -82,7 +82,7 @@ export async function generatePrescriptionPdf(prescription: Prescription, doctor
   const col2X = marginX + colWidth + gap;
   const qrX = pageWidth - marginX - qrSize;
   
-  // ✅ Increased blockHeight to 110 to comfortably fit 3 rows (Patient, Phone, Diagnosis / Doctor, Branch, Date)
+  // ✅ Increased blockHeight to 110 to comfortably fit 3 rows
   const blockHeight = 110;
 
   const infoBlock = (x: number, labels: string[], values: (string | undefined)[]) => {
