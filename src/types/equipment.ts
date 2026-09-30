@@ -18,6 +18,8 @@ export interface EquipmentAsset {
   initialValue?: number;
   currentValue?: number;
   alertMessage?: string;
+  branchId?: string;
+  branchCode?: string;
   createdAt?: string;
   updatedAt?: string;
 }
