@@ -31,6 +31,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generateClaimTrackingPdf } from "@/lib/insurancePdfGenerator";
 import ClaimDecisionModal from "../ClaimDecisionModal";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
@@ -48,6 +49,7 @@ export default function ClaimDetailsPage() {
   const [claim, setClaim] = useState<InsuranceClaim | null>(null);
   const [policy, setPolicy] = useState<InsurancePolicy | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewing, setReviewing] = useState(false);
 
   // Decision Modal State
   const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -104,6 +106,38 @@ export default function ClaimDetailsPage() {
     setShowDecisionModal(false);
     showSuccess("Claim decision recorded successfully.");
     loadClaimDetails();
+  };
+
+  const handleStartReview = async () => {
+    if (!claim) return;
+    setReviewing(true);
+    try {
+      const updated = await insuranceService.startClaimReview(claim.id);
+      setClaim(updated);
+      showSuccess("Claim is now marked as Under Review.");
+    } catch {
+      showError("Failed to update claim review status.");
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const handleExportPdf = () => {
+    if (!claim) return;
+    try {
+      const blob = generateClaimTrackingPdf(claim, policy);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Claim_${claim.claimNumber}_Statement.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Claim statement PDF exported successfully.");
+    } catch {
+      showError("Failed to generate PDF statement.");
+    }
   };
 
   // Generate itemized charges breakdown based on claim amount and description
@@ -216,40 +250,6 @@ export default function ClaimDetailsPage() {
           </div>
         </div>
 
-        {/* Tab Sub-Navigation (Matching Suite Design) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Reports
-          </Link>
-        </div>
-
         {/* Feedback Banners */}
         {successMessage && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
@@ -274,7 +274,13 @@ export default function ClaimDetailsPage() {
                   Claim ID #{claim.claimNumber}
                 </h1>
                 <Badge variant={statusVariant[claim.status]} className="text-xs font-semibold px-3 py-1">
-                  {claim.status === "APPROVED" ? "Approved" : claim.status === "REJECTED" ? "Rejected" : "Pending"}
+                  {claim.status === "APPROVED"
+                    ? "Approved"
+                    : claim.status === "REJECTED"
+                    ? "Rejected"
+                    : claim.status === "UNDER_REVIEW"
+                    ? "Under Review"
+                    : "Submitted"}
                 </Badge>
               </div>
               <p className="text-xs text-slate-500 mt-1">
@@ -282,22 +288,48 @@ export default function ClaimDetailsPage() {
               </p>
             </div>
 
-            {/* Approve / Reject Action Buttons (Matching Figma Design) */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => openDecision("APPROVE")}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+            {/* Quick Action Toolbar */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportPdf}
+                className="gap-1.5 text-slate-600"
               >
-                Approve
-              </button>
-              <button
-                type="button"
-                onClick={() => openDecision("REJECT")}
-                className="px-5 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold transition-colors"
-              >
-                Reject
-              </button>
+                <Download className="w-3.5 h-3.5" />
+                <span>Export PDF</span>
+              </Button>
+
+              {claim.status === "SUBMITTED" && (
+                <Button
+                  size="sm"
+                  onClick={handleStartReview}
+                  disabled={reviewing}
+                  className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{reviewing ? "Updating..." : "Start Review"}</span>
+                </Button>
+              )}
+
+              {isPending && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => openDecision("APPROVE")}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openDecision("REJECT")}
+                    className="px-4 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
             </div>
           </div>
 
@@ -353,7 +385,7 @@ export default function ClaimDetailsPage() {
                   Submitted: <strong className="text-slate-800">{submittedDateStr}</strong>
                 </p>
                 <p className="text-slate-500">
-                  Amount: <strong className="text-slate-900 text-sm">${(claim.claimAmount || 0).toFixed(2)}</strong>
+                  Amount: <strong className="text-slate-900 text-sm">Rs. ${(claim.claimAmount || 0).toFixed(2)}</strong>
                 </p>
                 <p className="text-slate-500 flex items-center gap-1.5">
                   Status:{" "}
@@ -397,7 +429,7 @@ export default function ClaimDetailsPage() {
                       <td className="py-3 px-4 font-medium text-slate-800">{item.description}</td>
                       <td className="py-3 px-4 font-mono text-slate-500">{item.code}</td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        ${item.amount.toFixed(2)}
+                        Rs. {item.amount.toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -406,7 +438,7 @@ export default function ClaimDetailsPage() {
                       Total Requested Claim
                     </td>
                     <td className="py-3 px-4 text-right text-blue-600 font-extrabold text-sm">
-                      ${(claim.claimAmount || 0).toFixed(2)}
+                      Rs. ${(claim.claimAmount || 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
@@ -490,9 +522,9 @@ export default function ClaimDetailsPage() {
                         : "Reviewed by claims specialist"}
                     </p>
                     <p className="text-slate-400 text-[11px]">{reviewedDateStr} · {reviewedTimeStr}</p>
-                    {claim.status === "APPROVED" && claim.approvedAmount !== undefined && (
+                    {claim.status === "APPROVED" && claim.approvedAmount != null && (
                       <p className="text-emerald-600 font-semibold text-[11px]">
-                        Settlement authorized: ${claim.approvedAmount.toFixed(2)}
+                        Settlement authorized: Rs. {Number(claim.approvedAmount).toFixed(2)}
                       </p>
                     )}
                     {claim.status === "REJECTED" && claim.rejectionReason && (

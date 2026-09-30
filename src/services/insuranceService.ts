@@ -13,6 +13,14 @@ export const insuranceService = {
     const res: any = await api.get(`${BASE}/claims/my`);
     return Array.isArray(res) ? res : (res?.data ?? []);
   },
+  getUnreadMessagesCount: async (): Promise<number> => {
+    try {
+      const res: any = await api.get(`${BASE}/messages/unread-count`);
+      return typeof res === 'number' ? res : (res?.count ?? 0);
+    } catch (error) {
+      return 0; // Fails safely to 0 if backend is ever offline
+    }
+  },
   submitClaim: async (
     claim: { policyId: string; treatmentDescription: string; claimAmount: number },
     documents: File[]
@@ -45,6 +53,10 @@ export const insuranceService = {
   },
   decideClaim: async (id: string, decision: ClaimDecisionRequest): Promise<InsuranceClaim> => {
     const res: any = await api.patch(`${BASE}/claims/${id}/decision`, decision);
+    return res?.data ?? res;
+  },
+  startClaimReview: async (id: string): Promise<InsuranceClaim> => {
+    const res: any = await api.patch(`${BASE}/claims/${id}/review`);
     return res?.data ?? res;
   },
   getPolicyById: async (id: string): Promise<InsurancePolicy> => {
