@@ -132,7 +132,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <div className="-mt-8 -mx-8 -mb-8 px-6 lg:px-10 py-6 bg-[#F8FAFC] dark:bg-slate-950 min-h-[calc(100vh-80px)] font-sans pb-20">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         <div className="max-w-[1000px] mx-auto space-y-2">
           

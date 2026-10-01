@@ -109,7 +109,7 @@ export default function PharmacyInventoryPage() {
 
   return (
     <>
-      <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         {/* Header Action Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white dark:bg-slate-900 p-2 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800">

@@ -27,7 +27,7 @@ export default function ApplicationReviewPage({ params }: { params: { id: string
 
   return (
     <>
-      <div className="-mt-8 -mx-8 mb-6 px-8 py-3 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex items-center">
+      <div className="mb-6 px-8 py-3 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex items-center">
         <Link 
           href="/super-admin/doctors/approvals" 
           className="inline-flex items-center text-sm font-semibold text-slate-500 hover:text-[#0052CC] transition-colors border border-slate-200 dark:border-slate-800 rounded-full px-4 py-1.5"

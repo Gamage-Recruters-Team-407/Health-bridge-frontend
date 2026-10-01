@@ -56,9 +56,9 @@ export default function RolesPermissionsPage() {
 
   return (
     <>
-      <div className="-mt-8 -mx-8 -mb-8 px-6 lg:px-8 py-8 bg-[#F4F7FB] dark:bg-slate-950 min-h-[calc(100vh-80px)] font-sans">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
-        <div className="max-w-[1500px] mx-auto space-y-6">
+        <div className="w-full space-y-6">
           
           {/* Header Section */}
           <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6 mb-6">

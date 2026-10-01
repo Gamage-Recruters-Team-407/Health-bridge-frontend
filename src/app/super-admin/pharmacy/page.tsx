@@ -37,7 +37,7 @@ const chartData = [
 export default function PharmacyDashboardPage() {
   return (
     <>
-      <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         {/* Header Actions */}
         <div className="flex flex-wrap justify-end gap-3 mb-2">

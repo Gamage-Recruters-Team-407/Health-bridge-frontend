@@ -97,7 +97,7 @@ export default function DoctorManagementPage() {
 
   return (
     <>
-      <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         {/* Header Section */}
         <div className="flex flex-col xl:flex-row xl:items-start justify-between gap-6 pb-2 border-b border-slate-200 dark:border-slate-800">

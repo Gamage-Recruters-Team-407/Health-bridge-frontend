@@ -83,9 +83,9 @@ export default function LaboratoryRegistrationsPage() {
         We use negative margins to break out of DashboardLayout's default padding 
         and apply a full white background to match the specific Figma design.
       */}
-      <div className="-mt-8 -mx-8 -mb-8 px-8 py-8 bg-white dark:bg-slate-950 min-h-[calc(100vh-80px)]">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
-        <div className="max-w-[1400px] mx-auto space-y-8">
+        <div className="w-full space-y-8">
           
           {/* Header Row */}
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -37,7 +37,7 @@ export default function AddHospitalPage() {
   }
 
   return (
-    <div className="max-w-[1400px] mx-auto w-full pb-10 space-y-6">
+    <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
         <Link href="/super-admin/hospitals" className="p-2 bg-white border border-slate-200 hover:bg-slate-50 rounded-xl transition-colors shadow-sm">

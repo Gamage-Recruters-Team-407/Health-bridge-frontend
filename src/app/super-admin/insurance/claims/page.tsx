@@ -84,7 +84,7 @@ export default function ClaimsOversightPage() {
 
   return (
     <>
-      <div className="-mt-8 -mx-8 -mb-8 flex flex-col min-h-[calc(100vh-80px)] font-sans bg-white dark:bg-slate-950 overflow-x-hidden">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         {/* Simulated Top Navbar */}
         <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 flex items-center justify-between shrink-0">
@@ -106,7 +106,7 @@ export default function ClaimsOversightPage() {
 
         {/* Main Content Area */}
         <div className="flex-1 p-8">
-          <div className="max-w-[1400px] mx-auto space-y-8">
+          <div className="mx-auto space-y-8">
             
             {/* Header */}
             <div>

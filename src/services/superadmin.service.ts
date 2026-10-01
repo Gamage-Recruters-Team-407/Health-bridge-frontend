@@ -63,6 +63,29 @@ export interface SystemAnalyticsDto {
   }[];
 }
 
+export interface AuditLog {
+  id: string;
+  timestamp: string;
+  user: string;
+  role: string;
+  event: string;
+  module: string;
+  actionDetails: string;
+  refId: string;
+  ipDevice: string;
+  status: string;
+  severity: string;
+}
+
+export interface AuditLogSummary {
+  totalToday: number;
+  authEvents: number;
+  adminActions: number;
+  recordAccess: number;
+  securityEvents: number;
+  failedActions: number;
+}
+
 export const superAdminService = {
   async getDashboardStats(): Promise<SuperAdminStatsDto> {
     return api.get<SuperAdminStatsDto>("/super-admin/dashboard/stats");
@@ -85,6 +108,18 @@ export const superAdminService = {
     return api.get<UserProfileResponse[]>("/users");
   },
 
+  async updateUserStatus(id: string, status: string): Promise<UserProfileResponse> {
+    return api.put<UserProfileResponse>(`/users/${id}/status`, { status });
+  },
+
+  async deleteUser(id: string): Promise<void> {
+    return api.delete(`/users/${id}`);
+  },
+
+  async updateUserDetails(id: string, data: any): Promise<UserProfileResponse> {
+    return api.put<UserProfileResponse>(`/users/${id}`, data);
+  },
+
   async downloadDashboardReport(): Promise<void> {
     const blobData: Blob = await api.get("/super-admin/dashboard/report", {
       responseType: 'blob'
@@ -93,6 +128,40 @@ export const superAdminService = {
     const link = document.createElement('a');
     link.href = url;
     link.setAttribute('download', `Dashboard_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+  },
+
+  async downloadAnalyticsReport(): Promise<void> {
+    const blobData: Blob = await api.get("/super-admin/dashboard/analytics/report", {
+      responseType: 'blob'
+    }) as any;
+    const url = window.URL.createObjectURL(blobData);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `System_Analytics_Report_${new Date().toISOString().split('T')[0]}.pdf`);
+    document.body.appendChild(link);
+    link.click();
+    link.parentNode?.removeChild(link);
+  },
+
+  async getAllAuditLogs(): Promise<AuditLog[]> {
+    return api.get<AuditLog[]>("/admin/audit-logs");
+  },
+
+  async getAuditLogSummary(): Promise<AuditLogSummary> {
+    return api.get<AuditLogSummary>("/admin/audit-logs/summary");
+  },
+
+  async downloadAuditReport(): Promise<void> {
+    const blobData: Blob = await api.get("/admin/audit-logs/report", {
+      responseType: 'blob'
+    }) as any;
+    const url = window.URL.createObjectURL(blobData);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `Audit_Report_${new Date().toISOString().split('T')[0]}.pdf`);
     document.body.appendChild(link);
     link.click();
     link.parentNode?.removeChild(link);

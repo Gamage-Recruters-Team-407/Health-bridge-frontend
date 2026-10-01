@@ -66,7 +66,7 @@ export default function InsuranceApprovalsPage() {
 
   return (
     <>
-      <div className="-mt-8 -mx-8 -mb-8 flex flex-col h-[calc(100vh-80px)] font-sans bg-[#F8FAFC] dark:bg-slate-950 overflow-hidden relative">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         {/* Simulated Top Navbar for the specific design */}
         <div className="h-16 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 flex items-center justify-between shrink-0 z-10">

@@ -98,7 +98,7 @@ export default function StaffManagementPage() {
   return (
     <>
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row md:items-start justify-between mb-8 gap-4">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">
             Staff Management
@@ -116,7 +116,6 @@ export default function StaffManagementPage() {
             Add staff
           </Button>
         </div>
-      </div>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -293,6 +292,7 @@ export default function StaffManagementPage() {
         pageSize={8}
         onPageChange={setCurrentPage}
       />
+      </div>
     </>
   );
 }

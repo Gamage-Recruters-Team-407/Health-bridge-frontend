@@ -88,7 +88,7 @@ export default function PharmacyReportsPage() {
   return (
     <>
       {/* Custom Header Area spanning full width below navbar to match Figma's split header */}
-      <div className="-mt-8 -mx-8 mb-6 px-8 py-4 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             <Link href="/super-admin/pharmacy" className="hover:text-slate-600 transition-colors">Pharmacy</Link>
@@ -99,9 +99,8 @@ export default function PharmacyReportsPage() {
             Report
           </h1>
         </div>
-      </div>
 
-      <div className="max-w-[1400px] mx-auto space-y-6">
+      <div className="mx-auto space-y-6">
         
         {/* Reports Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -140,6 +139,7 @@ export default function PharmacyReportsPage() {
 
         </div>
 
+      </div>
       </div>
     </>
   );

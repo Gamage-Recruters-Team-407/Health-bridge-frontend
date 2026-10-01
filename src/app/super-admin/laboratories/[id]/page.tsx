@@ -19,7 +19,7 @@ export default function LaboratoryReviewPage() {
 
   return (
     <>
-      <div className="-mt-8 -mx-8 -mb-8 px-8 py-8 bg-white dark:bg-slate-950 min-h-[calc(100vh-80px)] font-sans">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
 
         <div className="max-w-[1200px] mx-auto space-y-8">
 

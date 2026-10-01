@@ -93,7 +93,7 @@ export default function PharmacyOrdersPage() {
   return (
     <>
       {/* Custom Header Area */}
-      <div className="-mt-8 -mx-8 mb-6 px-8 py-4 bg-white border-b border-slate-200 dark:bg-slate-900 dark:border-slate-800 flex items-center justify-between">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         <div>
           <div className="flex items-center gap-2 text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">
             <Link href="/super-admin/pharmacy" className="hover:text-slate-600 transition-colors">Pharmacy</Link>
@@ -106,7 +106,7 @@ export default function PharmacyOrdersPage() {
         </div>
       </div>
 
-      <div className="max-w-[1400px] mx-auto space-y-6 relative">
+      <div className="mx-auto space-y-6 relative">
               
         {/* Metrics Row */}
         <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">

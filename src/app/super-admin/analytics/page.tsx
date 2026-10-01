@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { superAdminService, SuperAdminGrowthDto, SuperAdminStatsDto, UserProfileResponse } from "@/services/superadmin.service";
 
 import { 
-  LineChart, 
+  ComposedChart,
+  Bar,
   Line, 
   XAxis, 
   YAxis, 
@@ -88,6 +89,19 @@ export default function SystemAnalyticsPage() {
     fetchData();
   }, []);
   
+  const [isDownloading, setIsDownloading] = useState(false);
+
+  const handleDownloadReport = async () => {
+    try {
+      setIsDownloading(true);
+      await superAdminService.downloadAnalyticsReport();
+    } catch (error) {
+      console.error("Failed to download report", error);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   const getStatusColor = (status: string) => {
     switch (status) {
       case "Good": return "bg-emerald-500 text-white";
@@ -105,48 +119,12 @@ export default function SystemAnalyticsPage() {
 
   return (
     <>
-      <div className="-mt-8 -mx-8 -mb-8 font-sans bg-[#F4F7FB] dark:bg-slate-950 min-h-[calc(100vh-80px)] overflow-x-hidden pb-12">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
-        {/* Full Width White Header Section */}
-        <div className="bg-white border-b border-slate-200 px-6 lg:px-10 py-6 mb-8">
-          <div className="max-w-[1400px] mx-auto">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-              <div>
-                <h1 className="text-[28px] font-bold text-[#0A2540] dark:text-white tracking-tight mb-2">
-                  System Analytics
-                </h1>
-                <p className="text-sm font-medium text-slate-500">
-                  Platform-wide analytics and performance metrics
-                </p>
-              </div>
-              
-              <div className="flex items-center gap-3 shrink-0">
-                <button className="flex items-center gap-2 px-4 py-2 border border-slate-200 rounded-lg text-[13px] font-bold text-slate-700 hover:bg-slate-50 transition-colors shadow-sm">
-                  <Calendar size={14} className="text-slate-500" />
-                  Dec 2024
-                  <ChevronDown size={14} className="text-slate-500 ml-1" />
-                </button>
-                <button className="flex items-center gap-2 px-4 py-2 bg-[#0052CC] text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors shadow-sm">
-                  <Download size={14} />
-                  Export Data
-                </button>
-              </div>
-            </div>
 
-            {/* Filters Row */}
-            <div className="flex items-center gap-3 mt-6">
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-[#0052CC] text-xs font-bold rounded-lg transition-colors border border-blue-100">
-                All Modules <ChevronDown size={14} />
-              </button>
-              <button className="flex items-center gap-2 px-4 py-2 bg-blue-50 hover:bg-blue-100 text-[#0052CC] text-xs font-bold rounded-lg transition-colors border border-blue-100">
-                Date Range <ChevronDown size={14} />
-              </button>
-            </div>
-          </div>
-        </div>
 
         {/* Main Content Area */}
-        <div className="max-w-[1400px] mx-auto space-y-6 px-6 lg:px-10">
+        <div className="w-full space-y-6">
           
           {/* Top KPI Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -197,12 +175,23 @@ export default function SystemAnalyticsPage() {
 
           </div>
 
+          <div className="flex justify-end">
+            <button 
+              onClick={handleDownloadReport}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2 bg-[#0052CC] text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+            >
+              <Download size={14} />
+              {isDownloading ? "Generating..." : "Generate Report"}
+            </button>
+          </div>
+
           {/* Platform Growth Line Chart */}
           <Card className="p-8 rounded-2xl border border-slate-200/60 shadow-sm bg-white flex flex-col h-[450px]">
             <h2 className="text-[15px] font-bold text-[#0A2540] mb-8">Platform Growth</h2>
             <div className="flex-1 w-full relative">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={growthData} margin={{ top: 20, right: 80, left: 20, bottom: 0 }}>
+                <ComposedChart data={growthData} margin={{ top: 20, right: 80, left: 20, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis 
                     dataKey="name" 
@@ -212,12 +201,19 @@ export default function SystemAnalyticsPage() {
                     dy={10}
                   />
                   {/* Hide Y axis labels to match mockup, grid lines provide the scale visually */}
-                  <YAxis hide domain={['auto', 'auto']} />
+                  <YAxis yAxisId="left" hide domain={['auto', 'auto']} />
+                  <YAxis yAxisId="right" orientation="right" hide domain={['auto', 'auto']} />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}
                   />
                   
+                  {/* Revenue Bar mapped to right Y-Axis */}
+                  <Bar dataKey="revenue" yAxisId="right" fill="#10B981" radius={[4, 4, 0, 0]} opacity={0.3} maxBarSize={40}>
+                     <LabelList content={(props: any) => renderCustomizedLabel(props, `Rs. ${growthData[growthData.length - 1]?.revenue?.toLocaleString() || "0"}`, "#10B981", growthData.length)} />
+                  </Bar>
+                  
                   <Line 
+                    yAxisId="left"
                     type="monotone" 
                     dataKey="users" 
                     stroke="#0052CC" 
@@ -225,10 +221,11 @@ export default function SystemAnalyticsPage() {
                     dot={(props: any) => renderCustomDot(props, growthData.length)} 
                     activeDot={{ r: 6 }} 
                   >
-                    <LabelList content={(props: any) => renderCustomizedLabel(props, "12,845", "#0052CC", growthData.length)} />
+                    <LabelList content={(props: any) => renderCustomizedLabel(props, growthData[growthData.length - 1]?.users?.toLocaleString() || "0", "#0052CC", growthData.length)} />
                   </Line>
                   
                   <Line 
+                    yAxisId="left"
                     type="monotone" 
                     dataKey="appointments" 
                     stroke="#F59E0B" 
@@ -236,20 +233,9 @@ export default function SystemAnalyticsPage() {
                     dot={(props: any) => renderCustomDot(props, growthData.length)} 
                     activeDot={{ r: 6 }} 
                   >
-                    <LabelList content={(props: any) => renderCustomizedLabel(props, "9,500", "#F59E0B", growthData.length)} />
+                    <LabelList content={(props: any) => renderCustomizedLabel(props, growthData[growthData.length - 1]?.appointments?.toLocaleString() || "0", "#F59E0B", growthData.length)} />
                   </Line>
-
-                  <Line 
-                    type="monotone" 
-                    dataKey="revenue" 
-                    stroke="#10B981" 
-                    strokeWidth={3} 
-                    dot={(props: any) => renderCustomDot(props, growthData.length)} 
-                    activeDot={{ r: 6 }} 
-                  >
-                     <LabelList content={(props: any) => renderCustomizedLabel(props, "$2.4M", "#10B981", growthData.length)} />
-                  </Line>
-                </LineChart>
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
             
@@ -257,15 +243,15 @@ export default function SystemAnalyticsPage() {
             <div className="flex items-center justify-center gap-8 mt-6">
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#0052CC]"></div>
-                <span className="text-[13px] font-bold text-slate-600">Users: <span className="text-[#0A2540]">12,845</span></span>
+                <span className="text-[13px] font-bold text-slate-600">Users: <span className="text-[#0A2540]">{growthData[growthData.length - 1]?.users?.toLocaleString() || "0"}</span></span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#10B981]"></div>
-                <span className="text-[13px] font-bold text-slate-600">Revenue: <span className="text-[#0A2540]">$2.4M</span></span>
+                <span className="text-[13px] font-bold text-slate-600">Revenue: <span className="text-[#0A2540]">Rs. {growthData[growthData.length - 1]?.revenue?.toLocaleString() || "0"}</span></span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-3 h-3 rounded-full bg-[#F59E0B]"></div>
-                <span className="text-[13px] font-bold text-slate-600">Appointments: <span className="text-[#0A2540]">45.8K</span></span>
+                <span className="text-[13px] font-bold text-slate-600">Appointments: <span className="text-[#0A2540]">{growthData[growthData.length - 1]?.appointments?.toLocaleString() || "0"}</span></span>
               </div>
             </div>
           </Card>
@@ -448,24 +434,18 @@ export default function SystemAnalyticsPage() {
                           </div>
                         </td>
                         <td className="py-5 pr-6 text-right">
-                          <button className="text-[11px] font-bold text-[#0052CC] hover:underline">[Details]</button>
+                          <a 
+                            href={`/super-admin/${row.name === 'Patients' ? 'users' : row.name === 'Labs' ? 'laboratories' : row.name === 'Pharmacies' ? 'pharmacy' : row.name.toLowerCase()}`} 
+                            className="text-[11px] font-bold text-[#0052CC] hover:underline"
+                          >
+                            [Details]
+                          </a>
                         </td>
                       </tr>
                     )
                   })}
                 </tbody>
               </table>
-            </div>
-
-            {/* Summary Footer */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-5 rounded-xl bg-slate-50 border border-slate-100">
-              <p className="text-[13px] font-bold text-[#0A2540]">
-                Summary Insights: <span className="font-medium text-slate-600">3 modules are performing well, 2 need attention, and 1 requires urgent action. Focus on Insurance first.</span>
-              </p>
-              <div className="flex items-center gap-4 shrink-0">
-                <button className="text-xs font-bold text-[#0052CC] hover:underline">View Full Report</button>
-                <button className="text-xs font-bold text-[#0052CC] hover:underline">Export Data</button>
-              </div>
             </div>
 
           </Card>

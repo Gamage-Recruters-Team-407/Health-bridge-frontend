@@ -43,7 +43,7 @@ export default function AddDoctorPage() {
 
   return (
     <>
-      <div className="max-w-[1200px] mx-auto pb-32">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         <div className="flex flex-col lg:flex-row gap-6 lg:items-start relative">
           
           {/* Left Navigation Column - Sticky */}

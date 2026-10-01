@@ -123,9 +123,9 @@ export default function InsuranceRegistryPage() {
   return (
     <>
       {/* We apply bg-[#F8FAFC] explicitly here to ensure the full page background matches the Figma design */}
-      <div className="-mt-8 -mx-8 -mb-8 px-8 py-8 bg-[#F8FAFC] dark:bg-slate-950 min-h-[calc(100vh-80px)] font-sans">
+      <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
-        <div className="max-w-[1400px] mx-auto space-y-6">
+        <div className="w-full space-y-6">
           
           {/* Header Section */}
           <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/60 shadow-sm">
