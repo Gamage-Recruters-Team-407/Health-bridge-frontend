@@ -6,9 +6,9 @@ import { prescriptionService } from "@/services/prescriptionService";
 import QRCodeDisplay from "@/components/prescription/QRCodeDisplay";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import { Prescription } from "@/types/prescription";
-import { buildQrPayload, generatePrescriptionPdf } from "@/lib/prescriptionPdf"; // ✅ generatePrescriptionPdf import කරගන්න
+import { buildQrPayload, generatePrescriptionPdf } from "@/lib/prescriptionPdf";
 import { useAuth } from "@/hooks/useAuth";
-import api from "@/lib/axios"; // ✅ Doctor ගේ branch එක ගේන්න api එක import කරගන්න
+import api from "@/lib/axios";
 import { Download, ArrowLeft, Calendar, Pencil, Trash2, Loader2 } from "lucide-react";
 
 function StatusBadge({ status }: { status?: string }) {
@@ -35,25 +35,27 @@ export default function PrescriptionDetailsPage() {
   const [loading, setLoading] = useState(true);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  
-  // ✅ NEW: Doctor ගේ Hospital (Branch) name එක තියාගන්න state එකක්
   const [doctorBranch, setDoctorBranch] = useState<string>("Health Bridge Hospital");
 
   useEffect(() => {
-    prescriptionService.getPrescriptionById(id).then((prescriptionData) => {
+    prescriptionService.getPrescriptionById(id).then(async (prescriptionData) => {
       setData(prescriptionData);
       
-      // ✅ Doctor කෙනාගේ Profile එක අරගෙන branch (Hospital name) එක ගේනවා
       if (prescriptionData.doctorId) {
-        api.get(`/users/profile/${prescriptionData.doctorId}`)
-          .then((res: any) => {
-            if (res.branch) {
-              setDoctorBranch(res.branch);
-            }
-          })
-          .catch(() => {
-            setDoctorBranch("Health Bridge Hospital"); // Fallback name
-          });
+        try {
+          // ✅ FIXED: api.get already returns the data directly (due to interceptor)
+          const doctorProfile = await api.get<any>(`/users/profile/${prescriptionData.doctorId}`);
+          
+          // ✅ Access branch directly from the returned data object
+          if (doctorProfile && doctorProfile.branch) {
+            setDoctorBranch(doctorProfile.branch);
+            console.log("✅ Doctor branch loaded successfully:", doctorProfile.branch);
+          } else {
+            console.log("⚠️ No branch found in doctor profile:", doctorProfile);
+          }
+        } catch (err) {
+          console.error(" Failed to fetch doctor branch", err);
+        }
       }
     }).finally(() => setLoading(false));
   }, [id]);
@@ -71,7 +73,6 @@ export default function PrescriptionDetailsPage() {
 
   const handleDownload = async () => {
     if (!data) return;
-    // ✅ PDF එක හදද්දී doctorBranch එකත් එක්ක යවනවා
     await generatePrescriptionPdf(data, doctorBranch);
   };
 
@@ -115,7 +116,7 @@ export default function PrescriptionDetailsPage() {
                   onClick={() => setConfirmDelete(true)}
                   className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200"
                 >
-                  <Trash2 className="w-4 h-4" /> Delete
+                  <Trash2 className="w-4 w-4" /> Delete
                 </button>
               </>
             )}
@@ -177,7 +178,6 @@ export default function PrescriptionDetailsPage() {
               <div className="border-t border-slate-100 pt-4">
                 <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Prescribed By</p>
                 <p className="mt-1 text-sm font-semibold text-slate-900">{data.doctorName}</p>
-                {/* ✅ Frontend එකේ පෙන්නනකොත් Hospital name එකත් පෙන්නනවා */}
                 {doctorBranch && <p className="text-xs text-slate-500">{doctorBranch}</p>}
               </div>
             </div>

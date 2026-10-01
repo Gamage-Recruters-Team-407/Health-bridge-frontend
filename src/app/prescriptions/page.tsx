@@ -1,5 +1,4 @@
 "use client";
-
 import Link from "next/link";
 import { useState, useEffect, useMemo } from "react";
 import { prescriptionService } from "@/services/prescriptionService";
@@ -22,21 +21,6 @@ import {
 
 const ITEMS_PER_PAGE = 5;
 
-function StatusBadge({ status }: { status?: string }) {
-  const normalized = (status || "ACTIVE").toUpperCase();
-  const styles: Record<string, string> = {
-    ACTIVE: "bg-emerald-50 text-emerald-700 ring-emerald-100",
-    COMPLETED: "bg-blue-50 text-blue-700 ring-blue-100",
-    CANCELLED: "bg-rose-50 text-rose-700 ring-rose-100",
-  };
-  const style = styles[normalized] || "bg-slate-100 text-slate-600 ring-slate-200";
-  return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide ring-1 ${style}`}>
-      {normalized}
-    </span>
-  );
-}
-
 export default function PrescriptionsPage() {
   const { user } = useAuth();
   const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
@@ -44,7 +28,6 @@ export default function PrescriptionsPage() {
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [deletingId, setDeletingId] = useState<string | null>(null);
-  // ✅ FIXED: delete now goes through a themed ConfirmDialog instead of window.confirm
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -187,7 +170,6 @@ export default function PrescriptionsPage() {
                   <th className="px-6 py-4 font-semibold">Rx Number</th>
                   <th className="px-6 py-4 font-semibold">Patient</th>
                   <th className="px-6 py-4 font-semibold">Doctor</th>
-                  <th className="px-6 py-4 font-semibold">Status</th>
                   <th className="px-6 py-4 font-semibold">Date Issued</th>
                   <th className="px-6 py-4 font-semibold">Valid Until</th>
                   <th className="px-6 py-4 font-semibold text-right">Actions</th>
@@ -199,9 +181,6 @@ export default function PrescriptionsPage() {
                     <td className="px-6 py-4 font-medium text-slate-900">{p.prescriptionNumber}</td>
                     <td className="px-6 py-4 text-slate-600">{p.patientName}</td>
                     <td className="px-6 py-4 text-slate-600">{p.doctorName || "-"}</td>
-                    <td className="px-6 py-4">
-                      <StatusBadge status={p.status} />
-                    </td>
                     <td className="px-6 py-4 text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</td>
                     <td className="px-6 py-4 text-slate-500">
                       {p.validUntil ? new Date(p.validUntil).toLocaleDateString() : "-"}
