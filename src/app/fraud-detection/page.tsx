@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AlertTriangle, Clock, Info, ShieldAlert } from "lucide-react";
+import { AlertTriangle, Clock, Info, ShieldAlert, type LucideIcon } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FraudDetectionTabs from "@/components/fraud-detection/FraudDetectionTabs";
 import RiskScoreGauge from "@/components/fraud-detection/RiskScoreGauge";
@@ -105,6 +105,47 @@ export default function FraudDetectionPage() {
   const selectedAlert = alerts[selectedClaim];
   const selectedRiskScore = Number(text(selectedAlert, "riskScore", "score")) || 0;
   const selectedSeverity = text(selectedAlert, "severity", "riskLevel", "risk").toUpperCase();
+  const metricCards: {
+    label: string;
+    metric: string;
+    detail: string;
+    Icon: LucideIcon;
+    iconColor: string;
+    valueColor: string;
+  }[] = [
+    {
+      label: "Total flagged claims",
+      metric: text(statistics, "totalAlerts", "totalFlaggedClaims", "total"),
+      detail: "Across all providers",
+      Icon: Info,
+      iconColor: "#1769e8",
+      valueColor: "text-[#16191d]",
+    },
+    {
+      label: "High risk count",
+      metric: text(statistics, "criticalSeverityAlerts", "highRiskCount", "highRiskAlerts"),
+      detail: "Needs immediate review",
+      Icon: AlertTriangle,
+      iconColor: "#ef4444",
+      valueColor: "text-red-600",
+    },
+    {
+      label: "Under review",
+      metric: text(statistics, "pendingAlerts", "underReview", "pendingReview", "openAlerts"),
+      detail: "Pending analyst action",
+      Icon: Clock,
+      iconColor: "#1769e8",
+      valueColor: "text-[#16191d]",
+    },
+    {
+      label: "Confirmed fraud",
+      metric: text(statistics, "confirmedFraudAlerts", "confirmedFraud", "confirmedFraudCount"),
+      detail: "Escalated cases",
+      Icon: ShieldAlert,
+      iconColor: "#ef4444",
+      valueColor: "text-red-600",
+    },
+  ];
 
   return (
     <DashboardLayout pageTitle="Insurance" userRole="INSURANCE_OFFICER">
@@ -145,49 +186,15 @@ export default function FraudDetectionPage() {
           {!loading && !error && (
             <>
               <section className="mb-6 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                {[
-                  [
-                    "Total flagged claims",
-                    text(statistics, "totalAlerts", "totalFlaggedClaims", "total"),
-                    "Across all providers",
-                    Info,
-                    "#1769e8",
-                    "text-[#16191d]",
-                  ],
-                  [
-                    "High risk count",
-                    text(statistics, "criticalSeverityAlerts", "highRiskCount", "highRiskAlerts"),
-                    "Needs immediate review",
-                    AlertTriangle,
-                    "#ef4444",
-                    "text-red-600",
-                  ],
-                  [
-                    "Under review",
-                    text(statistics, "pendingAlerts", "underReview", "pendingReview", "openAlerts"),
-                    "Pending analyst action",
-                    Clock,
-                    "#1769e8",
-                    "text-[#16191d]",
-                  ],
-                  [
-                    "Confirmed fraud",
-                    text(statistics, "confirmedFraudAlerts", "confirmedFraud", "confirmedFraudCount"),
-                    "Escalated cases",
-                    ShieldAlert,
-                    "#ef4444",
-                    "text-red-600",
-                  ],
-                ].map(([label, metric, detail, Icon, iconColor, valueColor]) => {
-                  const IconComponent = Icon as typeof Info;
+                {metricCards.map(({ label, metric, detail, Icon, iconColor, valueColor }) => {
                   return (
                     <article
-                      key={label as string}
+                      key={label}
                       className="rounded-2xl border border-[#e8eaed] bg-white px-5 py-4"
                     >
                       <div className="flex items-center justify-between">
                         <p className="text-[11px] text-[#606a73]">{label}</p>
-                        <IconComponent className="h-4 w-4" style={{ color: iconColor as string }} />
+                        <Icon className="h-4 w-4" style={{ color: iconColor }} />
                       </div>
                       <p className={`mt-1 text-[27px] font-semibold ${valueColor}`}>{metric}</p>
                       <p className="mt-2 text-[10px] text-[#9299a0]">{detail}</p>
