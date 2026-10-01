@@ -349,7 +349,7 @@ export default function PaymentsPage() {
     }
     if (category === "PRESCRIPTION") {
       if (prescriptionBills.length === 0) {
-        setErrorMsg("No prescriptions available. You can find the price of the medicine here http://localhost:3000/pharmacy/medicines/new");
+        setErrorMsg("No prescriptions available.");
         return;
       }
       if (!selectedPrescriptionBillId) {
@@ -1047,22 +1047,12 @@ export default function PaymentsPage() {
                               </table>
                             </div>
 
-                            {/* Card Footer with Dispense info & Link to Medicine Pricing */}
+                            {/* Card Footer with Dispense info */}
                             <div className="mt-3 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
                               <span className="flex items-center gap-1.5">
                                 <Clock className="w-3.5 h-3.5 text-slate-400" />
                                 <span>Dispensed on: {new Date(bill.dispensedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
                               </span>
-                              <a
-                                href="http://localhost:3000/pharmacy/medicines/new"
-                                target="_blank"
-                                rel="noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="text-blue-600 hover:text-blue-800 font-semibold hover:underline inline-flex items-center gap-1"
-                              >
-                                <span>Check Medicine Pricing at /pharmacy/medicines/new</span>
-                                <ArrowRight className="w-3 h-3" />
-                              </a>
                             </div>
                           </div>
                         );
