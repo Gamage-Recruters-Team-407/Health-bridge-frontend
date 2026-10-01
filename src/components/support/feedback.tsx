@@ -99,18 +99,13 @@ export default function PatientFeedbackViewPage() {
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-6 py-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
         <header className="mb-10 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#0F6CBD]">
-            Support
-          </p>
+       
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             What our patients say
           </h1>
 
-          <p className="mx-auto mt-2 max-w-xl text-sm text-slate-600">
-            Ratings and comments submitted by our patients after receiving
-            support.
-          </p>
+         
         </header>
 
         {loading && (
