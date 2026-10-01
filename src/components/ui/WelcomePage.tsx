@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   MessageSquareText,
 } from "lucide-react";
-
+import Feedback from "@/components/support/feedback";
 export interface WelcomePageProps {
   onBookAppointment?: () => void;
   onContinueGuest?: () => void;
@@ -236,7 +236,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
           </div>
         </div>
       </section>
-
+      <Feedback />
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-100 py-8 bg-slate-50/50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">

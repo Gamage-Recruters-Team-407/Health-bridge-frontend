@@ -44,6 +44,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generatePatientStatementPdf } from "@/lib/insurancePdfGenerator";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
@@ -155,47 +156,22 @@ export default function PatientInsurancePage() {
     );
   }, [claims, searchQuery]);
 
-  // Export Statement as CSV
+  // Export Statement as PDF
   const handleExportStatement = () => {
-    if (claims.length === 0) {
-      showError("No claim records to export.");
-      return;
+    try {
+      const pdfBlob = generatePatientStatementPdf(activePolicy, claims, metrics);
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Insurance_Statement_${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess("Insurance statement downloaded as PDF.");
+    } catch {
+      showError("Failed to generate insurance statement PDF.");
     }
-
-    const headers = [
-      "Claim ID",
-      "Provider",
-      "Service Description",
-      "Date Submitted",
-      "Claimed Amount ($)",
-      "Approved Amount ($)",
-      "Status",
-    ];
-
-    const rows = claims.map((c) => [
-      `"${c.claimNumber}"`,
-      `"${c.providerName || activePolicy?.providerName || "Insurance Provider"}"`,
-      `"${(c.treatmentDescription || "").replace(/"/g, '""')}"`,
-      `"${c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : ""}"`,
-      c.claimAmount?.toFixed(2) || "0.00",
-      c.approvedAmount !== undefined ? c.approvedAmount.toFixed(2) : "0.00",
-      `"${c.status}"`,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `Insurance_Statement_${new Date().toISOString().split("T")[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showSuccess("Insurance statement downloaded as CSV.");
   };
 
   if (loading) {
@@ -240,40 +216,6 @@ export default function PatientInsurancePage() {
         </div>
       </div>
 
-      {/* Tab Sub-Navigation (Matching Figma Design) */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-        <Link
-          href="/patient/dashboard"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          My Dashboard
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-        >
-          My Claims
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Coverage Details
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Billing
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Documents
-        </Link>
-      </div>
-
       {/* Feedback Banners */}
       {successMessage && (
         <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
@@ -310,7 +252,7 @@ export default function PatientInsurancePage() {
         />
         <StatCard
           title="Amount Reimbursed"
-          value={`$${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`Rs. ${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle="Total paid back"
           icon={<DollarSign className="w-5 h-5 text-indigo-600" />}
         />
@@ -333,7 +275,7 @@ export default function PatientInsurancePage() {
               <div className="flex items-center gap-2">
                 <Button size="sm" variant="outline" onClick={handleExportStatement} className="gap-1.5 text-xs">
                   <Download className="w-3.5 h-3.5" />
-                  <span>Export</span>
+                  <span>Export PDF</span>
                 </Button>
                 <Button
                   size="sm"
@@ -371,10 +313,10 @@ export default function PatientInsurancePage() {
                   Coverage Used
                 </span>
                 <p className="text-sm font-extrabold text-slate-900">
-                  ${(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Rs. {(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  of ${(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit
+                  of Rs. {(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit
                 </p>
               </div>
 
@@ -383,7 +325,7 @@ export default function PatientInsurancePage() {
                   Remaining Balance
                 </span>
                 <p className="text-sm font-extrabold text-blue-600">
-                  ${remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  Rs. {remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </p>
                 <p className="text-[11px] text-slate-500">Remaining this year</p>
               </div>
@@ -503,7 +445,7 @@ export default function PatientInsurancePage() {
 
                         {/* Amount */}
                         <TableCell className="text-xs font-bold text-slate-900">
-                          ${c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          Rs. {c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </TableCell>
 
                         {/* Status */}
@@ -657,7 +599,7 @@ export default function PatientInsurancePage() {
                 onClick={handleExportStatement}
                 className="w-full text-xs font-semibold py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
               >
-                Download Statement
+                Download Statement (PDF)
               </Button>
             </div>
           </Card>

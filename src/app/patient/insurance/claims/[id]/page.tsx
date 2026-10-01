@@ -28,6 +28,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generateClaimTrackingPdf } from "@/lib/insurancePdfGenerator";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
@@ -51,12 +52,7 @@ const STEPS: { status: ClaimStatus; label: string; description: string }[] = [
   {
     status: "APPROVED",
     label: "Adjudication Approved",
-    description: "Reimbursement authorized",
-  },
-  {
-    status: "PAID",
-    label: "Payment Settled",
-    description: "Disbursement completed to patient",
+    description: "Reimbursement authorized & settled",
   },
 ];
 
@@ -109,7 +105,7 @@ export default function PatientClaimTrackingPage() {
     loadClaimDetails();
   }, [id]);
 
-  // Determine current progression index
+  // Determine current progression index (3-stage adjudication)
   const stepIndex = useMemo(() => {
     if (!claim) return 0;
     if (claim.status === "REJECTED") return -1;
@@ -119,13 +115,30 @@ export default function PatientClaimTrackingPage() {
       case "UNDER_REVIEW":
         return 1;
       case "APPROVED":
-        return 2;
       case "PAID":
-        return 3;
+        return 2;
       default:
         return 0;
     }
   }, [claim]);
+
+  const handleDownloadPdf = () => {
+    if (!claim) return;
+    try {
+      const blob = generateClaimTrackingPdf(claim, policy);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Claim_Statement_${claim.claimNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Claim statement PDF downloaded successfully.");
+    } catch {
+      showError("Failed to generate claim statement PDF.");
+    }
+  };
 
   // Itemized breakdown
   const itemizedCharges = useMemo(() => {
@@ -217,12 +230,11 @@ export default function PatientClaimTrackingPage() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => window.print()}
-            className="gap-1.5 text-slate-600"
+            onClick={handleDownloadPdf}
+            className="gap-1.5 shadow-sm"
           >
-            <Printer className="w-4 h-4" />
-            <span>Print Summary</span>
+            <Download className="w-4 h-4" />
+            <span>Download PDF</span>
           </Button>
         </div>
       </div>
@@ -241,12 +253,12 @@ export default function PatientClaimTrackingPage() {
         </div>
       )}
 
-      {/* 4-Stage Visual Status Stepper Card */}
+      {/* 3-Stage Visual Status Stepper Card */}
       <Card className="p-6 bg-white shadow-xs">
         <h2 className="text-sm font-bold text-[#0A2540] mb-6">Adjudication Progress</h2>
 
         {!isRejected ? (
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
             {STEPS.map((step, idx) => {
               const isCompleted = idx <= stepIndex;
               const isCurrent = idx === stepIndex;
@@ -304,15 +316,15 @@ export default function PatientClaimTrackingPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard
           title="Claimed Amount"
-          value={`$${(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          value={`Rs. ${(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
           subtitle="Submitted by you"
           icon={<DollarSign className="w-5 h-5 text-blue-600" />}
         />
         <StatCard
           title="Approved Settlement"
           value={
-            claim.approvedAmount !== undefined
-              ? `$${claim.approvedAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+            claim.approvedAmount != null
+              ? `Rs. ${Number(claim.approvedAmount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
               : "Pending Review"
           }
           subtitle={
@@ -358,7 +370,7 @@ export default function PatientClaimTrackingPage() {
                       <td className="py-3 px-4 font-medium text-slate-800">{item.description}</td>
                       <td className="py-3 px-4 font-mono text-slate-500">{item.code}</td>
                       <td className="py-3 px-4 text-right font-bold text-slate-900">
-                        ${item.amount.toFixed(2)}
+                        Rs. {item.amount.toFixed(2)}
                       </td>
                     </tr>
                   ))}
@@ -367,7 +379,7 @@ export default function PatientClaimTrackingPage() {
                       Total Requested Amount
                     </td>
                     <td className="py-3 px-4 text-right text-blue-600 font-extrabold text-sm">
-                      ${(claim.claimAmount || 0).toFixed(2)}
+                      Rs. {(claim.claimAmount || 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>

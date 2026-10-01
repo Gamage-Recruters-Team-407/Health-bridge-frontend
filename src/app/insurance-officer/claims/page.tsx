@@ -172,6 +172,17 @@ export default function ClaimsListPage() {
     loadClaims();
   };
 
+  const handleStartReview = async (claimId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await insuranceService.startClaimReview(claimId);
+      showSuccess("Claim marked as Under Review.");
+      loadClaims();
+    } catch {
+      showError("Failed to update claim review status.");
+    }
+  };
+
   return (
     <DashboardLayout pageTitle="Insurance Claims" userRole="INSURANCE_OFFICER">
       <div className="space-y-6">
@@ -204,40 +215,6 @@ export default function ClaimsListPage() {
           </div>
         </div>
 
-        {/* Tab Sub-Navigation (Matching Suite Design) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Reports
-          </Link>
-        </div>
-
         {/* Feedback Banners */}
         {successMessage && (
           <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm flex items-center gap-2 animate-in fade-in duration-200">
@@ -268,7 +245,7 @@ export default function ClaimsListPage() {
           />
           <StatCard
             title="Approved Payouts"
-            value={`$${metrics.totalApprovedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`Rs. ${metrics.totalApprovedPayout.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.approved} claims settled`}
             icon={<DollarSign className="w-5 h-5 text-emerald-600" />}
           />
@@ -451,11 +428,11 @@ export default function ClaimsListPage() {
                         <TableCell>
                           <div className="space-y-0.5 text-xs">
                             <span className="font-bold text-slate-900">
-                              ${c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              Rs. {c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
-                            {c.approvedAmount !== undefined && (c.status === "APPROVED" || c.status === "PAID") && (
+                            {c.approvedAmount != null && (c.status === "APPROVED" || c.status === "PAID") && (
                               <p className="text-[10px] font-semibold text-emerald-600">
-                                Approved: ${c.approvedAmount.toFixed(2)}
+                                Approved: Rs. {Number(c.approvedAmount).toFixed(2)}
                               </p>
                             )}
                           </div>
@@ -471,6 +448,15 @@ export default function ClaimsListPage() {
                           <div className="flex items-center justify-end gap-1.5">
                             {isPending ? (
                               <>
+                                {c.status === "SUBMITTED" && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleStartReview(c.id, e)}
+                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold transition-colors"
+                                  >
+                                    Start Review
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => openDecisionModal(c, "APPROVE")}

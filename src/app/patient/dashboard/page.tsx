@@ -6,6 +6,8 @@ import { User as UserIcon, LogOut, Bell, HeadphonesIcon, CreditCard, Video } fro
 import { getStoredUser, clearAuthData, AuthUser, AUTH_CHANGE_EVENT } from "@/lib/auth";
 import Link from "next/link";
 import api from "@/lib/axios";
+import { labReportService } from "@/services/labReportService";
+import { insuranceService } from "@/services/insuranceService";
 
 export default function PatientDashboardPage() {
   const router = useRouter();
@@ -15,6 +17,7 @@ export default function PatientDashboardPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [labReports, setLabReports] = useState<any[]>([]);
   const [activePrescriptions, setActivePrescriptions] = useState<number>(0);
+  const [insuranceMessagesCount, setInsuranceMessagesCount] = useState<number>(0);
 
   useEffect(() => {
     const storedUser = getStoredUser();
@@ -46,11 +49,8 @@ export default function PatientDashboardPage() {
           .catch(err => console.error(err));
 
       // Fetch Live Lab Reports
-      api.get(`/lab/results/patient/${storedUser.id}/history`)
-          .then((data: any) => {
-            const valid = data.filter((r: any) => r.status !== 'DRAFT');
-            setLabReports(valid);
-          })
+      labReportService.getPatientLabHistory(storedUser.id)
+          .then(data => setLabReports(data))
           .catch(err => console.error(err));
 
       // Fetch Active Prescriptions Count
@@ -58,6 +58,11 @@ export default function PatientDashboardPage() {
           .then((data: any) => setActivePrescriptions(data.length))
           .catch(err => console.error(err))
           .finally(() => setLoading(false));
+
+      // Fetch Live Insurance Messages
+      insuranceService.getUnreadMessagesCount()
+          .then(count => setInsuranceMessagesCount(count))
+          .catch(() => setInsuranceMessagesCount(0));
     };
 
     // Initial fetch
@@ -90,7 +95,6 @@ export default function PatientDashboardPage() {
   // Dynamic Metric Calculations
   const upcomingAppointmentsCount = appointments.filter(a => a.status === 'UPCOMING' || a.status === 'BOOKED').length;
   const labReportsCount = labReports.length;
-  const insuranceMessagesCount = 0; // Placeholder until Backend Developer 17 builds the messaging endpoint
 
   const formatDate = (dateString: string) => {
     if (!dateString) return "N/A";
@@ -146,7 +150,7 @@ export default function PatientDashboardPage() {
               <span>Notifications</span>
             </Link>
             <Link
-                href="/support/patient"
+                href="/support/patient/sdefault"
                 className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white text-blue-600 hover:bg-blue-50 text-xs font-semibold shadow-sm transition"
             >
               <HeadphonesIcon className="w-4 h-4" />
@@ -206,7 +210,7 @@ export default function PatientDashboardPage() {
                 <svg className="w-5 h-5 transition-transform duration-300 group-hover:scale-110 group-hover:animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"></path></svg>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-zinc-500 leading-tight">New messages<br/>from Insuarance</span>
+                <span className="text-xs text-zinc-500 leading-tight">New messages<br/>from Insurance</span>
                 <span className="text-2xl font-bold text-zinc-950 leading-none">{insuranceMessagesCount}</span>
               </div>
             </div>
@@ -337,7 +341,7 @@ export default function PatientDashboardPage() {
           <div className="bg-white border border-zinc-200 rounded-xl p-6 shadow-sm">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-zinc-950 text-[16px]">Recent lab reports</h3>
-              <Link href="/patient/records" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
+              <Link href="/patient/lab-reports" className="text-sm font-medium text-blue-500 hover:text-blue-600 cursor-pointer">View all</Link>
             </div>
 
             <div className="w-full">
@@ -354,15 +358,26 @@ export default function PatientDashboardPage() {
                     labReports.slice(0, 3).map((report, index) => (
                         <div key={index} className="flex justify-between items-center py-4 border-b border-zinc-100 last:border-0 hover:bg-slate-50 transition px-2 -mx-2 rounded-lg">
                           <div className="w-1/3 text-sm text-zinc-950 font-medium truncate pr-2">
-                            {report.parameters && report.parameters[0] ? report.parameters[0].parameterName : `Test Order #${report.testOrderId}`}
+                            {report.parameters && report.parameters.length > 0 ? (
+                              <>
+                                {report.parameters[0].parameterName}
+                                {report.parameters.length > 1 && (
+                                  <span className="text-zinc-500 text-xs ml-1.5 font-normal">
+                                    +{report.parameters.length - 1} more
+                                  </span>
+                                )}
+                              </>
+                            ) : (
+                              `Test Order #${report.testOrderId}`
+                            )}
                           </div>
                           <div className="w-1/3 text-sm text-zinc-500 text-center">
                             {formatDate(report.publishedAt || report.resultedAt)}
                           </div>
                           <div className="w-1/3 flex justify-end items-center gap-4 sm:gap-8 pr-2">
-                            {report.isCritical ? (
+                            { (report.critical || report.isCritical) ? (
                                 <span className="bg-red-500/15 text-red-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Critical</span>
-                            ) : report.isAbnormal ? (
+                            ) : (report.abnormal || report.isAbnormal) ? (
                                 <span className="bg-orange-500/15 text-orange-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Review needed</span>
                             ) : (
                                 <span className="bg-teal-500/15 text-teal-700 text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap">Normal</span>
