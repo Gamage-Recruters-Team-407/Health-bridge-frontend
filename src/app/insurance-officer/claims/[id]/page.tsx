@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useCallback } from "react";
+import { useParams } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
@@ -9,23 +9,11 @@ import {
   CheckCircle2,
   Clock,
   AlertTriangle,
-  XCircle,
-  Building2,
-  User,
-  Calendar,
-  DollarSign,
-  Shield,
   Download,
-  FileCheck,
-  File,
   Image as ImageIcon,
-  Paperclip,
-  Printer,
-  ChevronRight,
-  Sparkles,
+  ExternalLink,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
@@ -44,7 +32,6 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 
 export default function ClaimDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const router = useRouter();
 
   const [claim, setClaim] = useState<InsuranceClaim | null>(null);
   const [policy, setPolicy] = useState<InsurancePolicy | null>(null);
@@ -69,9 +56,9 @@ export default function ClaimDetailsPage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const loadClaimDetails = async () => {
+  const loadClaimDetails = useCallback(async (showSpinner = false) => {
     if (!id) return;
-    setLoading(true);
+    if (showSpinner) setLoading(true);
     try {
       const claimData = await insuranceService.getClaimById(id);
       setClaim(claimData);
@@ -91,10 +78,36 @@ export default function ClaimDetailsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id]);
 
   useEffect(() => {
-    loadClaimDetails();
+    let isMounted = true;
+    if (!id) return;
+    insuranceService
+      .getClaimById(id)
+      .then(async (claimData) => {
+        if (!isMounted) return;
+        setClaim(claimData);
+        setErrorMessage(null);
+        if (claimData?.policyId) {
+          try {
+            const policyData = await insuranceService.getPolicyById(claimData.policyId);
+            if (isMounted) setPolicy(policyData);
+          } catch {
+            // Non-blocking policy fetch
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) setErrorMessage("Failed to load claim details from server.");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const openDecision = (mode: "APPROVE" | "REJECT" | "REVIEW") => {
@@ -192,9 +205,9 @@ export default function ClaimDetailsPage() {
           <AlertTriangle className="w-12 h-12 text-red-500 mx-auto" />
           <h2 className="text-xl font-bold text-slate-800">Claim Not Found</h2>
           <p className="text-sm text-slate-500">The requested claim could not be retrieved from the server.</p>
-          <Button onClick={() => router.push("/insurance-officer/claims")}>
-            Return to Claims Queue
-          </Button>
+          <Link href="/insurance-officer/claims">
+            <Button>Return to Claims Queue</Button>
+          </Link>
         </div>
       </DashboardLayout>
     );
@@ -441,7 +454,7 @@ export default function ClaimDetailsPage() {
                       Total Requested Claim
                     </td>
                     <td className="py-3 px-4 text-right text-blue-600 font-extrabold text-sm">
-                      Rs. ${(claim.claimAmount || 0).toFixed(2)}
+                      Rs. {(claim.claimAmount || 0).toFixed(2)}
                     </td>
                   </tr>
                 </tbody>
@@ -451,49 +464,64 @@ export default function ClaimDetailsPage() {
 
           {/* Section 3: Supporting Documents (Matching Figma Card Tiles) */}
           <div className="space-y-3">
-            <h2 className="text-sm font-bold text-[#0A2540]">Supporting Documents</h2>
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-bold text-[#0A2540]">Supporting Documents</h2>
+              <span className="text-xs text-slate-400 font-medium">
+                {((claim.documentUrls && claim.documentUrls.length > 0 ? claim.documentUrls : claim.documentFileIds) || []).length} Attached
+              </span>
+            </div>
 
-            {(!claim.documentFileIds || claim.documentFileIds.length === 0) ? (
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {/* Fallback mock tiles if no files attached */}
-                <div className="p-4 rounded-2xl border border-slate-200/80 bg-white flex flex-col items-center justify-center text-center space-y-2 py-6">
-                  <FileText className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-semibold text-slate-700">Invoice.pdf</span>
-                  <span className="text-[10px] text-slate-400">Attached with claim</span>
-                </div>
-                <div className="p-4 rounded-2xl border border-slate-200/80 bg-white flex flex-col items-center justify-center text-center space-y-2 py-6">
-                  <ImageIcon className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-semibold text-slate-700">Receipt.jpg</span>
-                  <span className="text-[10px] text-slate-400">Payment receipt</span>
-                </div>
-                <div className="p-4 rounded-2xl border border-slate-200/80 bg-white flex flex-col items-center justify-center text-center space-y-2 py-6">
-                  <Paperclip className="w-6 h-6 text-slate-400" />
-                  <span className="text-xs font-semibold text-slate-700">Referral.docx</span>
-                  <span className="text-[10px] text-slate-400">Physician referral</span>
-                </div>
+            {(!claim.documentUrls?.length && (!claim.documentFileIds || claim.documentFileIds.length === 0)) ? (
+              <div className="p-8 rounded-2xl border border-dashed border-slate-200 bg-slate-50/50 text-center">
+                <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs text-slate-500 font-medium">No supporting documents attached to this claim.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                {claim.documentFileIds.map((fileId, index) => (
-                  <a
-                    key={fileId}
-                    href={insuranceService.getDocumentUrl(fileId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-4 rounded-2xl border border-slate-200/80 bg-white hover:border-blue-400 hover:shadow-sm transition-all flex flex-col items-center justify-center text-center space-y-2 py-6 group"
-                  >
-                    <FileText className="w-7 h-7 text-blue-500 group-hover:scale-110 transition-transform" />
-                    <span className="text-xs font-bold text-slate-800">
-                      Medical_Document_{index + 1}.pdf
-                    </span>
-                    <span className="text-[10px] text-slate-400 font-mono">
-                      ID: {fileId.slice(0, 10)}…
-                    </span>
-                    <span className="text-[11px] text-blue-600 font-semibold group-hover:underline flex items-center gap-1">
-                      <Download className="w-3 h-3" /> View Document
-                    </span>
-                  </a>
-                ))}
+                {(claim.documentUrls && claim.documentUrls.length > 0 ? claim.documentUrls : (claim.documentFileIds || [])).map((docRef, index) => {
+                  const url = insuranceService.getDocumentUrl(docRef);
+                  const isImage = /\.(jpg|jpeg|png|webp|gif)/i.test(docRef) || docRef.includes("/image/upload");
+                  
+                  let displayName = `Medical_Document_${index + 1}.pdf`;
+                  try {
+                    if (docRef.startsWith("http")) {
+                      const parts = docRef.split("/");
+                      const last = parts[parts.length - 1].split("?")[0];
+                      if (last && last.length > 3) {
+                        displayName = decodeURIComponent(last).slice(-26);
+                      }
+                    } else if (docRef.length > 8) {
+                      displayName = `Doc_${docRef.slice(0, 8)}...`;
+                    }
+                  } catch {
+                    displayName = `Document_${index + 1}`;
+                  }
+
+                  return (
+                    <a
+                      key={index}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-4 rounded-2xl border border-slate-200/80 bg-white hover:border-blue-400 hover:shadow-sm transition-all flex flex-col items-center justify-center text-center space-y-2 py-6 group"
+                    >
+                      {isImage ? (
+                        <ImageIcon className="w-7 h-7 text-purple-500 group-hover:scale-110 transition-transform" />
+                      ) : (
+                        <FileText className="w-7 h-7 text-blue-500 group-hover:scale-110 transition-transform" />
+                      )}
+                      <span className="text-xs font-bold text-slate-800 truncate max-w-full px-2">
+                        {displayName}
+                      </span>
+                      <span className="text-[10px] text-slate-400 font-mono">
+                        {docRef.startsWith("http") ? "Cloudinary Asset" : `ID: ${docRef.slice(0, 10)}…`}
+                      </span>
+                      <span className="text-[11px] text-blue-600 font-semibold group-hover:underline flex items-center gap-1">
+                        <ExternalLink className="w-3 h-3" /> View Document
+                      </span>
+                    </a>
+                  );
+                })}
               </div>
             )}
           </div>

@@ -1,33 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   FileText,
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
   Clock,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
   Plus,
   Search,
   Download,
   DollarSign,
-  Building2,
-  Calendar,
-  User,
   ArrowUpRight,
   RefreshCw,
-  HelpCircle,
-  FileCheck,
   ChevronRight,
   Lock,
   Bell,
-  Sparkles,
-  Printer,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
 import {
@@ -55,8 +43,6 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 };
 
 export default function PatientInsurancePage() {
-  const router = useRouter();
-
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
@@ -64,6 +50,8 @@ export default function PatientInsurancePage() {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState("This year");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   // Interactive notification toggles
   const [notifyStatusUpdates, setNotifyStatusUpdates] = useState(true);
@@ -84,8 +72,8 @@ export default function PatientInsurancePage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     try {
       const [policiesData, claimsData] = await Promise.all([
         insuranceService.getMyPolicies(),
@@ -99,10 +87,35 @@ export default function PatientInsurancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadData();
+    let isMounted = true;
+    Promise.all([
+      insuranceService.getMyPolicies(),
+      insuranceService.getMyClaims(),
+    ])
+      .then(([policiesData, claimsData]) => {
+        if (isMounted) {
+          setPolicies(policiesData);
+          setClaims(claimsData);
+          setErrorMessage(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage("Failed to load your insurance information.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const activePolicy = useMemo(
@@ -155,6 +168,13 @@ export default function PatientInsurancePage() {
         (c.treatmentDescription && c.treatmentDescription.toLowerCase().includes(q))
     );
   }, [claims, searchQuery]);
+
+  // Paginated Claims (6 per page)
+  const totalPages = Math.ceil(filteredClaims.length / pageSize) || 1;
+  const paginatedClaims = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredClaims.slice(start, start + pageSize);
+  }, [filteredClaims, currentPage, pageSize]);
 
   // Export Statement as PDF
   const handleExportStatement = () => {
@@ -374,7 +394,10 @@ export default function PatientInsurancePage() {
                     type="text"
                     placeholder="Search claims..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
                   />
                 </div>
@@ -405,11 +428,11 @@ export default function PatientInsurancePage() {
                       <TableHead>Date</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredClaims.map((c) => (
+                    {paginatedClaims.map((c) => (
                       <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Claim # */}
                         <TableCell>
@@ -455,21 +478,22 @@ export default function PatientInsurancePage() {
                           </Badge>
                         </TableCell>
 
-                        {/* Actions (View and Track buttons) */}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        {/* Actions (Centered: View and Track buttons) */}
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <Button
                               size="sm"
                               variant="outline"
                               onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
-                              className="h-7 text-xs px-2.5"
+                              className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] inline-flex items-center justify-center"
                             >
-                              View
+                              <span>View</span>
+                              <ArrowUpRight className="w-3.5 h-3.5" />
                             </Button>
                             <Button
                               size="sm"
                               onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
-                              className="h-7 text-xs px-2.5 bg-blue-600 hover:bg-blue-700 text-white"
+                              className="h-7 text-xs px-3 bg-blue-600 hover:bg-blue-700 text-white"
                             >
                               Track
                             </Button>
@@ -479,6 +503,52 @@ export default function PatientInsurancePage() {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+
+              {/* Pagination Controls (Matching Screenshot 2) */}
+              {filteredClaims.length > 0 && totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                  <div>
+                    Showing <span className="font-semibold text-[#0A2540]">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                    <span className="font-semibold text-[#0A2540]">{Math.min(currentPage * pageSize, filteredClaims.length)}</span> of{" "}
+                    <span className="font-semibold text-[#0A2540]">{filteredClaims.length}</span> claims
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                    >
+                      Previous
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                          currentPage === pageNum
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               )}
             </CardContent>
           </Card>

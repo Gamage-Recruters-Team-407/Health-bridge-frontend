@@ -25,7 +25,7 @@ function escapePdf(text: string): string {
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
     .replace(/\)/g, "\\)")
-    .replace(/[\u0080-\uFFFF]/g, ""); // strip non-ASCII characters for standard Type 1 Helvetica font
+    .replace(/[^\x20-\x7E\t\n\r]/g, ""); // strip non-ASCII characters for standard Type 1 Helvetica font
 }
 
 class SimplePdfDocument {
@@ -733,7 +733,7 @@ export function generateClaimTrackingPdf(
   doc.drawText("Current Status:", 430, y - 28, { font: "regular", size: 8, color: "#64748B" });
   let statusBadgeColor = "#2563EB";
   let statusBadgeBg = "#EFF6FF";
-  let statusLabel = claim.status;
+  let statusLabel: string = claim.status;
   if (claim.status === "APPROVED" || claim.status === "PAID") {
     statusBadgeColor = "#059669";
     statusBadgeBg = "#ECFDF5";

@@ -27,7 +27,8 @@ export interface InsuranceClaim {
   branch?: string;
   claimAmount: number;
   approvedAmount?: number;
-  documentFileIds: string[];
+  documentUrls?: string[];
+  documentFileIds?: string[];
   status: ClaimStatus;
   reviewedByOfficerId?: string;
   rejectionReason?: string;

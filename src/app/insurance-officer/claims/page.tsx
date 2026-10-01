@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -14,12 +14,8 @@ import {
   User,
   Calendar,
   DollarSign,
-  Filter,
   ArrowUpRight,
   RefreshCw,
-  Eye,
-  ChevronLeft,
-  ChevronRight,
 } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
@@ -34,7 +30,6 @@ import {
 } from "@/components/ui/Table";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, ClaimStatus } from "@/types/insurance";
@@ -59,7 +54,7 @@ export default function ClaimsListPage() {
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [providerFilter, setProviderFilter] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState(1);
-  const pageSize = 10;
+  const pageSize = 6;
 
   // Decision Modal State
   const [selectedClaim, setSelectedClaim] = useState<InsuranceClaim | null>(null);
@@ -79,8 +74,8 @@ export default function ClaimsListPage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const loadClaims = async () => {
-    setLoading(true);
+  const loadClaims = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     try {
       const data = await insuranceService.getAllClaims();
       setClaims(data);
@@ -90,10 +85,32 @@ export default function ClaimsListPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadClaims();
+    let isMounted = true;
+    insuranceService
+      .getAllClaims()
+      .then((data) => {
+        if (isMounted) {
+          setClaims(data);
+          setErrorMessage(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage("Failed to load claims from server.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Unique providers from claims
@@ -170,17 +187,6 @@ export default function ClaimsListPage() {
     setSelectedClaim(null);
     showSuccess("Claim decision saved successfully.");
     loadClaims();
-  };
-
-  const handleStartReview = async (claimId: string, e: React.MouseEvent) => {
-    e.stopPropagation();
-    try {
-      await insuranceService.startClaimReview(claimId);
-      showSuccess("Claim marked as Under Review.");
-      loadClaims();
-    } catch {
-      showError("Failed to update claim review status.");
-    }
   };
 
   return (
@@ -365,7 +371,7 @@ export default function ClaimsListPage() {
                     <TableHead>Date</TableHead>
                     <TableHead>Amount</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -444,45 +450,36 @@ export default function ClaimsListPage() {
                           <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
                         </TableCell>
 
-                        {/* Actions (Matching Figma: Approve / Reject quick buttons + Review link) */}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            {isPending ? (
+                        {/* Actions (Centered: View + Approve/Reject if pending, arranged vertically) */}
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
+                              className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center"
+                            >
+                              <span>View</span>
+                              <ArrowUpRight className="w-3.5 h-3.5" />
+                            </Button>
+
+                            {isPending && (
                               <>
-                                {c.status === "SUBMITTED" && (
-                                  <button
-                                    type="button"
-                                    onClick={(e) => handleStartReview(c.id, e)}
-                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold transition-colors"
-                                  >
-                                    Start Review
-                                  </button>
-                                )}
                                 <button
                                   type="button"
                                   onClick={() => openDecisionModal(c, "APPROVE")}
-                                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors"
+                                  className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-xs transition-colors h-7 min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center"
                                 >
                                   Approve
                                 </button>
                                 <button
                                   type="button"
                                   onClick={() => openDecisionModal(c, "REJECT")}
-                                  className="px-3 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition-colors"
+                                  className="px-3 py-1 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-lg text-xs font-semibold transition-colors h-7 min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center"
                                 >
                                   Reject
                                 </button>
                               </>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
-                                className="h-7 text-xs px-2.5 gap-1"
-                              >
-                                <span>View</span>
-                                <ArrowUpRight className="w-3 h-3" />
-                              </Button>
                             )}
                           </div>
                         </TableCell>
@@ -493,8 +490,8 @@ export default function ClaimsListPage() {
               </Table>
             )}
 
-            {/* Pagination Controls (Matching Figma Design) */}
-            {filteredClaims.length > 0 && (
+            {/* Pagination Controls (Matching Screenshot 2) */}
+            {filteredClaims.length > 0 && totalPages > 1 && (
               <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
                 <div>
                   Showing{" "}
@@ -512,41 +509,36 @@ export default function ClaimsListPage() {
                   claims
                 </div>
 
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1.5">
                   <button
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
                     disabled={currentPage === 1}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
                   >
                     Previous
                   </button>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1)
-                    .slice(
-                      Math.max(0, currentPage - 3),
-                      Math.min(totalPages, currentPage + 2)
-                    )
-                    .map((pageNum) => (
-                      <button
-                        key={pageNum}
-                        type="button"
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`w-7 h-7 rounded-lg text-xs font-bold transition-all ${
-                          currentPage === pageNum
-                            ? "bg-blue-600 text-white shadow-xs"
-                            : "text-slate-600 hover:bg-slate-100"
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    ))}
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
 
                   <button
                     type="button"
                     onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
                     disabled={currentPage === totalPages}
-                    className="px-2.5 py-1.5 rounded-lg border border-slate-200 text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium"
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
                   >
                     Next
                   </button>

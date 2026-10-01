@@ -11,7 +11,7 @@ import {
   CheckCircle2,
   AlertTriangle,
   X,
-  File,
+  File as FileIcon,
   Shield,
   ShieldCheck,
   Lock,
@@ -495,7 +495,7 @@ export default function SubmitClaimPage() {
                         className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <File className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                          <FileIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                           <span className="truncate font-medium text-slate-700">
                             {file.name}
                           </span>
