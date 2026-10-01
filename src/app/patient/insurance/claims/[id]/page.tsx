@@ -7,27 +7,21 @@ import {
   FileText,
   ArrowLeft,
   CheckCircle2,
-  Clock,
   AlertTriangle,
   XCircle,
-  Building2,
-  User,
-  Calendar,
-  DollarSign,
-  Shield,
   Download,
-  FileCheck,
-  File,
-  Printer,
-  ChevronRight,
   ShieldCheck,
+  ImageIcon,
+  ExternalLink,
+  DollarSign,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
+import { Card, StatCard } from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generateClaimTrackingPdf } from "@/lib/insurancePdfGenerator";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
@@ -51,18 +45,13 @@ const STEPS: { status: ClaimStatus; label: string; description: string }[] = [
   {
     status: "APPROVED",
     label: "Adjudication Approved",
-    description: "Reimbursement authorized",
-  },
-  {
-    status: "PAID",
-    label: "Payment Settled",
-    description: "Disbursement completed to patient",
+    description: "Reimbursement authorized & settled",
   },
 ];
 
 export default function PatientClaimTrackingPage() {
-  const { id } = useParams<{ id: string }>();
   const router = useRouter();
+  const { id } = useParams<{ id: string }>();
 
   const [claim, setClaim] = useState<InsuranceClaim | null>(null);
   const [policy, setPolicy] = useState<InsurancePolicy | null>(null);
@@ -82,34 +71,37 @@ export default function PatientClaimTrackingPage() {
     setTimeout(() => setSuccessMessage(null), 4000);
   };
 
-  const loadClaimDetails = async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const data = await insuranceService.getClaimById(id);
-      setClaim(data);
-      setErrorMessage(null);
-
-      if (data?.policyId) {
-        try {
-          const p = await insuranceService.getPolicyById(data.policyId);
-          setPolicy(p);
-        } catch {
-          // Non-blocking
-        }
-      }
-    } catch {
-      showError("Failed to retrieve claim details from the server.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadClaimDetails();
+    let isMounted = true;
+    if (!id) return;
+    insuranceService
+      .getClaimById(id)
+      .then(async (data) => {
+        if (!isMounted) return;
+        setClaim(data);
+        setErrorMessage(null);
+        if (data?.policyId) {
+          try {
+            const p = await insuranceService.getPolicyById(data.policyId);
+            if (isMounted) setPolicy(p);
+          } catch {
+            // Non-blocking
+          }
+        }
+      })
+      .catch(() => {
+        if (isMounted) setErrorMessage("Failed to retrieve claim details from the server.");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
-  // Determine current progression index
+  // Determine current progression index (3-stage adjudication)
   const stepIndex = useMemo(() => {
     if (!claim) return 0;
     if (claim.status === "REJECTED") return -1;
@@ -119,13 +111,30 @@ export default function PatientClaimTrackingPage() {
       case "UNDER_REVIEW":
         return 1;
       case "APPROVED":
-        return 2;
       case "PAID":
-        return 3;
+        return 2;
       default:
         return 0;
     }
   }, [claim]);
+
+  const handleDownloadPdf = () => {
+    if (!claim) return;
+    try {
+      const blob = generateClaimTrackingPdf(claim, policy);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Claim_Statement_${claim.claimNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Claim statement PDF downloaded successfully.");
+    } catch {
+      showError("Failed to generate claim statement PDF.");
+    }
+  };
 
   // Itemized breakdown
   const itemizedCharges = useMemo(() => {
@@ -217,12 +226,11 @@ export default function PatientClaimTrackingPage() {
         <div className="flex items-center gap-2">
           <Button
             size="sm"
-            variant="outline"
-            onClick={() => window.print()}
-            className="gap-1.5 text-slate-600"
+            onClick={handleDownloadPdf}
+            className="gap-1.5 shadow-sm"
           >
-            <Printer className="w-4 h-4" />
-            <span>Print Summary</span>
+            <Download className="w-4 h-4" />
+            <span>Download PDF</span>
           </Button>
         </div>
       </div>
@@ -241,12 +249,12 @@ export default function PatientClaimTrackingPage() {
         </div>
       )}
 
-      {/* 4-Stage Visual Status Stepper Card */}
+      {/* 3-Stage Visual Status Stepper Card */}
       <Card className="p-6 bg-white shadow-xs">
         <h2 className="text-sm font-bold text-[#0A2540] mb-6">Adjudication Progress</h2>
 
         {!isRejected ? (
-          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4 relative">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 relative">
             {STEPS.map((step, idx) => {
               const isCompleted = idx <= stepIndex;
               const isCurrent = idx === stepIndex;
@@ -380,34 +388,58 @@ export default function PatientClaimTrackingPage() {
             <div className="flex items-center justify-between pb-3 border-b border-slate-100">
               <h2 className="text-sm font-bold text-[#0A2540]">Supporting Documentation</h2>
               <span className="text-xs text-slate-400 font-medium">
-                {(claim.documentFileIds || []).length} Attached
+                {((claim.documentUrls && claim.documentUrls.length > 0 ? claim.documentUrls : claim.documentFileIds) || []).length} Attached
               </span>
             </div>
 
-            {(!claim.documentFileIds || claim.documentFileIds.length === 0) ? (
+            {(!claim.documentUrls?.length && (!claim.documentFileIds || claim.documentFileIds.length === 0)) ? (
               <p className="text-xs text-slate-400">No documents attached to this claim.</p>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {claim.documentFileIds.map((fileId, i) => (
-                  <a
-                    key={fileId}
-                    href={insuranceService.getDocumentUrl(fileId)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-blue-400 hover:shadow-xs transition-all flex items-center justify-between group text-xs"
-                  >
-                    <div className="flex items-center gap-2.5 min-w-0">
-                      <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
-                        <FileText className="w-4 h-4" />
+                {(claim.documentUrls && claim.documentUrls.length > 0 ? claim.documentUrls : (claim.documentFileIds || [])).map((docRef, i) => {
+                  const url = insuranceService.getDocumentUrl(docRef);
+                  const isImage = /\.(jpg|jpeg|png|webp|gif)/i.test(docRef) || docRef.includes("/image/upload");
+                  
+                  let displayName = `Document #${i + 1}`;
+                  try {
+                    if (docRef.startsWith("http")) {
+                      const parts = docRef.split("/");
+                      const last = parts[parts.length - 1].split("?")[0];
+                      if (last && last.length > 3) {
+                        displayName = decodeURIComponent(last).slice(-24);
+                      }
+                    } else if (docRef.length > 8) {
+                      displayName = `Doc_${docRef.slice(0, 8)}...`;
+                    }
+                  } catch {
+                    displayName = `Document #${i + 1}`;
+                  }
+
+                  return (
+                    <a
+                      key={i}
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="p-3.5 rounded-xl border border-slate-200/80 bg-white hover:border-blue-400 hover:shadow-xs transition-all flex items-center justify-between group text-xs"
+                    >
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 ${
+                          isImage ? "bg-purple-50 text-purple-600" : "bg-blue-50 text-blue-600"
+                        }`}>
+                          {isImage ? <ImageIcon className="w-4 h-4" /> : <FileText className="w-4 h-4" />}
+                        </div>
+                        <div className="truncate">
+                          <p className="font-bold text-slate-800 truncate">{displayName}</p>
+                          <p className="text-[10px] text-slate-400 font-mono truncate">
+                            {docRef.startsWith("http") ? "Cloudinary File" : `ID: ${docRef.slice(0, 10)}…`}
+                          </p>
+                        </div>
                       </div>
-                      <div className="truncate">
-                        <p className="font-bold text-slate-800 truncate">Document #{i + 1}</p>
-                        <p className="text-[10px] text-slate-400 font-mono truncate">{fileId.slice(0, 10)}…</p>
-                      </div>
-                    </div>
-                    <Download className="w-4 h-4 text-slate-400 group-hover:text-blue-600 flex-shrink-0" />
-                  </a>
-                ))}
+                      <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-600 flex-shrink-0" />
+                    </a>
+                  );
+                })}
               </div>
             )}
           </Card>
@@ -437,6 +469,15 @@ export default function PatientClaimTrackingPage() {
                 </span>
                 <p className="font-mono font-bold text-blue-600 mt-0.5">
                   {policy?.policyNumber || claim.policyNumber || claim.policyId}
+                </p>
+              </div>
+
+              <div>
+                <span className="text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                  Hospital & Branch
+                </span>
+                <p className="font-semibold text-slate-800 mt-0.5">
+                  {claim.hospitalName || "HealthBridge Hospital"} • {claim.branch || "Colombo"} Branch
                 </p>
               </div>
 

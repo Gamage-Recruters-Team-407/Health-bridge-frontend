@@ -27,7 +27,15 @@ export default function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await authService.forgotPassword(email.trim());
+      const res: any = await authService.forgotPassword(email.trim());
+      const devOtp = res?.devOtp || res?.data?.devOtp;
+      if (typeof window !== "undefined") {
+        if (devOtp) {
+          sessionStorage.setItem(`dev_otp_${email.trim().toLowerCase()}`, devOtp);
+        } else {
+          sessionStorage.removeItem(`dev_otp_${email.trim().toLowerCase()}`);
+        }
+      }
       // Direct user to the OTP verification page with the email in query parameters
       router.push(`/otp?email=${encodeURIComponent(email.trim())}`);
     } catch (err: any) {

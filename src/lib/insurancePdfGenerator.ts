@@ -25,7 +25,7 @@ function escapePdf(text: string): string {
     .replace(/\\/g, "\\\\")
     .replace(/\(/g, "\\(")
     .replace(/\)/g, "\\)")
-    .replace(/[\u0080-\uFFFF]/g, ""); // strip non-ASCII characters for standard Type 1 Helvetica font
+    .replace(/[^\x20-\x7E\t\n\r]/g, ""); // strip non-ASCII characters for standard Type 1 Helvetica font
 }
 
 class SimplePdfDocument {
@@ -667,6 +667,306 @@ export function generatePatientStatementPdf(
       y -= 19;
     }
   }
+
+  return doc.buildBlob();
+}
+
+/**
+ * Generates an individual Claim Tracking & Adjudication Statement PDF
+ */
+export function generateClaimTrackingPdf(
+  claim: InsuranceClaim,
+  policy?: InsurancePolicy | null
+): Blob {
+  const doc = new SimplePdfDocument();
+  let y = 800;
+
+  // Header Bar
+  doc.drawRect(40, y - 48, 515, 52, { fillColor: "#0A2540" });
+  doc.drawText("HEALTHBRIDGE HEALTHCARE NETWORK", 54, y - 18, {
+    font: "bold",
+    size: 13,
+    color: "#FFFFFF",
+  });
+  doc.drawText("INSURANCE CLAIM TRACKING & ADJUDICATION STATEMENT", 54, y - 34, {
+    font: "bold",
+    size: 8,
+    color: "#60A5FA",
+  });
+
+  const now = new Date();
+  const dateGenerated = now.toLocaleDateString("en-GB", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  });
+  doc.drawText(`Generated: ${dateGenerated}`, 540, y - 24, {
+    font: "regular",
+    size: 8,
+    color: "#94A3B8",
+    align: "right",
+  });
+  doc.drawText(`Claim Ref: ${claim.claimNumber}`, 540, y - 36, {
+    font: "bold",
+    size: 8,
+    color: "#FFFFFF",
+    align: "right",
+  });
+
+  y -= 64;
+
+  // Overview Information Box
+  doc.drawRect(40, y - 70, 515, 70, { fillColor: "#F8FAFC", strokeColor: "#E2E8F0" });
+  doc.drawText("CLAIM ADJUDICATION OVERVIEW", 50, y - 14, {
+    font: "bold",
+    size: 8.5,
+    color: "#1E293B",
+  });
+
+  // Row 1
+  doc.drawText("Claim Number:", 50, y - 28, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(claim.claimNumber, 125, y - 28, { font: "bold", size: 8, color: "#2563EB" });
+
+  doc.drawText("Beneficiary Patient ID:", 240, y - 28, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(claim.patientId || "—", 345, y - 28, { font: "bold", size: 8, color: "#1E293B" });
+
+  doc.drawText("Current Status:", 430, y - 28, { font: "regular", size: 8, color: "#64748B" });
+  let statusBadgeColor = "#2563EB";
+  let statusBadgeBg = "#EFF6FF";
+  let statusLabel: string = claim.status;
+  if (claim.status === "APPROVED" || claim.status === "PAID") {
+    statusBadgeColor = "#059669";
+    statusBadgeBg = "#ECFDF5";
+    statusLabel = "APPROVED";
+  } else if (claim.status === "REJECTED") {
+    statusBadgeColor = "#DC2626";
+    statusBadgeBg = "#FEF2F2";
+    statusLabel = "REJECTED";
+  } else if (claim.status === "UNDER_REVIEW") {
+    statusBadgeColor = "#D97706";
+    statusBadgeBg = "#FFFBEB";
+    statusLabel = "UNDER REVIEW";
+  } else {
+    statusLabel = "SUBMITTED";
+  }
+
+  doc.drawRect(495, y - 32, 50, 14, { fillColor: statusBadgeBg, strokeColor: statusBadgeColor, lineWidth: 0.5 });
+  doc.drawText(statusLabel, 520, y - 28, { font: "bold", size: 6.5, color: statusBadgeColor, align: "center" });
+
+  // Row 2
+  const subDateStr = claim.submittedAt
+    ? new Date(claim.submittedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    : "—";
+  doc.drawText("Submission Date:", 50, y - 44, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(subDateStr, 125, y - 44, { font: "regular", size: 8, color: "#1E293B" });
+
+  const revDateStr = claim.reviewedAt
+    ? new Date(claim.reviewedAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" })
+    : "Pending Review";
+  doc.drawText("Adjudication Date:", 240, y - 44, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(revDateStr, 345, y - 44, { font: "regular", size: 8, color: "#1E293B" });
+
+  doc.drawText("Policy Carrier:", 430, y - 44, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(claim.providerName || policy?.providerName || "Ceylinco Life", 505, y - 44, {
+    font: "bold",
+    size: 7.5,
+    color: "#1E293B",
+  });
+
+  // Row 3: Hospital & Branch
+  doc.drawText("Hospital Facility:", 50, y - 58, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(claim.hospitalName || "HealthBridge Hospital", 125, y - 58, { font: "bold", size: 8, color: "#1E293B" });
+
+  doc.drawText("Hospital Branch:", 240, y - 58, { font: "regular", size: 8, color: "#64748B" });
+  doc.drawText(`${claim.branch || "Colombo"} Branch`, 345, y - 58, { font: "bold", size: 8, color: "#2563EB" });
+
+  y -= 84;
+
+  // 3 KPI Cards Row
+  const cardW = 165;
+  const cardH = 50;
+  const gap = 10;
+
+  // Card 1: Claimed Amount
+  doc.drawRect(40, y - cardH, cardW, cardH, { fillColor: "#EFF6FF", strokeColor: "#BFDBFE" });
+  doc.drawText("REQUESTED CLAIM AMOUNT", 48, y - 14, { font: "bold", size: 7.5, color: "#1E40AF" });
+  doc.drawText(`Rs. ${(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 48, y - 32, {
+    font: "bold",
+    size: 12,
+    color: "#1E3A8A",
+  });
+  doc.drawText("Submitted medical expenses", 48, y - 44, { font: "regular", size: 7, color: "#60A5FA" });
+
+  // Card 2: Approved Settlement
+  const c2x = 40 + cardW + gap;
+  const isApproved = claim.status === "APPROVED" || claim.status === "PAID";
+  const appBg = isApproved ? "#ECFDF5" : "#FFFBEB";
+  const appBorder = isApproved ? "#A7F3D0" : "#FDE68A";
+  doc.drawRect(c2x, y - cardH, cardW, cardH, { fillColor: appBg, strokeColor: appBorder });
+  doc.drawText("APPROVED SETTLEMENT", c2x + 8, y - 14, {
+    font: "bold",
+    size: 7.5,
+    color: isApproved ? "#065F46" : "#92400E",
+  });
+  const approvedText = isApproved
+    ? `Rs. ${Number(claim.approvedAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
+    : claim.status === "REJECTED"
+    ? "Rs. 0.00"
+    : "In Review";
+  doc.drawText(approvedText, c2x + 8, y - 32, {
+    font: "bold",
+    size: 12,
+    color: isApproved ? "#047857" : claim.status === "REJECTED" ? "#DC2626" : "#B45309",
+  });
+  doc.drawText(isApproved ? "Authorized for payout" : claim.status === "REJECTED" ? "Claim declined" : "Awaiting decision", c2x + 8, y - 44, {
+    font: "regular",
+    size: 7,
+    color: isApproved ? "#34D399" : "#D97706",
+  });
+
+  // Card 3: Policy Coverage Balance
+  const c3x = c2x + cardW + gap;
+  doc.drawRect(c3x, y - cardH, cardW, cardH, { fillColor: "#F8FAFC", strokeColor: "#E2E8F0" });
+  doc.drawText("COVERAGE CARRIER", c3x + 8, y - 14, { font: "bold", size: 7.5, color: "#475569" });
+  doc.drawText(policy?.providerName || claim.providerName || "BlueShield / Ceylinco", c3x + 8, y - 28, {
+    font: "bold",
+    size: 10,
+    color: "#0F172A",
+  });
+  doc.drawText(`Policy #${policy?.policyNumber || claim.policyNumber || "POL-2026-ACTIVE"}`, c3x + 8, y - 42, {
+    font: "regular",
+    size: 7,
+    color: "#64748B",
+  });
+
+  y -= cardH + 20;
+
+  // If Rejected, Show Prominent Rejection Banner
+  if (claim.status === "REJECTED") {
+    doc.drawRect(40, y - 38, 515, 38, { fillColor: "#FEF2F2", strokeColor: "#FCA5A5" });
+    doc.drawText("CLAIM ADJUDICATION NOTICE: REJECTED BY UNDERWRITER", 50, y - 14, {
+      font: "bold",
+      size: 8.5,
+      color: "#991B1B",
+    });
+    doc.drawText(
+      `Rejection Reason: ${claim.rejectionReason || "Treatment not covered under policy contract terms."}`,
+      50,
+      y - 28,
+      { font: "regular", size: 8, color: "#B91C1C", maxWidth: 495 }
+    );
+    y -= 52;
+  }
+
+  // Itemized Clinical Charges Table
+  doc.drawText("ITEMIZED CLINICAL CHARGES BREAKDOWN", 40, y, { font: "bold", size: 9.5, color: "#0A2540" });
+  y -= 14;
+
+  doc.drawRect(40, y - 18, 515, 20, { fillColor: "#0F172A", strokeColor: "#0F172A" });
+  doc.drawText("SERVICE DESCRIPTION", 48, y - 13, { font: "bold", size: 8, color: "#FFFFFF" });
+  doc.drawText("BILLING CODE", 340, y - 13, { font: "bold", size: 8, color: "#FFFFFF" });
+  doc.drawText("AMOUNT (Rs.)", 540, y - 13, { font: "bold", size: 8, color: "#FFFFFF", align: "right" });
+  y -= 20;
+
+  const total = claim.claimAmount || 0;
+  const items = [
+    { desc: claim.treatmentDescription || "Consultation & Clinical Evaluation", code: "99213", amt: total * 0.2 },
+    { desc: "Diagnostic Lab & Pathology Workup", code: "80053", amt: total * 0.4 },
+    { desc: "Prescribed Medication & Therapy Dispensing", code: "J3490", amt: total * 0.25 },
+    { desc: "Facility & Clinical Administration Fee", code: "A9999", amt: total * 0.15 },
+  ];
+
+  items.forEach((item, idx) => {
+    const rowBg = idx % 2 === 0 ? "#FFFFFF" : "#F8FAFC";
+    doc.drawRect(40, y - 18, 515, 19, { fillColor: rowBg, strokeColor: "#E2E8F0", lineWidth: 0.5 });
+    doc.drawText(item.desc, 48, y - 13, { font: "regular", size: 8, color: "#1E293B", maxWidth: 280 });
+    doc.drawText(item.code, 340, y - 13, { font: "bold", size: 8, color: "#64748B" });
+    doc.drawText(item.amt.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }), 540, y - 13, {
+      font: "bold",
+      size: 8,
+      color: "#0F172A",
+      align: "right",
+    });
+    y -= 19;
+  });
+
+  // Table Totals Footer Row
+  doc.drawRect(40, y - 22, 515, 23, { fillColor: "#F1F5F9", strokeColor: "#CBD5E1" });
+  doc.drawText("TOTAL CLAIMED AMOUNT:", 250, y - 15, { font: "bold", size: 8.5, color: "#0F172A" });
+  doc.drawText(
+    `Rs. ${(claim.claimAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+    540,
+    y - 15,
+    { font: "bold", size: 9.5, color: "#0F172A", align: "right" }
+  );
+
+  y -= 40;
+
+  // Policy Contract Specifications Card
+  if (policy) {
+    doc.drawText("POLICY CONTRACT & COVERAGE POOL SPECIFICATIONS", 40, y, {
+      font: "bold",
+      size: 9.5,
+      color: "#0A2540",
+    });
+    y -= 14;
+
+    doc.drawRect(40, y - 48, 515, 48, { fillColor: "#F8FAFC", strokeColor: "#E2E8F0" });
+    doc.drawText("Policy Number:", 50, y - 16, { font: "regular", size: 8, color: "#64748B" });
+    doc.drawText(policy.policyNumber, 125, y - 16, { font: "bold", size: 8, color: "#2563EB" });
+
+    doc.drawText("Policy Type:", 240, y - 16, { font: "regular", size: 8, color: "#64748B" });
+    doc.drawText(policy.policyType || "Comprehensive Health Plan", 310, y - 16, {
+      font: "bold",
+      size: 8,
+      color: "#1E293B",
+    });
+
+    doc.drawText("Total Coverage:", 420, y - 16, { font: "regular", size: 8, color: "#64748B" });
+    doc.drawText(`Rs. ${(policy.coverageAmount || 0).toLocaleString()}`, 490, y - 16, {
+      font: "bold",
+      size: 8,
+      color: "#059669",
+    });
+
+    doc.drawText("Validity:", 50, y - 34, { font: "regular", size: 8, color: "#64748B" });
+    doc.drawText(`${policy.startDate || "2026-01-01"} to ${policy.endDate || "2026-12-31"}`, 125, y - 34, {
+      font: "regular",
+      size: 8,
+      color: "#1E293B",
+    });
+
+    doc.drawText("Coverage Used:", 240, y - 34, { font: "regular", size: 8, color: "#64748B" });
+    doc.drawText(`Rs. ${(policy.coverageUsed || 0).toLocaleString()}`, 310, y - 34, {
+      font: "bold",
+      size: 8,
+      color: "#D97706",
+    });
+
+    const rem = Math.max(0, (policy.coverageAmount || 0) - (policy.coverageUsed || 0));
+    doc.drawText("Remaining Balance:", 420, y - 34, { font: "regular", size: 8, color: "#64748B" });
+    doc.drawText(`Rs. ${rem.toLocaleString()}`, 490, y - 34, {
+      font: "bold",
+      size: 8,
+      color: "#2563EB",
+    });
+
+    y -= 60;
+  }
+
+  // Verification & Audit Sign-off Note
+  doc.drawText(
+    "Notice: This electronic statement is generated by HealthBridge Hospital Information System.",
+    40,
+    y,
+    { font: "regular", size: 7.5, color: "#94A3B8" }
+  );
+  doc.drawText(
+    "All reimbursement settlements are subject to underwriting verification under terms of insurance policy.",
+    40,
+    y - 12,
+    { font: "regular", size: 7.5, color: "#94A3B8" }
+  );
 
   return doc.buildBlob();
 }
