@@ -55,6 +55,9 @@ export default function AuthProvider({ children }: { children: React.ReactNode }
     clearAuthData();
     setToken(null);
     setUser(null);
+    if (typeof window !== "undefined") {
+      window.location.href = "/login";
+    }
   };
 
   const hasRole = (role: UserRole | UserRole[]) => {

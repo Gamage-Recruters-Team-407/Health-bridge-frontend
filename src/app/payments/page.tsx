@@ -6,6 +6,9 @@ import Link from "next/link";
 import DashboardLayout from "@/app/dashboard/layout";
 import { getStoredUser, AuthUser } from "@/lib/auth";
 import { paymentService, PaymentRequestData } from "@/services/paymentService";
+import { prescriptionBillingService, DispensedPrescriptionBill } from "@/services/prescriptionBillingService";
+import { prescriptionService } from "@/services/prescriptionService";
+import { getAllMedicines } from "@/services/pharmacyService";
 import {
   CreditCard,
   ShieldCheck,
@@ -23,6 +26,11 @@ import {
   Receipt,
   Sparkles,
   Lock,
+  ChevronDown,
+  Check,
+  TestTube2,
+  Scan,
+  X,
 } from "lucide-react";
 
 type PaymentStep = "DETAILS" | "CARD" | "VERIFICATION" | "SUCCESS";
@@ -34,12 +42,83 @@ interface CategoryOption {
   defaultAmount: number;
 }
 
+export interface LabTestOption {
+  id: string;
+  code: string;
+  name: string;
+  shortName: string;
+  panel: string;
+  price: number;
+  turnaround: string;
+  fastingRequired: boolean;
+  description: string;
+}
+
+export const LAB_TEST_OPTIONS: LabTestOption[] = [
+  {
+    id: "CBC",
+    code: "LB-101",
+    name: "Complete Blood Count (CBC / FBC)",
+    shortName: "CBC / FBC",
+    panel: "Hematology",
+    price: 1500,
+    turnaround: "2 - 4 Hours",
+    fastingRequired: false,
+    description: "Evaluates red & white blood cells, hemoglobin, and platelets to screen for anemia and infection.",
+  },
+  {
+    id: "LIPID_GLUCOSE",
+    code: "LB-204",
+    name: "Fasting Blood Sugar & Lipid Profile",
+    shortName: "Lipid Profile & Glucose",
+    panel: "Biochemistry",
+    price: 2800,
+    turnaround: "4 - 6 Hours",
+    fastingRequired: true,
+    description: "Evaluates glucose, cholesterol, HDL, LDL, and triglycerides for cardiovascular & diabetic health.",
+  },
+  {
+    id: "THYROID_PANEL",
+    code: "LB-315",
+    name: "Comprehensive Thyroid Panel (TSH, FT3, FT4)",
+    shortName: "Thyroid Panel (TSH/FT3/FT4)",
+    panel: "Endocrinology",
+    price: 4200,
+    turnaround: "Same Day",
+    fastingRequired: false,
+    description: "Complete hormone assay to diagnose thyroid gland health and metabolic regulation.",
+  },
+  {
+    id: "LFT_KFT",
+    code: "LB-422",
+    name: "Liver (LFT) & Kidney (KFT) Function Screening",
+    shortName: "Liver & Kidney (LFT/KFT)",
+    panel: "Organ Function",
+    price: 5600,
+    turnaround: "6 - 8 Hours",
+    fastingRequired: true,
+    description: "Screening of liver enzymes (ALT, AST, bilirubin) and renal markers (creatinine, BUN, electrolytes).",
+  },
+  {
+    id: "EXECUTIVE_HEALTH",
+    code: "LB-580",
+    name: "Full Body Executive Diagnostic & Wellness Screen",
+    shortName: "Full Body Executive Diagnostic",
+    panel: "Advanced Diagnostic",
+    price: 7800,
+    turnaround: "24 Hours",
+    fastingRequired: true,
+    description: "All-inclusive clinical diagnostic battery: CBC, LFT, KFT, lipid panel, HbA1c, and urine analysis.",
+  },
+];
+
 const CATEGORIES: CategoryOption[] = [
   { id: "CONSULTATION", name: "Doctor Consultation", icon: Stethoscope, defaultAmount: 3000 },
-  { id: "LAB_TEST", name: "Laboratory Test", icon: FlaskConical, defaultAmount: 1000 },
-  { id: "INSURANCE", name: "Insurance Copay", icon: Shield, defaultAmount: 1000 },
+  { id: "LAB_TEST", name: "Laboratory Test", icon: FlaskConical, defaultAmount: 1500 },
+  { id: "PRESCRIPTION", name: "Medical Prescription Bills", icon: Pill, defaultAmount: 0 },
+  { id: "X_RAY", name: "X-Ray", icon: Scan, defaultAmount: 3500 },
   { id: "OTHER", name: "Medical Service", icon: FileText, defaultAmount: 5000 },
-  { id: "CHECKUP", name: "Medical Checkup", icon: Pill, defaultAmount: 5000 },
+  { id: "CHECKUP", name: "Medical Checkup", icon: ShieldCheck, defaultAmount: 5000 },
 ];
 
 export default function PaymentsPage() {
@@ -58,11 +137,85 @@ export default function PaymentsPage() {
   const [expiryDate, setExpiryDate] = useState<string>("");
   const [cvv, setCvv] = useState<string>("");
 
+  // Lab Test State (Multi-selection: choose one or more lab tests)
+  const [selectedLabTestIds, setSelectedLabTestIds] = useState<string[]>(["CBC"]);
+
+  const selectedLabTests = LAB_TEST_OPTIONS.filter((t) => selectedLabTestIds.includes(t.id));
+  const totalLabAmount = selectedLabTests.reduce((sum, t) => sum + t.price, 0);
+  const hasFastingRequired = selectedLabTests.some((t) => t.fastingRequired);
+
+  // Medical Prescription Bills State
+  const [prescriptionBills, setPrescriptionBills] = useState<DispensedPrescriptionBill[]>([]);
+  const [selectedPrescriptionBillId, setSelectedPrescriptionBillId] = useState<string | null>(null);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState<boolean>(false);
+
+  // Load prescription bills for the logged in patient
+  const loadPrescriptionBills = async (currentUser?: AuthUser | null) => {
+    const targetUser = currentUser || user || getStoredUser();
+    setLoadingPrescriptions(true);
+    try {
+      // 1. Get bills recorded upon "Verify and dispense" from local store
+      const localBills = prescriptionBillingService.getDispensedBillsForPatient(
+        targetUser?.id,
+        targetUser?.fullName
+      );
+
+      let mergedBills = [...localBills];
+
+      // 2. Query backend prescriptions if patient ID exists
+      if (targetUser?.id) {
+        try {
+          const backendPrescriptions = await prescriptionService.getPatientPrescriptions(targetUser.id);
+          const dispensed = (backendPrescriptions || []).filter(
+            (p) => p.status?.toUpperCase() === "COMPLETED" || p.status?.toLowerCase() === "dispensed"
+          );
+
+          if (dispensed.length > 0) {
+            const medRes = await getAllMedicines().catch(() => []);
+            const medList = Array.isArray(medRes) ? medRes : ((medRes as any)?.data || []);
+
+            dispensed.forEach((p) => {
+              if (!mergedBills.some((b) => b.id === p.id)) {
+                const built = prescriptionBillingService.buildBill(p, medList);
+                prescriptionBillingService.saveDispensedBill(built);
+                mergedBills.push(built);
+              }
+            });
+          }
+        } catch (backendErr) {
+          console.warn("Backend prescription fetch warn:", backendErr);
+        }
+      }
+
+      setPrescriptionBills(mergedBills);
+
+      // If in PRESCRIPTION category, set active bill
+      if (category === "PRESCRIPTION") {
+        const unpaid = mergedBills.filter((b) => b.status !== "PAID");
+        const activeBill = unpaid.length > 0 ? unpaid[0] : mergedBills[0];
+        if (activeBill) {
+          setSelectedPrescriptionBillId(activeBill.id);
+          setAmount(activeBill.totalAmount.toFixed(2));
+          setDescription(`Medical Prescription Bill: ${activeBill.prescriptionNumber} (${activeBill.patientName})`);
+        } else {
+          setSelectedPrescriptionBillId(null);
+          setAmount("0.00");
+          setDescription("Medical Prescription Bills");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load prescription bills:", err);
+    } finally {
+      setLoadingPrescriptions(false);
+    }
+  };
+
   // OTP State
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
   const otpInputsRef = useRef<(HTMLInputElement | null)[]>([]);
   const [activePaymentId, setActivePaymentId] = useState<string | null>(null);
   const [maskedCard, setMaskedCard] = useState<string>("");
+  const [devOtp, setDevOtp] = useState<string | null>(null);
   const [confirmedPayment, setConfirmedPayment] = useState<{
     id: string;
     amount: number;
@@ -82,7 +235,59 @@ export default function PaymentsPage() {
     }
     setUser(currentUser);
     setCardHolderName(currentUser.fullName || "");
+    void loadPrescriptionBills(currentUser);
+
+    const handleDispenseEvent = () => {
+      void loadPrescriptionBills(currentUser);
+    };
+    window.addEventListener("healthbridge_prescription_dispensed", handleDispenseEvent);
+    return () => {
+      window.removeEventListener("healthbridge_prescription_dispensed", handleDispenseEvent);
+    };
   }, [router]);
+
+  // Helper to sync lab tests with amount & description
+  const updateLabTestSelection = (newIds: string[]) => {
+    setSelectedLabTestIds(newIds);
+    const tests = LAB_TEST_OPTIONS.filter((t) => newIds.includes(t.id));
+    const sum = tests.reduce((acc, t) => acc + t.price, 0);
+    setAmount(sum.toFixed(2));
+    if (tests.length === 1) {
+      setDescription(`Laboratory Test - ${tests[0].name}`);
+    } else if (tests.length > 1) {
+      setDescription(`Laboratory Tests (${tests.length}): ${tests.map((t) => t.shortName).join(", ")}`);
+    } else {
+      setDescription("Laboratory Test");
+    }
+  };
+
+  // Toggle selection of a single lab test (multi-select)
+  const handleToggleLabTest = (testId: string) => {
+    if (selectedLabTestIds.includes(testId)) {
+      if (selectedLabTestIds.length === 1) {
+        setErrorMsg("Please keep at least one laboratory test selected.");
+        return;
+      }
+      setErrorMsg(null);
+      const updated = selectedLabTestIds.filter((id) => id !== testId);
+      updateLabTestSelection(updated);
+    } else {
+      setErrorMsg(null);
+      const updated = [...selectedLabTestIds, testId];
+      updateLabTestSelection(updated);
+    }
+  };
+
+  const handleSelectAllLabTests = () => {
+    setErrorMsg(null);
+    const allIds = LAB_TEST_OPTIONS.map((t) => t.id);
+    updateLabTestSelection(allIds);
+  };
+
+  const handleResetLabTests = () => {
+    setErrorMsg(null);
+    updateLabTestSelection([LAB_TEST_OPTIONS[0].id]);
+  };
 
   // Countdown timer effect
   useEffect(() => {
@@ -138,6 +343,20 @@ export default function PaymentsPage() {
   const handleProceedToCard = (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
+    if (category === "LAB_TEST" && selectedLabTestIds.length === 0) {
+      setErrorMsg("Please select at least one laboratory test to proceed.");
+      return;
+    }
+    if (category === "PRESCRIPTION") {
+      if (prescriptionBills.length === 0) {
+        setErrorMsg("No prescriptions available.");
+        return;
+      }
+      if (!selectedPrescriptionBillId) {
+        setErrorMsg("Please select an individual medical prescription bill to proceed.");
+        return;
+      }
+    }
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
       setErrorMsg("Please enter a valid payment amount greater than $0.00");
@@ -192,6 +411,12 @@ export default function PaymentsPage() {
       setMaskedCard(res.maskedCard);
       setTimeLeft(600); // 10 minutes reset
       setOtpDigits(["", "", "", "", "", ""]);
+      // Capture devOtp fallback when email quota exceeded
+      if (res.devOtp) {
+        setDevOtp(res.devOtp);
+      } else {
+        setDevOtp(null);
+      }
       setStep("VERIFICATION");
       // Focus first OTP input on next tick
       setTimeout(() => {
@@ -257,6 +482,10 @@ export default function PaymentsPage() {
     setLoading(true);
     try {
       const res = await paymentService.confirmPayment(activePaymentId, fullCode);
+      if (category === "PRESCRIPTION" && selectedPrescriptionBillId) {
+        prescriptionBillingService.markAsPaid(selectedPrescriptionBillId, res.paymentId);
+        void loadPrescriptionBills();
+      }
       setConfirmedPayment({
         id: res.paymentId,
         amount: res.amount || parseFloat(amount),
@@ -264,6 +493,7 @@ export default function PaymentsPage() {
         description,
         maskedCard,
       });
+      setDevOtp(null);
       setStep("SUCCESS");
     } catch (err: any) {
       console.error("Confirmation error:", err);
@@ -296,7 +526,14 @@ export default function PaymentsPage() {
       setActivePaymentId(res.paymentId);
       setTimeLeft(600);
       setOtpDigits(["", "", "", "", "", ""]);
-      alert("A fresh 6-digit confirmation code has been dispatched to your email.");
+      if (res.devOtp) {
+        setDevOtp(res.devOtp);
+      } else {
+        setDevOtp(null);
+      }
+      alert(res.devOtp
+        ? "Email could not be delivered (SMTP limit reached). Please use the code displayed on screen."
+        : "A fresh 6-digit confirmation code has been dispatched to your email.");
     } catch (err: any) {
       setErrorMsg("Could not resend code. Please restart payment.");
     } finally {
@@ -309,10 +546,13 @@ export default function PaymentsPage() {
     setAmount("3000.00");
     setDescription("Doctor Consultation");
     setCategory("CONSULTATION");
+    setSelectedLabTestIds(["CBC"]);
+    setSelectedPrescriptionBillId(null);
     setCardNumber("");
     setExpiryDate("");
     setCvv("");
     setOtpDigits(["", "", "", "", "", ""]);
+    setDevOtp(null);
     setErrorMsg(null);
     setConfirmedPayment(null);
   };
@@ -405,12 +645,33 @@ export default function PaymentsPage() {
                       key={cat.id}
                       onClick={() => {
                         setCategory(cat.id);
-                        setAmount(cat.defaultAmount.toFixed(2));
-                        setDescription(cat.name);
+                        if (cat.id === "LAB_TEST") {
+                          const activeIds =
+                            selectedLabTestIds.length > 0 ? selectedLabTestIds : [LAB_TEST_OPTIONS[0].id];
+                          updateLabTestSelection(activeIds);
+                        } else if (cat.id === "PRESCRIPTION") {
+                          setErrorMsg(null);
+                          void loadPrescriptionBills();
+                          const unpaid = prescriptionBills.filter((b) => b.status !== "PAID");
+                          const activeBill = unpaid.length > 0 ? unpaid[0] : prescriptionBills[0];
+                          if (activeBill) {
+                            setSelectedPrescriptionBillId(activeBill.id);
+                            setAmount(activeBill.totalAmount.toFixed(2));
+                            setDescription(`Medical Prescription Bill: ${activeBill.prescriptionNumber} (${activeBill.patientName})`);
+                          } else {
+                            setSelectedPrescriptionBillId(null);
+                            setAmount("0.00");
+                            setDescription("Medical Prescription Bills");
+                          }
+                        } else {
+                          setErrorMsg(null);
+                          setAmount(cat.defaultAmount.toFixed(2));
+                          setDescription(cat.name);
+                        }
                       }}
                       className={`flex items-center gap-3 p-4 rounded-2xl border-2 text-left transition-all ${
                         isSelected
-                          ? "border-blue-600 bg-blue-50/50 shadow-sm"
+                          ? "border-blue-600 bg-blue-50/50 shadow-sm ring-2 ring-blue-500/20"
                           : "border-slate-200 hover:border-slate-300 bg-white"
                       }`}
                     >
@@ -421,16 +682,385 @@ export default function PaymentsPage() {
                       >
                         <Icon className="w-5 h-5" />
                       </div>
-                      <div className="min-w-0">
+                      <div className="min-w-0 flex-1">
                         <div className="text-sm font-bold text-slate-900 truncate">{cat.name}</div>
                         <div className="text-xs text-slate-500 font-medium">
-                          Fee: RS {cat.defaultAmount.toLocaleString()}
+                          {cat.id === "LAB_TEST"
+                            ? isSelected
+                              ? `${selectedLabTestIds.length} Test${
+                                  selectedLabTestIds.length > 1 ? "s" : ""
+                                } Selected (RS ${Number(amount).toLocaleString()})`
+                              : "5 Tests (Choose 1 or more)"
+                            : cat.id === "PRESCRIPTION"
+                            ? isSelected && selectedPrescriptionBillId
+                              ? `1 Bill Selected (RS ${Number(amount).toLocaleString()})`
+                              : `${prescriptionBills.length} Bill${prescriptionBills.length === 1 ? "" : "s"} Available`
+                            : `Fee: RS ${cat.defaultAmount.toLocaleString()}`}
                         </div>
                       </div>
                     </button>
                   );
                 })}
               </div>
+
+              {/* LABORATORY TEST MULTI-SELECTION SECTION */}
+              {category === "LAB_TEST" && (
+                <div className="rounded-3xl border-2 border-blue-200/90 bg-gradient-to-br from-blue-50/80 via-indigo-50/30 to-white p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20 shrink-0">
+                        <FlaskConical className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-slate-900">
+                            Choose Diagnostic Laboratory Tests
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                            Multi-Select
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Select one or more laboratory tests to include in your order. Total fee updates automatically.
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Quick Select Controls */}
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={handleSelectAllLabTests}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-100 hover:bg-blue-200 text-blue-700 transition"
+                      >
+                        Select All (5)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleResetLabTests}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition"
+                      >
+                        Reset (CBC Only)
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* List of Selectable Lab Test Cards */}
+                  <div className="space-y-2.5">
+                    {LAB_TEST_OPTIONS.map((test) => {
+                      const isCurrent = selectedLabTestIds.includes(test.id);
+                      return (
+                        <div
+                          key={test.id}
+                          onClick={() => handleToggleLabTest(test.id)}
+                          role="checkbox"
+                          aria-checked={isCurrent}
+                          tabIndex={0}
+                          onKeyDown={(e) => {
+                            if (e.key === " " || e.key === "Enter") {
+                              e.preventDefault();
+                              handleToggleLabTest(test.id);
+                            }
+                          }}
+                          className={`w-full flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer text-left select-none ${
+                            isCurrent
+                              ? "border-blue-600 bg-white shadow-sm ring-2 ring-blue-500/15"
+                              : "border-slate-200/90 hover:border-blue-300 bg-white/70 hover:bg-white"
+                          }`}
+                        >
+                          <div className="flex items-start gap-3.5 min-w-0 pr-3">
+                            {/* Checkbox Icon */}
+                            <div
+                              className={`w-5 h-5 mt-0.5 rounded-lg border-2 flex items-center justify-center shrink-0 transition-all ${
+                                isCurrent
+                                  ? "border-blue-600 bg-blue-600 text-white shadow-sm"
+                                  : "border-slate-300 bg-white"
+                              }`}
+                            >
+                              {isCurrent && <Check className="w-3.5 h-3.5 stroke-[3]" />}
+                            </div>
+
+                            <div className="min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span
+                                  className={`text-sm font-bold ${
+                                    isCurrent ? "text-blue-950 font-extrabold" : "text-slate-900"
+                                  }`}
+                                >
+                                  {test.name}
+                                </span>
+                                <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                                  {test.code}
+                                </span>
+                              </div>
+                              <p className="text-xs text-slate-500 mt-1 line-clamp-1">
+                                {test.description}
+                              </p>
+                              <div className="flex items-center gap-2 mt-1.5 text-[11px] text-slate-500 flex-wrap">
+                                <span className="font-semibold text-slate-700 bg-slate-100/80 px-2 py-0.5 rounded-md">
+                                  {test.panel}
+                                </span>
+                                <span>•</span>
+                                <span className="flex items-center gap-1">
+                                  <Clock className="w-3 h-3 text-slate-400" />
+                                  {test.turnaround}
+                                </span>
+                                <span>•</span>
+                                <span
+                                  className={`font-semibold ${
+                                    test.fastingRequired ? "text-amber-600" : "text-emerald-600"
+                                  }`}
+                                >
+                                  {test.fastingRequired
+                                    ? "10-12 Hr Fasting Required"
+                                    : "No Fasting Needed"}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 text-right pl-3">
+                            <div className="text-base font-black text-blue-700 font-mono">
+                              RS {test.price.toLocaleString()}
+                            </div>
+                            <span
+                              className={`text-[10px] font-bold uppercase tracking-wider block mt-0.5 transition-colors ${
+                                isCurrent ? "text-emerald-600" : "text-slate-400"
+                              }`}
+                            >
+                              {isCurrent ? "Selected" : "Click to Add"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Selected Tests Chips & Bottom Summary Bar */}
+                  <div className="bg-white rounded-2xl border border-blue-100 p-4 space-y-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="text-xs font-bold text-slate-700 uppercase tracking-wider mr-1">
+                        Active Tests ({selectedLabTests.length}):
+                      </span>
+                      {selectedLabTests.map((t) => (
+                        <span
+                          key={t.id}
+                          className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-semibold"
+                        >
+                          <span>{t.code}</span>
+                          <span className="font-bold truncate max-w-[150px]">{t.name}</span>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleToggleLabTest(t.id);
+                            }}
+                            className="text-blue-500 hover:text-red-600 transition ml-0.5 p-0.5 rounded-full hover:bg-blue-100 cursor-pointer"
+                            title="Remove test"
+                          >
+                            <X className="w-3 h-3 stroke-[2.5]" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+
+                    <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-600">
+                      <div className="flex items-start gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                        <div>
+                          {hasFastingRequired ? (
+                            <span className="text-amber-700 font-medium">
+                              <strong className="text-amber-800">Fasting Notice:</strong> One or more selected tests require 10-12 hours of overnight fasting prior to your sample collection.
+                            </span>
+                          ) : (
+                            <span className="text-emerald-700 font-medium">
+                              <strong className="text-emerald-800">No Fasting Required:</strong> Routine sample collection without dietary restrictions.
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto text-[11px] font-medium text-slate-500">
+                        <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>ISO 15189 Certified Pathology</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* MEDICAL PRESCRIPTION BILLS SECTION */}
+              {category === "PRESCRIPTION" && (
+                <div className="rounded-3xl border-2 border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-blue-50/40 to-white p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
+                        <Pill className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-slate-900">
+                            Medical Prescription Bills
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
+                            Individual Patient Bills
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Select a dispensed prescription bill below to proceed with payment.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void loadPrescriptionBills()}
+                        disabled={loadingPrescriptions}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 transition flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loadingPrescriptions ? "animate-spin" : ""}`} />
+                        <span>Refresh Bills</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* NO DISPENSED PRESCRIPTIONS AVAILABLE */}
+                  {prescriptionBills.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                        <Pill className="w-7 h-7" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-600 mt-4">No prescription bills yet</p>
+                      <p className="text-xs text-slate-400 mt-1">Dispensed prescriptions will appear here automatically.</p>
+                    </div>
+                  ) : (
+                    /* LIST OF INDIVIDUAL MEDICAL PRESCRIPTION BILLS */
+                    <div className="space-y-4">
+                      {prescriptionBills.map((bill) => {
+                        const isSelected = selectedPrescriptionBillId === bill.id;
+                        const isPaid = bill.status === "PAID";
+
+                        return (
+                          <div
+                            key={bill.id}
+                            onClick={() => {
+                              if (isPaid) return;
+                              setSelectedPrescriptionBillId(bill.id);
+                              setAmount(bill.totalAmount.toFixed(2));
+                              setDescription(`Medical Prescription Bill: ${bill.prescriptionNumber} (${bill.patientName})`);
+                              setErrorMsg(null);
+                            }}
+                            className={`rounded-2xl border-2 transition-all p-5 cursor-pointer relative bg-white ${
+                              isSelected
+                                ? "border-indigo-600 shadow-md ring-2 ring-indigo-500/20 bg-indigo-50/20"
+                                : isPaid
+                                ? "border-emerald-200 bg-emerald-50/30 opacity-80 cursor-default"
+                                : "border-slate-200 hover:border-indigo-300"
+                            }`}
+                          >
+                            {/* Bill Card Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center border-2 shrink-0 transition-colors ${
+                                    isSelected
+                                      ? "border-indigo-600 bg-indigo-600 text-white"
+                                      : isPaid
+                                      ? "border-emerald-600 bg-emerald-600 text-white"
+                                      : "border-slate-300 bg-white"
+                                  }`}
+                                >
+                                  {isSelected || isPaid ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">{bill.prescriptionNumber}</span>
+                                    <span
+                                      className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                                        isPaid
+                                          ? "bg-emerald-100 text-emerald-800"
+                                          : "bg-indigo-100 text-indigo-800"
+                                      }`}
+                                    >
+                                      {isPaid ? "Paid & Cleared" : "Dispensed - Ready for Payment"}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-0.5">
+                                    Patient: <strong className="font-semibold text-slate-800">{bill.patientName}</strong> &middot; ID:{" "}
+                                    <span className="font-mono text-slate-700">{bill.patientId}</span>
+                                    {bill.doctorName && (
+                                      <span> &middot; Doctor: {bill.doctorName}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right shrink-0">
+                                <div className="text-lg font-black text-indigo-700 font-mono">
+                                  RS {bill.totalAmount.toLocaleString()}
+                                </div>
+                                <span
+                                  className={`text-[10px] font-bold uppercase tracking-wider block mt-0.5 ${
+                                    isSelected
+                                      ? "text-indigo-600 font-bold"
+                                      : isPaid
+                                      ? "text-emerald-600"
+                                      : "text-slate-400"
+                                  }`}
+                                >
+                                  {isSelected ? "Selected for Payment" : isPaid ? "Paid" : "Click to Select Bill"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Medications Table with Drug Name and QTY */}
+                            <div className="mt-3 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-slate-100/70 text-[11px] uppercase tracking-wider text-slate-500">
+                                  <tr>
+                                    <th className="py-2.5 px-3 font-semibold">Drug Name</th>
+                                    <th className="py-2.5 px-3 font-semibold">Dosage & Frequency</th>
+                                    <th className="py-2.5 px-3 font-semibold text-center">QTY</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Unit Price</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                                  {bill.items.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/70">
+                                      <td className="py-2.5 px-3 font-bold text-slate-900">{item.medicineName}</td>
+                                      <td className="py-2.5 px-3 text-slate-500">
+                                        {item.dosage} {item.frequency ? `• ${item.frequency}` : ""}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center font-black text-indigo-700 font-mono">
+                                        {item.quantity}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right text-slate-600 font-mono">
+                                        RS {item.unitPrice.toLocaleString()}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-bold text-slate-900 font-mono">
+                                        RS {item.totalPrice.toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Card Footer with Dispense info */}
+                            <div className="mt-3 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Dispensed on: {new Date(bill.dispensedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Amount and Description (Non-changeable fixed fees) */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-4 border-t border-slate-100">
@@ -466,13 +1096,33 @@ export default function PaymentsPage() {
                       <Lock className="w-3 h-3" /> Fixed
                     </span>
                   </div>
-                  <input
-                    type="text"
-                    readOnly
-                    disabled
-                    value={description}
-                    className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-100/90 text-slate-800 font-semibold cursor-not-allowed select-none"
-                  />
+                  {category === "LAB_TEST" && selectedLabTests.length > 1 ? (
+                    <div className="w-full p-2.5 rounded-2xl border border-slate-200 bg-slate-100/90 flex flex-wrap items-center gap-1.5 min-h-[52px]">
+                      <span className="text-xs font-bold text-blue-700 mr-1 shrink-0">
+                        {selectedLabTests.length} Tests Selected:
+                      </span>
+                      {selectedLabTests.map((t) => (
+                        <span
+                          key={t.id}
+                          className="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-800 shadow-2xs"
+                        >
+                          <span className="font-bold">{t.shortName}</span>
+                          <span className="text-slate-400">•</span>
+                          <span className="text-blue-600 font-mono font-bold">
+                            RS {t.price.toLocaleString()}
+                          </span>
+                        </span>
+                      ))}
+                    </div>
+                  ) : (
+                    <input
+                      type="text"
+                      readOnly
+                      disabled
+                      value={description}
+                      className="w-full px-4 py-3.5 rounded-2xl border border-slate-200 bg-slate-100/90 text-slate-800 font-semibold cursor-not-allowed select-none"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -662,17 +1312,88 @@ export default function PaymentsPage() {
             </div>
 
             {/* Payment Summary Box */}
-            <div className="my-6 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-left max-w-md mx-auto">
-              <div>
-                <div className="text-xs text-slate-500 font-medium">Service</div>
-                <div className="text-sm font-bold text-slate-900 truncate">{description}</div>
-                <div className="text-xs text-slate-400 font-mono mt-0.5">{maskedCard}</div>
+            {category === "LAB_TEST" && selectedLabTests.length > 1 ? (
+              <div className="my-6 rounded-2xl bg-slate-50 border border-slate-200/90 text-left max-w-lg mx-auto overflow-hidden shadow-sm">
+                <div className="p-3.5 bg-blue-50/70 border-b border-blue-100 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FlaskConical className="w-4 h-4 text-blue-600 shrink-0" />
+                    <span className="text-xs font-bold uppercase tracking-wider text-blue-900">
+                      Laboratory Tests ({selectedLabTests.length} Tests)
+                    </span>
+                  </div>
+                  <span className="text-sm font-black text-blue-700 font-mono">
+                    Total: RS {Number(amount).toLocaleString()}
+                  </span>
+                </div>
+
+                <div className="p-3 space-y-2 max-h-48 overflow-y-auto divide-y divide-slate-100">
+                  {selectedLabTests.map((t) => (
+                    <div key={t.id} className="pt-2 first:pt-0 flex items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0" />
+                        <span className="font-semibold text-slate-800 truncate">{t.name}</span>
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-200/80 text-slate-600 shrink-0 font-bold">
+                          {t.code}
+                        </span>
+                      </div>
+                      <span className="font-bold text-slate-700 font-mono shrink-0">
+                        RS {t.price.toLocaleString()}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="px-3.5 py-2.5 bg-slate-100/60 border-t border-slate-200/80 flex items-center justify-between text-xs text-slate-500">
+                  <span>Card Used: <span className="font-mono text-slate-700 font-semibold">{maskedCard}</span></span>
+                  <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                    <ShieldCheck className="w-3.5 h-3.5" />
+                    Verified Order
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <div className="text-xs text-slate-500 font-medium">Total Due</div>
-                <div className="text-lg font-black text-blue-600">RS {Number(amount).toLocaleString()}</div>
+            ) : (
+              <div className="my-6 p-4 rounded-2xl bg-slate-50 border border-slate-200/80 flex items-center justify-between text-left max-w-lg mx-auto shadow-sm">
+                <div className="min-w-0 flex-1 pr-4">
+                  <div className="text-xs text-slate-500 font-medium">Service</div>
+                  <div className="text-sm font-bold text-slate-900 truncate">{description}</div>
+                  <div className="text-xs text-slate-400 font-mono mt-0.5">{maskedCard}</div>
+                </div>
+                <div className="text-right shrink-0">
+                  <div className="text-xs text-slate-500 font-medium">Total Due</div>
+                  <div className="text-lg font-black text-blue-600">RS {Number(amount).toLocaleString()}</div>
+                </div>
               </div>
-            </div>
+            )}
+
+            {/* Dev Fallback Banner – shown when email quota is exceeded */}
+            {devOtp && (
+              <div className="my-4 p-4 rounded-2xl bg-amber-50 border-2 border-amber-300 text-left max-w-md mx-auto shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-lg">⚠️</span>
+                  <span className="text-sm font-bold text-amber-800">Email Delivery Unavailable</span>
+                </div>
+                <p className="text-xs text-amber-700 mb-3">
+                  The confirmation email could not be sent (SMTP daily limit reached). Use the code below to continue:
+                </p>
+                <div className="flex items-center gap-3">
+                  <code className="px-4 py-2 bg-white rounded-xl text-2xl font-black font-mono tracking-[0.3em] text-amber-900 border border-amber-200 shadow-inner">
+                    {devOtp}
+                  </code>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const digits = devOtp.split("");
+                      setOtpDigits(digits);
+                      // Auto-focus last input after fill
+                      setTimeout(() => otpInputsRef.current[5]?.focus(), 100);
+                    }}
+                    className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition-all shadow-sm"
+                  >
+                    Auto-fill
+                  </button>
+                </div>
+              </div>
+            )}
 
             <form onSubmit={handleConfirmOtp} className="space-y-6 max-w-md mx-auto">
               {/* 6 Digit Input Group */}
@@ -772,9 +1493,9 @@ export default function PaymentsPage() {
                 </span>
               </div>
 
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-slate-500">Service Description</span>
-                <span className="text-sm font-semibold text-slate-900">
+              <div className="flex items-start justify-between gap-4">
+                <span className="text-xs text-slate-500 shrink-0 mt-0.5">Service Description</span>
+                <span className="text-sm font-semibold text-slate-900 text-right min-w-0 flex-1 break-words">
                   {confirmedPayment.description}
                 </span>
               </div>

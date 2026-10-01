@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "@/app/dashboard/layout";
 import { saveResult, publishResult, getAllResults } from "../api/labApi";
 import { ResultParameter, LabResult } from "../types";
-import { Plus, Copy, Check } from "lucide-react";
+import { patientService, PatientOption } from "@/services/prescriptionService";
+import { Plus, Copy, Check, UserRound } from "lucide-react";
 
 const DRAFT_KEY = "lab_result_draft";
 
@@ -24,6 +25,10 @@ export default function ResultsPage() {
     const [results, setResults] = useState<LabResult[]>([]);
     const [loading, setLoading] = useState(true);
     const [copiedId, setCopiedId] = useState<string | null>(null);
+
+    const [patients, setPatients] = useState<PatientOption[]>([]);
+    const [loadingPatients, setLoadingPatients] = useState(true);
+    const [selectedPatientName, setSelectedPatientName] = useState("");
 
     const inputClass = "border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500";
 
@@ -46,6 +51,14 @@ export default function ResultsPage() {
         sessionStorage.setItem(DRAFT_KEY, JSON.stringify({ form, parameters }));
     }, [form, parameters]);
 
+    // Restore selected patient name once both draft and patient list are ready
+    useEffect(() => {
+        if (form.patientId && patients.length > 0) {
+            const match = patients.find((p) => p.value === form.patientId);
+            if (match) setSelectedPatientName(match.label);
+        }
+    }, [form.patientId, patients]);
+
     const loadResults = async () => {
         setLoading(true);
         try {
@@ -58,7 +71,22 @@ export default function ResultsPage() {
         }
     };
 
-    useEffect(() => { loadResults(); }, []);
+    const loadPatients = async () => {
+        setLoadingPatients(true);
+        try {
+            const p = await patientService.getAllPatients();
+            setPatients(p);
+        } catch (e) {
+            console.error("Failed to load patients", e);
+        } finally {
+            setLoadingPatients(false);
+        }
+    };
+
+    useEffect(() => {
+        loadResults();
+        loadPatients();
+    }, []);
 
     const updateParam = (i: number, field: keyof ResultParameter, value: string | boolean) => {
         const updated = [...parameters];
@@ -73,10 +101,16 @@ export default function ResultsPage() {
         sessionStorage.removeItem(DRAFT_KEY);
         setForm(emptyForm);
         setParameters(emptyParams);
+        setSelectedPatientName("");
     };
 
     const handleSave = async (e: React.FormEvent) => {
         e.preventDefault();
+        if (!form.patientId) {
+            setMessage("Please select a patient from the list.");
+            setIsError(true);
+            return;
+        }
         try {
             const result = await saveResult({ ...form, parameters, status: "DRAFT" });
             setSavedResultId(result.id);
@@ -129,9 +163,35 @@ export default function ResultsPage() {
                            onChange={(e) => setForm({ ...form, testOrderId: e.target.value })} className={inputClass} />
                     <input placeholder="Sample ID" value={form.sampleId} required
                            onChange={(e) => setForm({ ...form, sampleId: e.target.value })} className={inputClass} />
-                    <input placeholder="Patient ID" value={form.patientId} required
-                           onChange={(e) => setForm({ ...form, patientId: e.target.value })} className={inputClass} />
+
+                    <div>
+                        <select
+                            value={form.patientId}
+                            required
+                            disabled={loadingPatients}
+                            onChange={(e) => {
+                                const selected = patients.find((p) => p.value === e.target.value);
+                                setForm({ ...form, patientId: e.target.value });
+                                setSelectedPatientName(selected?.label || "");
+                            }}
+                            className={`${inputClass} w-full`}
+                        >
+                            <option value="">-- Select Patient --</option>
+                            {patients.map((p) => (
+                                <option key={p.value} value={p.value}>
+                                    {p.label} ({p.value})
+                                </option>
+                            ))}
+                        </select>
+                    </div>
                 </div>
+
+                {selectedPatientName && (
+                    <div className="flex items-center gap-2 rounded-lg border border-blue-100 bg-blue-50/50 p-2.5 -mt-2">
+                        <UserRound size={16} className="text-blue-600" />
+                        <span className="text-sm font-medium text-slate-800">{selectedPatientName}</span>
+                    </div>
+                )}
 
                 <div>
                     <h3 className="text-sm font-semibold text-slate-700 mb-2">Parameters</h3>
@@ -169,7 +229,8 @@ export default function ResultsPage() {
                        onChange={(e) => setForm({ ...form, verifiedBy: e.target.value })} className={`${inputClass} w-full`} />
 
                 <div className="flex gap-2">
-                    <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm">
+                    <button type="submit" disabled={loadingPatients}
+                            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white font-medium px-4 py-2 rounded-lg text-sm">
                         Save Result
                     </button>
                     {savedResultId && (
@@ -202,7 +263,9 @@ export default function ResultsPage() {
                                     {copiedId === r.id ? (<><Check size={12} className="text-emerald-600" /> Copied!</>) : (<><Copy size={12} /> {r.id}</>)}
                                 </button>
                             </td>
-                            <td className="px-6 py-3">{r.patientId}</td>
+                            <td className="px-6 py-3">
+                                {patients.find((p) => p.value === r.patientId)?.label || r.patientId}
+                            </td>
                             <td className="px-6 py-3">
                                 {r.critical ? (
                                     <span className="text-xs bg-red-100 text-red-700 px-2 py-1 rounded-full font-medium">CRITICAL</span>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+
 import {
   type FormEvent,
   useEffect,
@@ -23,9 +24,11 @@ import {
   Stethoscope,
   UserCheck,
   UserRound,
+  X,
 } from "lucide-react";
 
-import DashboardLayout from "@/components/medical-records/MedicalRecordsShell";
+import DashboardLayout
+  from "@/components/medical-records/MedicalRecordsShell";
 
 import {
   getStoredUser,
@@ -42,12 +45,71 @@ import type {
 } from "@/types/medicalRecord";
 
 
+type ValidationField =
+  | "patient"
+  | "visitDate"
+  | "hospitalName"
+  | "recordType"
+  | "diagnosis"
+  | "clinicalSummary"
+  | "consultationNotes";
+
+
+type ValidationErrors =
+  Partial<
+    Record<
+      ValidationField,
+      string
+    >
+  >;
+
+
+type TouchedFields =
+  Record<
+    ValidationField,
+    boolean
+  >;
+
+
+const RECORD_TYPES = [
+  "Consultation",
+  "Follow-up",
+  "Emergency",
+  "Admission",
+  "Discharge",
+  "Procedure",
+  "Other",
+] as const;
+
+
+const INITIAL_TOUCHED:
+  TouchedFields = {
+
+    patient: false,
+
+    visitDate: false,
+
+    hospitalName: false,
+
+    recordType: false,
+
+    diagnosis: false,
+
+    clinicalSummary: false,
+
+    consultationNotes: false,
+  };
+
+
 function today(): string {
+
   const date =
     new Date();
 
+
   const year =
     date.getFullYear();
+
 
   const month =
     String(
@@ -57,6 +119,7 @@ function today(): string {
       "0"
     );
 
+
   const day =
     String(
       date.getDate()
@@ -65,6 +128,7 @@ function today(): string {
       "0"
     );
 
+
   return `${year}-${month}-${day}`;
 }
 
@@ -72,11 +136,13 @@ function today(): string {
 function getErrorMessage(
   error: unknown
 ): string {
+
   if (
     typeof error === "object"
     && error !== null
     && "response" in error
   ) {
+
     const requestError =
       error as {
         response?: {
@@ -87,43 +153,53 @@ function getErrorMessage(
         };
       };
 
+
     if (
       requestError
         .response
         ?.data
         ?.message
     ) {
+
       return requestError
         .response
         .data
         .message;
     }
 
+
     if (
       requestError
         .response
         ?.status === 403
     ) {
+
       return (
         "You do not have permission "
         + "to perform this action."
       );
     }
 
+
     if (
       requestError
         .response
         ?.status === 404
     ) {
+
       return "Patient was not found.";
     }
   }
 
-  return "Request failed. Please try again.";
+
+  return (
+    "Request failed. Please try again."
+  );
 }
 
 
 export default function CreateMedicalRecordPage() {
+
   const router =
     useRouter();
 
@@ -229,10 +305,6 @@ export default function CreateMedicalRecordPage() {
     useState("");
 
 
-
-
-
-
   const [
     submitting,
     setSubmitting,
@@ -254,6 +326,17 @@ export default function CreateMedicalRecordPage() {
     useState("");
 
 
+  const [
+    touched,
+    setTouched,
+  ] =
+    useState<TouchedFields>(
+      {
+        ...INITIAL_TOUCHED,
+      }
+    );
+
+
   const canCreate =
     currentUser?.role
     === "DOCTOR";
@@ -261,16 +344,229 @@ export default function CreateMedicalRecordPage() {
 
   /*
    * =========================================================
-   * AUTH + OPTIONAL ?patientId=
+   * VALIDATION
+   * =========================================================
+   */
+  const validationErrors =
+    useMemo<ValidationErrors>(
+      () => {
+
+        const errors:
+          ValidationErrors = {};
+
+
+        /*
+         * Patient
+         */
+        if (
+          !selectedPatient?.id
+        ) {
+
+          errors.patient =
+            "Please select a registered patient.";
+        }
+
+
+        /*
+         * Visit Date
+         */
+        if (!visitDate) {
+
+          errors.visitDate =
+            "Visit date is required.";
+
+        } else if (
+          visitDate > today()
+        ) {
+
+          errors.visitDate =
+            "Visit date cannot be in the future.";
+        }
+
+
+        /*
+         * Hospital
+         */
+        const hospital =
+          hospitalName.trim();
+
+
+        if (!hospital) {
+
+          errors.hospitalName =
+            "Hospital / Clinic is required.";
+
+        } else if (
+          hospital.length < 2
+        ) {
+
+          errors.hospitalName =
+            "Hospital / Clinic must be at least 2 characters.";
+
+        } else if (
+          hospital.length > 120
+        ) {
+
+          errors.hospitalName =
+            "Hospital / Clinic cannot exceed 120 characters.";
+        }
+
+
+        /*
+         * Record Type
+         */
+        if (
+          !RECORD_TYPES.includes(
+            recordType as
+              typeof RECORD_TYPES[number]
+          )
+        ) {
+
+          errors.recordType =
+            "Please select a valid Record Type.";
+        }
+
+
+        /*
+         * Primary Diagnosis
+         */
+        const diagnosisValue =
+          diagnosis.trim();
+
+
+        if (!diagnosisValue) {
+
+          errors.diagnosis =
+            "Primary Diagnosis is required.";
+
+        } else if (
+          diagnosisValue.length < 2
+        ) {
+
+          errors.diagnosis =
+            "Primary Diagnosis must be at least 2 characters.";
+
+        } else if (
+          diagnosisValue.length > 150
+        ) {
+
+          errors.diagnosis =
+            "Primary Diagnosis cannot exceed 150 characters.";
+        }
+
+
+        /*
+         * Clinical Summary
+         */
+        const summary =
+          clinicalSummary.trim();
+
+
+        if (!summary) {
+
+          errors.clinicalSummary =
+            "Clinical Summary is required.";
+
+        } else if (
+          summary.length < 10
+        ) {
+
+          errors.clinicalSummary =
+            "Clinical Summary must be at least 10 characters.";
+
+        } else if (
+          summary.length > 2000
+        ) {
+
+          errors.clinicalSummary =
+            "Clinical Summary cannot exceed 2000 characters.";
+        }
+
+
+        /*
+         * Consultation Notes
+         *
+         * Optional field.
+         */
+        if (
+          consultationNotes.length
+          > 5000
+        ) {
+
+          errors.consultationNotes =
+            "Consultation Notes cannot exceed 5000 characters.";
+        }
+
+
+        return errors;
+
+      },
+      [
+        selectedPatient,
+        visitDate,
+        hospitalName,
+        recordType,
+        diagnosis,
+        clinicalSummary,
+        consultationNotes,
+      ]
+    );
+
+
+  const formValid =
+    Object.keys(
+      validationErrors
+    ).length === 0;
+
+
+  const markTouched =
+    (
+      field:
+      ValidationField
+    ) => {
+
+      setTouched(
+        (
+          previous
+        ) => ({
+          ...previous,
+
+          [field]:
+            true,
+        })
+      );
+    };
+
+
+  const showError =
+    (
+      field:
+      ValidationField
+    ) => {
+
+      return (
+        touched[field]
+        && Boolean(
+          validationErrors[field]
+        )
+      );
+    };
+
+
+  /*
+   * =========================================================
+   * AUTH + OPTIONAL PATIENT ID
    * =========================================================
    */
   useEffect(
     () => {
+
       const storedUser =
         getStoredUser();
 
 
       if (!storedUser) {
+
         setError(
           "Please login to continue."
         );
@@ -288,6 +584,7 @@ export default function CreateMedicalRecordPage() {
         storedUser.role
         !== "DOCTOR"
       ) {
+
         setError(
           "Only doctors can create Medical Records."
         );
@@ -304,7 +601,9 @@ export default function CreateMedicalRecordPage() {
 
       const patientId =
         params
-          .get("patientId")
+          .get(
+            "patientId"
+          )
           ?.trim();
 
 
@@ -315,11 +614,14 @@ export default function CreateMedicalRecordPage() {
 
       const resolvePatient =
         async () => {
+
           setSearchingPatients(
             true
           );
 
+
           try {
+
             const results =
               await medicalRecordService
                 .searchPatients(
@@ -338,9 +640,23 @@ export default function CreateMedicalRecordPage() {
 
 
             if (exact) {
+
               setSelectedPatient(
                 exact
               );
+
+
+              setTouched(
+                (
+                  previous
+                ) => ({
+                  ...previous,
+
+                  patient:
+                    true,
+                })
+              );
+
 
               return;
             }
@@ -350,22 +666,30 @@ export default function CreateMedicalRecordPage() {
               patientId
             );
 
+
             setPatientResults(
               results
             );
 
+
             setPatientListOpen(
               true
             );
+
+
           } catch (
             requestError
           ) {
+
             setPatientSearchError(
               getErrorMessage(
                 requestError
               )
             );
+
+
           } finally {
+
             setSearchingPatients(
               false
             );
@@ -374,6 +698,7 @@ export default function CreateMedicalRecordPage() {
 
 
       void resolvePatient();
+
     },
     []
   );
@@ -381,15 +706,17 @@ export default function CreateMedicalRecordPage() {
 
   /*
    * =========================================================
-   * SEARCH PATIENTS - DEBOUNCE
+   * PATIENT SEARCH DEBOUNCE
    * =========================================================
    */
   useEffect(
     () => {
+
       if (
         !canCreate
         || selectedPatient
       ) {
+
         return;
       }
 
@@ -401,17 +728,21 @@ export default function CreateMedicalRecordPage() {
       if (
         query.length === 0
       ) {
+
         setPatientResults(
           []
         );
+
 
         setPatientSearchError(
           ""
         );
 
+
         setSearchingPatients(
           false
         );
+
 
         return;
       }
@@ -424,11 +755,14 @@ export default function CreateMedicalRecordPage() {
       const timeout =
         window.setTimeout(
           () => {
+
             const search =
               async () => {
+
                 setSearchingPatients(
                   true
                 );
+
 
                 setPatientSearchError(
                   ""
@@ -436,6 +770,7 @@ export default function CreateMedicalRecordPage() {
 
 
                 try {
+
                   const results =
                     await medicalRecordService
                       .searchPatients(
@@ -452,12 +787,16 @@ export default function CreateMedicalRecordPage() {
                     results
                   );
 
+
                   setPatientListOpen(
                     true
                   );
+
+
                 } catch (
                   requestError
                 ) {
+
                   if (cancelled) {
                     return;
                   }
@@ -467,13 +806,18 @@ export default function CreateMedicalRecordPage() {
                     []
                   );
 
+
                   setPatientSearchError(
                     getErrorMessage(
                       requestError
                     )
                   );
+
+
                 } finally {
+
                   if (!cancelled) {
+
                     setSearchingPatients(
                       false
                     );
@@ -483,18 +827,23 @@ export default function CreateMedicalRecordPage() {
 
 
             void search();
+
           },
           350
         );
 
 
       return () => {
-        cancelled = true;
+
+        cancelled =
+          true;
+
 
         window.clearTimeout(
           timeout
         );
       };
+
     },
     [
       patientSearch,
@@ -506,11 +855,12 @@ export default function CreateMedicalRecordPage() {
 
   /*
    * =========================================================
-   * LOAD DEFAULT PATIENT LIST WHEN FIELD CLICKED
+   * OPEN PATIENT LIST
    * =========================================================
    */
   const openPatientSelector =
     async () => {
+
       setPatientListOpen(
         true
       );
@@ -520,6 +870,7 @@ export default function CreateMedicalRecordPage() {
         patientSearch.trim()
         || patientResults.length > 0
       ) {
+
         return;
       }
 
@@ -528,12 +879,14 @@ export default function CreateMedicalRecordPage() {
         true
       );
 
+
       setPatientSearchError(
         ""
       );
 
 
       try {
+
         const results =
           await medicalRecordService
             .searchPatients(
@@ -544,19 +897,26 @@ export default function CreateMedicalRecordPage() {
         setPatientResults(
           results
         );
+
+
       } catch (
         requestError
       ) {
+
         setPatientResults(
           []
         );
+
 
         setPatientSearchError(
           getErrorMessage(
             requestError
           )
         );
+
+
       } finally {
+
         setSearchingPatients(
           false
         );
@@ -564,78 +924,139 @@ export default function CreateMedicalRecordPage() {
     };
 
 
-  const selectPatient =
-    (
-      patient:
-      PatientLookupResult
-    ) => {
-      setSelectedPatient(
-        patient
-      );
-
-      setPatientSearch(
-        ""
-      );
-
-      setPatientResults(
-        []
-      );
+  /*
+   * =========================================================
+   * CLOSE PATIENT LIST
+   * =========================================================
+   */
+  const closePatientSelector =
+    () => {
 
       setPatientListOpen(
         false
       );
 
+
+      setPatientSearch(
+        ""
+      );
+
+
+      setPatientResults(
+        []
+      );
+
+
       setPatientSearchError(
         ""
       );
 
-      setError(
-        ""
+
+      setSearchingPatients(
+        false
       );
     };
 
 
   /*
    * =========================================================
-   * CLINICAL FORM RESET
+   * SELECT PATIENT
    * =========================================================
-   *
-   * Clinical details belong to one patient only.
-   * When the doctor changes the selected patient,
-   * these values must never carry over to another patient.
    */
-  const resetClinicalFields =
-    () => {
-      setHospitalName(
+  const selectPatient =
+    (
+      patient:
+      PatientLookupResult
+    ) => {
+
+      setSelectedPatient(
+        patient
+      );
+
+
+      setPatientSearch(
         ""
       );
 
-      setVisitDate(
-        today()
+
+      setPatientResults(
+        []
       );
 
-      setRecordType(
-        "Consultation"
+
+      setPatientListOpen(
+        false
       );
 
-      setDiagnosis(
+
+      setPatientSearchError(
         ""
       );
 
-      setClinicalSummary(
-        ""
-      );
-
-      setConsultationNotes(
-        ""
-      );
 
       setError(
         ""
       );
 
+
+      markTouched(
+        "patient"
+      );
+    };
+
+
+  /*
+   * =========================================================
+   * RESET CLINICAL DATA
+   * =========================================================
+   */
+  const resetClinicalFields =
+    () => {
+
+      setHospitalName(
+        ""
+      );
+
+
+      setVisitDate(
+        today()
+      );
+
+
+      setRecordType(
+        "Consultation"
+      );
+
+
+      setDiagnosis(
+        ""
+      );
+
+
+      setClinicalSummary(
+        ""
+      );
+
+
+      setConsultationNotes(
+        ""
+      );
+
+
+      setError(
+        ""
+      );
+
+
       setSuccess(
         ""
+      );
+
+
+      setTouched(
+        {
+          ...INITIAL_TOUCHED,
+        }
       );
     };
 
@@ -647,13 +1068,23 @@ export default function CreateMedicalRecordPage() {
       || clinicalSummary.trim()
       || consultationNotes.trim()
       || visitDate !== today()
-      || recordType !== "Consultation"
+      || recordType
+        !== "Consultation"
     );
 
 
+  /*
+   * =========================================================
+   * CHANGE PATIENT
+   * =========================================================
+   */
   const changePatient =
     () => {
-      if (hasClinicalDraft) {
+
+      if (
+        hasClinicalDraft
+      ) {
+
         const confirmed =
           window.confirm(
             "Changing the patient will clear the clinical data "
@@ -674,45 +1105,26 @@ export default function CreateMedicalRecordPage() {
         null
       );
 
+
       setPatientSearch(
         ""
       );
+
 
       setPatientResults(
         []
       );
 
+
       setPatientListOpen(
         false
       );
+
 
       setPatientSearchError(
         ""
       );
     };
-
-
-  const formValid =
-    useMemo(
-      () =>
-        Boolean(
-          selectedPatient?.id
-          && hospitalName.trim()
-          && visitDate
-          && visitDate <= today()
-          && recordType.trim()
-          && diagnosis.trim()
-          && clinicalSummary.trim()
-        ),
-      [
-        selectedPatient,
-        hospitalName,
-        visitDate,
-        recordType,
-        diagnosis,
-        clinicalSummary,
-      ]
-    );
 
 
   /*
@@ -725,10 +1137,12 @@ export default function CreateMedicalRecordPage() {
       event:
       FormEvent<HTMLFormElement>
     ) => {
+
       event.preventDefault();
 
 
       if (!canCreate) {
+
         setError(
           "Only doctors can create Medical Records."
         );
@@ -737,7 +1151,41 @@ export default function CreateMedicalRecordPage() {
       }
 
 
+      /*
+       * Force all validation messages
+       * to become visible after Submit.
+       */
+      setTouched(
+        {
+          patient: true,
+
+          visitDate: true,
+
+          hospitalName: true,
+
+          recordType: true,
+
+          diagnosis: true,
+
+          clinicalSummary: true,
+
+          consultationNotes: true,
+        }
+      );
+
+
+      if (!formValid) {
+
+        setError(
+          "Please fix the highlighted fields before creating the Medical Record."
+        );
+
+        return;
+      }
+
+
       if (!selectedPatient) {
+
         setError(
           "Please select a patient."
         );
@@ -746,59 +1194,47 @@ export default function CreateMedicalRecordPage() {
       }
 
 
-      if (
-        visitDate > today()
-      ) {
-        setError(
-          "Visit date cannot be in the future."
-        );
-
-        return;
-      }
-
-
-      if (!formValid) {
-        setError(
-          "Please complete all required fields."
-        );
-
-        return;
-      }
-
-
-      /*
-       * Symptoms and the legacy Treatment Plan are intentionally
-       * not collected on this page anymore.
-       *
-       * Diagnoses and Treatment Records are managed after the
-       * Medical Record is created from the record details page.
-       * Empty arrays keep the current backend contract compatible.
-       */
       const request:
         MedicalRecordRequest = {
+
           patientId:
             selectedPatient.id,
+
 
           hospitalName:
             hospitalName.trim(),
 
+
           visitDate,
+
 
           recordType:
             recordType.trim(),
 
+
           diagnosis:
             diagnosis.trim(),
+
 
           clinicalSummary:
             clinicalSummary.trim(),
 
+
+          /*
+           * These legacy arrays are intentionally
+           * empty because Diagnosis and Treatment
+           * records are managed separately after
+           * Medical Record creation.
+           */
           symptoms: [],
+
 
           treatmentPlan: [],
 
+
           consultationNotes:
-            consultationNotes.trim()
+            consultationNotes
+              .trim()
             || undefined,
         };
 
@@ -807,9 +1243,11 @@ export default function CreateMedicalRecordPage() {
         true
       );
 
+
       setError(
         ""
       );
+
 
       setSuccess(
         ""
@@ -817,6 +1255,7 @@ export default function CreateMedicalRecordPage() {
 
 
       try {
+
         const created =
           await medicalRecordService
             .createMedicalRecord(
@@ -831,6 +1270,7 @@ export default function CreateMedicalRecordPage() {
 
         window.setTimeout(
           () => {
+
             router.push(
               `/medical-records/${
                 encodeURIComponent(
@@ -838,18 +1278,25 @@ export default function CreateMedicalRecordPage() {
                 )
               }`
             );
+
           },
           600
         );
+
+
       } catch (
         requestError
       ) {
+
         setError(
           getErrorMessage(
             requestError
           )
         );
+
+
       } finally {
+
         setSubmitting(
           false
         );
@@ -870,9 +1317,11 @@ export default function CreateMedicalRecordPage() {
 
 
   return (
+
     <DashboardLayout
       pageTitle="Create Medical Record"
     >
+
       <div
         className="
           mx-auto
@@ -881,20 +1330,30 @@ export default function CreateMedicalRecordPage() {
           space-y-5
         "
       >
+
+        {/* HEADER */}
         <div>
+
           <Link
-            href={backHref}
+            href={
+              backHref
+            }
             className="
               inline-flex
               items-center
               gap-2
               text-sm
               font-semibold
-              text-blue-600
-              hover:text-blue-700
+              text-teal-600
+              hover:text-teal-700
             "
           >
-            <ArrowLeft className="h-4 w-4" />
+            <ArrowLeft
+              className="
+                h-4
+                w-4
+              "
+            />
 
             Back to EHR
           </Link>
@@ -908,6 +1367,7 @@ export default function CreateMedicalRecordPage() {
               gap-3
             "
           >
+
             <div
               className="
                 flex
@@ -916,14 +1376,21 @@ export default function CreateMedicalRecordPage() {
                 items-center
                 justify-center
                 rounded-2xl
-                bg-blue-50
-                text-blue-600
+                bg-teal-50
+                text-teal-600
               "
             >
-              <ClipboardPlus className="h-6 w-6" />
+              <ClipboardPlus
+                className="
+                  h-6
+                  w-6
+                "
+              />
             </div>
 
+
             <div>
+
               <h1
                 className="
                   text-2xl
@@ -934,6 +1401,7 @@ export default function CreateMedicalRecordPage() {
                 Create Medical Record
               </h1>
 
+
               <p
                 className="
                   mt-1
@@ -942,24 +1410,30 @@ export default function CreateMedicalRecordPage() {
                 "
               >
                 Record a new patient consultation,
-                diagnosis, clinical summary,
-                symptoms and treatment plan.
+                primary diagnosis, clinical summary
+                and consultation notes.
               </p>
+
             </div>
+
           </div>
+
         </div>
 
 
+        {/* AUTHENTICATED DOCTOR */}
         {currentUser && (
+
           <section
             className="
               rounded-2xl
               border
-              border-blue-100
-              bg-blue-50/60
+              border-teal-100
+              bg-teal-50/60
               p-4
             "
           >
+
             <div
               className="
                 flex
@@ -967,6 +1441,7 @@ export default function CreateMedicalRecordPage() {
                 gap-3
               "
             >
+
               <div
                 className="
                   flex
@@ -976,23 +1451,31 @@ export default function CreateMedicalRecordPage() {
                   justify-center
                   rounded-xl
                   bg-white
-                  text-blue-600
+                  text-teal-600
                 "
               >
-                <Stethoscope className="h-5 w-5" />
+                <Stethoscope
+                  className="
+                    h-5
+                    w-5
+                  "
+                />
               </div>
 
+
               <div>
+
                 <p
                   className="
                     text-xs
                     font-semibold
                     uppercase
-                    text-blue-500
+                    text-teal-500
                   "
                 >
                   Authenticated Doctor
                 </p>
+
 
                 <p
                   className="
@@ -1004,8 +1487,11 @@ export default function CreateMedicalRecordPage() {
                 >
                   {currentUser.fullName}
                 </p>
+
               </div>
+
             </div>
+
 
             <p
               className="
@@ -1017,11 +1503,14 @@ export default function CreateMedicalRecordPage() {
               Doctor identity is taken securely
               from your JWT. It is not entered manually.
             </p>
+
           </section>
         )}
 
 
+        {/* PAGE ERROR */}
         {error && (
+
           <div
             className="
               flex
@@ -1035,7 +1524,14 @@ export default function CreateMedicalRecordPage() {
               text-red-700
             "
           >
-            <AlertCircle className="mt-0.5 h-5 w-5" />
+            <AlertCircle
+              className="
+                mt-0.5
+                h-5
+                w-5
+                shrink-0
+              "
+            />
 
             <p className="text-sm">
               {error}
@@ -1044,7 +1540,9 @@ export default function CreateMedicalRecordPage() {
         )}
 
 
+        {/* SUCCESS */}
         {success && (
+
           <div
             className="
               flex
@@ -1058,7 +1556,12 @@ export default function CreateMedicalRecordPage() {
               text-emerald-700
             "
           >
-            <CheckCircle2 className="h-5 w-5" />
+            <CheckCircle2
+              className="
+                h-5
+                w-5
+              "
+            />
 
             <p
               className="
@@ -1072,9 +1575,11 @@ export default function CreateMedicalRecordPage() {
         )}
 
 
+        {/* NOT DOCTOR */}
         {currentUser
           && !canCreate
           && (
+
             <section
               className="
                 rounded-2xl
@@ -1108,11 +1613,20 @@ export default function CreateMedicalRecordPage() {
 
 
         {canCreate && (
+
           <form
-            onSubmit={handleSubmit}
-            className="space-y-5"
+            onSubmit={
+              handleSubmit
+            }
+            noValidate
+            className="
+              space-y-5
+            "
           >
-            {/* VISIT INFORMATION */}
+
+            {/* ============================================
+                VISIT INFORMATION
+                ============================================ */}
             <section
               className="
                 rounded-2xl
@@ -1123,6 +1637,7 @@ export default function CreateMedicalRecordPage() {
                 shadow-sm
               "
             >
+
               <div
                 className="
                   flex
@@ -1134,7 +1649,7 @@ export default function CreateMedicalRecordPage() {
                   className="
                     h-5
                     w-5
-                    text-blue-600
+                    text-teal-600
                   "
                 />
 
@@ -1157,8 +1672,14 @@ export default function CreateMedicalRecordPage() {
                   md:grid-cols-2
                 "
               >
+
                 {/* PATIENT */}
-                <div className="md:col-span-2">
+                <div
+                  className="
+                    md:col-span-2
+                  "
+                >
+
                   <label
                     className="
                       mb-1.5
@@ -1168,7 +1689,13 @@ export default function CreateMedicalRecordPage() {
                     "
                   >
                     Patient
-                    <span className="ml-1 text-red-500">
+
+                    <span
+                      className="
+                        ml-1
+                        text-red-500
+                      "
+                    >
                       *
                     </span>
                   </label>
@@ -1176,15 +1703,23 @@ export default function CreateMedicalRecordPage() {
 
                   {selectedPatient
                     ? (
+
                       <div
-                        className="
+                        className={`
                           rounded-2xl
                           border
-                          border-blue-200
-                          bg-blue-50/60
+                          bg-teal-50/60
                           p-4
-                        "
+                          ${
+                            showError(
+                              "patient"
+                            )
+                              ? "border-red-300"
+                              : "border-teal-200"
+                          }
+                        `}
                       >
+
                         <div
                           className="
                             flex
@@ -1195,6 +1730,7 @@ export default function CreateMedicalRecordPage() {
                             sm:justify-between
                           "
                         >
+
                           <div
                             className="
                               flex
@@ -1202,6 +1738,7 @@ export default function CreateMedicalRecordPage() {
                               gap-3
                             "
                           >
+
                             <div
                               className="
                                 flex
@@ -1213,13 +1750,17 @@ export default function CreateMedicalRecordPage() {
                                 overflow-hidden
                                 rounded-xl
                                 bg-white
-                                text-blue-600
+                                text-teal-600
                               "
                             >
+
                               {selectedPatient.picture
                                 ? (
+
                                   <img
-                                    src={selectedPatient.picture}
+                                    src={
+                                      selectedPatient.picture
+                                    }
                                     alt=""
                                     className="
                                       h-full
@@ -1227,25 +1768,36 @@ export default function CreateMedicalRecordPage() {
                                       object-cover
                                     "
                                   />
+
                                 )
                                 : (
-                                  <UserCheck className="h-5 w-5" />
+
+                                  <UserCheck
+                                    className="
+                                      h-5
+                                      w-5
+                                    "
+                                  />
+
                                 )
                               }
+
                             </div>
 
 
                             <div>
+
                               <p
                                 className="
                                   text-xs
                                   font-semibold
                                   uppercase
-                                  text-blue-500
+                                  text-teal-500
                                 "
                               >
                                 Selected Patient
                               </p>
+
 
                               <p
                                 className="
@@ -1254,8 +1806,12 @@ export default function CreateMedicalRecordPage() {
                                   text-slate-900
                                 "
                               >
-                                {selectedPatient.fullName}
+                                {
+                                  selectedPatient
+                                    .fullName
+                                }
                               </p>
+
 
                               <p
                                 className="
@@ -1266,7 +1822,9 @@ export default function CreateMedicalRecordPage() {
                                 "
                               >
                                 Patient ID:{" "}
-                                {selectedPatient.id}
+                                {
+                                  selectedPatient.id
+                                }
                               </p>
 
 
@@ -1278,79 +1836,127 @@ export default function CreateMedicalRecordPage() {
                                   gap-2
                                 "
                               >
-                                {selectedPatient.dateOfBirth && (
-                                  <span
-                                    className="
-                                      rounded-full
-                                      bg-white
-                                      px-2.5
-                                      py-1
-                                      text-xs
-                                    "
-                                  >
-                                    DOB:{" "}
-                                    {selectedPatient.dateOfBirth}
-                                  </span>
-                                )}
 
-                                {selectedPatient.gender && (
-                                  <span
-                                    className="
-                                      rounded-full
-                                      bg-white
-                                      px-2.5
-                                      py-1
-                                      text-xs
-                                    "
-                                  >
-                                    {selectedPatient.gender}
-                                  </span>
-                                )}
+                                {selectedPatient
+                                  .dateOfBirth
+                                  && (
 
-                                {selectedPatient.bloodGroup && (
-                                  <span
-                                    className="
-                                      rounded-full
-                                      bg-white
-                                      px-2.5
-                                      py-1
-                                      text-xs
-                                      font-semibold
-                                      text-rose-600
-                                    "
-                                  >
-                                    Blood:{" "}
-                                    {selectedPatient.bloodGroup}
-                                  </span>
-                                )}
+                                    <span
+                                      className="
+                                        rounded-full
+                                        bg-white
+                                        px-2.5
+                                        py-1
+                                        text-xs
+                                      "
+                                    >
+                                      DOB:{" "}
+                                      {
+                                        selectedPatient
+                                          .dateOfBirth
+                                      }
+                                    </span>
+
+                                  )
+                                }
+
+
+                                {selectedPatient
+                                  .gender
+                                  && (
+
+                                    <span
+                                      className="
+                                        rounded-full
+                                        bg-white
+                                        px-2.5
+                                        py-1
+                                        text-xs
+                                      "
+                                    >
+                                      {
+                                        selectedPatient
+                                          .gender
+                                      }
+                                    </span>
+
+                                  )
+                                }
+
+
+                                {selectedPatient
+                                  .bloodGroup
+                                  && (
+
+                                    <span
+                                      className="
+                                        rounded-full
+                                        bg-white
+                                        px-2.5
+                                        py-1
+                                        text-xs
+                                        font-semibold
+                                        text-rose-600
+                                      "
+                                    >
+                                      Blood:{" "}
+                                      {
+                                        selectedPatient
+                                          .bloodGroup
+                                      }
+                                    </span>
+
+                                  )
+                                }
+
                               </div>
+
                             </div>
+
                           </div>
 
 
                           <button
                             type="button"
-                            onClick={changePatient}
+                            onClick={
+                              changePatient
+                            }
                             className="
                               rounded-xl
                               border
-                              border-blue-200
+                              border-teal-200
                               bg-white
                               px-4
                               py-2.5
                               text-sm
                               font-semibold
-                              text-blue-700
+                              text-teal-700
+                              transition
+                              hover:bg-teal-50
                             "
                           >
                             Change Patient
                           </button>
+
                         </div>
+
                       </div>
+
                     )
                     : (
-                      <div className="relative">
-                        <div className="relative">
+
+                      <div
+                        className="
+                          relative
+                        "
+                      >
+
+                        <div
+                          className="
+                            relative
+                          "
+                        >
+
                           <Search
                             className="
                               absolute
@@ -1363,11 +1969,21 @@ export default function CreateMedicalRecordPage() {
                             "
                           />
 
+
                           <input
                             type="search"
-                            value={patientSearch}
+                            value={
+                              patientSearch
+                            }
+                            autoComplete="off"
+                            aria-invalid={
+                              showError(
+                                "patient"
+                              )
+                            }
                             onFocus={
                               () => {
+
                                 void openPatientSelector();
                               }
                             }
@@ -1375,34 +1991,55 @@ export default function CreateMedicalRecordPage() {
                               (
                                 event
                               ) => {
+
                                 setPatientSearch(
                                   event.target.value
                                 );
 
+
                                 setPatientListOpen(
                                   true
+                                );
+
+
+                                setError(
+                                  ""
                                 );
                               }
                             }
                             placeholder="Search by patient name or exact Patient ID..."
-                            autoComplete="off"
-                            className="
+                            className={`
                               w-full
                               rounded-xl
                               border
-                              border-slate-200
                               py-3
                               pl-10
                               pr-10
                               text-sm
                               outline-none
-                              focus:border-blue-500
-                              focus:ring-2
-                              focus:ring-blue-100
-                            "
+                              ${
+                                showError(
+                                  "patient"
+                                )
+                                  ? (
+                                    "border-red-300 "
+                                    + "focus:border-red-500 "
+                                    + "focus:ring-2 "
+                                    + "focus:ring-red-100"
+                                  )
+                                  : (
+                                    "border-slate-200 "
+                                    + "focus:border-teal-500 "
+                                    + "focus:ring-2 "
+                                    + "focus:ring-teal-100"
+                                  )
+                              }
+                            `}
                           />
 
+
                           {searchingPatients && (
+
                             <Loader2
                               className="
                                 absolute
@@ -1412,10 +2049,12 @@ export default function CreateMedicalRecordPage() {
                                 w-4
                                 -translate-y-1/2
                                 animate-spin
-                                text-blue-600
+                                text-teal-600
                               "
                             />
+
                           )}
+
                         </div>
 
 
@@ -1432,6 +2071,7 @@ export default function CreateMedicalRecordPage() {
 
 
                         {patientSearchError && (
+
                           <p
                             className="
                               mt-2
@@ -1439,12 +2079,16 @@ export default function CreateMedicalRecordPage() {
                               text-red-600
                             "
                           >
-                            {patientSearchError}
+                            {
+                              patientSearchError
+                            }
                           </p>
+
                         )}
 
 
                         {patientListOpen && (
+
                           <div
                             className="
                               absolute
@@ -1462,9 +2106,94 @@ export default function CreateMedicalRecordPage() {
                               shadow-xl
                             "
                           >
+
+                            {/* PATIENT LIST HEADER */}
+                            <div
+                              className="
+                                sticky
+                                top-0
+                                z-10
+                                mb-1
+                                flex
+                                items-center
+                                justify-between
+                                rounded-xl
+                                bg-white
+                                px-3
+                                py-2
+                                shadow-sm
+                              "
+                            >
+
+                              <div>
+
+                                <p
+                                  className="
+                                    text-xs
+                                    font-bold
+                                    uppercase
+                                    tracking-wide
+                                    text-slate-500
+                                  "
+                                >
+                                  Patients
+                                </p>
+
+
+                                <p
+                                  className="
+                                    mt-0.5
+                                    text-[11px]
+                                    text-slate-400
+                                  "
+                                >
+                                  Select a patient for this Medical Record.
+                                </p>
+
+                              </div>
+
+
+                              <button
+                                type="button"
+                                onClick={
+                                  closePatientSelector
+                                }
+                                aria-label="Close patient list"
+                                title="Close patient list"
+                                className="
+                                  inline-flex
+                                  h-9
+                                  w-9
+                                  shrink-0
+                                  items-center
+                                  justify-center
+                                  rounded-lg
+                                  border
+                                  border-slate-200
+                                  bg-white
+                                  text-slate-500
+                                  transition
+                                  hover:border-red-200
+                                  hover:bg-red-50
+                                  hover:text-red-600
+                                "
+                              >
+                                <X
+                                  className="
+                                    h-4
+                                    w-4
+                                  "
+                                />
+                              </button>
+
+                            </div>
+
+
                             {searchingPatients
-                              && patientResults.length === 0
+                              && patientResults
+                                .length === 0
                               ? (
+
                                 <div
                                   className="
                                     flex
@@ -1486,9 +2215,12 @@ export default function CreateMedicalRecordPage() {
 
                                   Loading patients...
                                 </div>
+
                               )
-                              : patientResults.length === 0
+                              : patientResults
+                                .length === 0
                                 ? (
+
                                   <div
                                     className="
                                       p-8
@@ -1515,15 +2247,25 @@ export default function CreateMedicalRecordPage() {
                                       No patients found
                                     </p>
                                   </div>
+
                                 )
                                 : (
-                                  <div className="space-y-1">
+
+                                  <div
+                                    className="
+                                      space-y-1
+                                    "
+                                  >
+
                                     {patientResults.map(
                                       (
                                         patient
                                       ) => (
+
                                         <button
-                                          key={patient.id}
+                                          key={
+                                            patient.id
+                                          }
                                           type="button"
                                           onClick={
                                             () =>
@@ -1540,9 +2282,10 @@ export default function CreateMedicalRecordPage() {
                                             p-3
                                             text-left
                                             transition
-                                            hover:bg-blue-50
+                                            hover:bg-teal-50
                                           "
                                         >
+
                                           <div
                                             className="
                                               flex
@@ -1554,13 +2297,17 @@ export default function CreateMedicalRecordPage() {
                                               overflow-hidden
                                               rounded-xl
                                               bg-slate-100
-                                              text-blue-600
+                                              text-teal-600
                                             "
                                           >
+
                                             {patient.picture
                                               ? (
+
                                                 <img
-                                                  src={patient.picture}
+                                                  src={
+                                                    patient.picture
+                                                  }
                                                   alt=""
                                                   className="
                                                     h-full
@@ -1568,20 +2315,29 @@ export default function CreateMedicalRecordPage() {
                                                     object-cover
                                                   "
                                                 />
+
                                               )
                                               : (
+
                                                 <UserRound
                                                   className="
                                                     h-5
                                                     w-5
                                                   "
                                                 />
+
                                               )
                                             }
+
                                           </div>
 
 
-                                          <div className="min-w-0">
+                                          <div
+                                            className="
+                                              min-w-0
+                                            "
+                                          >
+
                                             <p
                                               className="
                                                 truncate
@@ -1590,8 +2346,11 @@ export default function CreateMedicalRecordPage() {
                                                 text-slate-900
                                               "
                                             >
-                                              {patient.fullName}
+                                              {
+                                                patient.fullName
+                                              }
                                             </p>
+
 
                                             <p
                                               className="
@@ -1602,8 +2361,11 @@ export default function CreateMedicalRecordPage() {
                                               "
                                             >
                                               Patient ID:{" "}
-                                              {patient.id}
+                                              {
+                                                patient.id
+                                              }
                                             </p>
+
 
                                             <div
                                               className="
@@ -1615,46 +2377,106 @@ export default function CreateMedicalRecordPage() {
                                                 text-slate-500
                                               "
                                             >
-                                              {patient.dateOfBirth && (
-                                                <span>
-                                                  DOB:{" "}
-                                                  {patient.dateOfBirth}
-                                                </span>
-                                              )}
 
-                                              {patient.gender && (
-                                                <span>
-                                                  {patient.gender}
-                                                </span>
-                                              )}
+                                              {patient
+                                                .dateOfBirth
+                                                && (
 
-                                              {patient.bloodGroup && (
-                                                <span
-                                                  className="
-                                                    text-rose-600
-                                                  "
-                                                >
-                                                  Blood:{" "}
-                                                  {patient.bloodGroup}
-                                                </span>
-                                              )}
+                                                  <span>
+                                                    DOB:{" "}
+                                                    {
+                                                      patient
+                                                        .dateOfBirth
+                                                    }
+                                                  </span>
+
+                                                )
+                                              }
+
+
+                                              {patient
+                                                .gender
+                                                && (
+
+                                                  <span>
+                                                    {
+                                                      patient
+                                                        .gender
+                                                    }
+                                                  </span>
+
+                                                )
+                                              }
+
+
+                                              {patient
+                                                .bloodGroup
+                                                && (
+
+                                                  <span
+                                                    className="
+                                                      text-rose-600
+                                                    "
+                                                  >
+                                                    Blood:{" "}
+                                                    {
+                                                      patient
+                                                        .bloodGroup
+                                                    }
+                                                  </span>
+
+                                                )
+                                              }
+
                                             </div>
+
                                           </div>
+
                                         </button>
+
                                       )
                                     )}
+
                                   </div>
+
                                 )
                             }
+
                           </div>
+
                         )}
+
                       </div>
+
                     )
                   }
+
+
+                  {showError(
+                    "patient"
+                  ) && (
+
+                    <p
+                      className="
+                        mt-2
+                        text-xs
+                        font-medium
+                        text-red-600
+                      "
+                    >
+                      {
+                        validationErrors.patient
+                      }
+                    </p>
+
+                  )}
+
                 </div>
 
 
+                {/* VISIT DATE */}
                 <div>
+
                   <label
                     className="
                       mb-1.5
@@ -1666,36 +2488,96 @@ export default function CreateMedicalRecordPage() {
                     Visit Date *
                   </label>
 
+
                   <input
                     type="date"
-                    value={visitDate}
-                    max={today()}
+                    value={
+                      visitDate
+                    }
+                    required
+                    max={
+                      today()
+                    }
+                    aria-invalid={
+                      showError(
+                        "visitDate"
+                      )
+                    }
+                    onBlur={
+                      () =>
+                        markTouched(
+                          "visitDate"
+                        )
+                    }
                     onChange={
                       (
                         event
-                      ) =>
+                      ) => {
+
                         setVisitDate(
                           event.target.value
-                        )
+                        );
+
+
+                        setError(
+                          ""
+                        );
+                      }
                     }
-                    className="
+                    className={`
                       w-full
                       rounded-xl
                       border
-                      border-slate-200
                       px-3
                       py-2.5
                       text-sm
                       outline-none
-                      focus:border-blue-500
-                      focus:ring-2
-                      focus:ring-blue-100
-                    "
+                      ${
+                        showError(
+                          "visitDate"
+                        )
+                          ? (
+                            "border-red-300 "
+                            + "focus:border-red-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-red-100"
+                          )
+                          : (
+                            "border-slate-200 "
+                            + "focus:border-teal-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-teal-100"
+                          )
+                      }
+                    `}
                   />
+
+
+                  {showError(
+                    "visitDate"
+                  ) && (
+
+                    <p
+                      className="
+                        mt-1.5
+                        text-xs
+                        font-medium
+                        text-red-600
+                      "
+                    >
+                      {
+                        validationErrors.visitDate
+                      }
+                    </p>
+
+                  )}
+
                 </div>
 
 
+                {/* HOSPITAL */}
                 <div>
+
                   <label
                     className="
                       mb-1.5
@@ -1707,36 +2589,127 @@ export default function CreateMedicalRecordPage() {
                     Hospital / Clinic *
                   </label>
 
+
                   <input
                     type="text"
-                    value={hospitalName}
+                    value={
+                      hospitalName
+                    }
+                    required
+                    minLength={2}
+                    maxLength={120}
+                    aria-invalid={
+                      showError(
+                        "hospitalName"
+                      )
+                    }
+                    onBlur={
+                      () =>
+                        markTouched(
+                          "hospitalName"
+                        )
+                    }
                     onChange={
                       (
                         event
-                      ) =>
+                      ) => {
+
                         setHospitalName(
                           event.target.value
-                        )
+                        );
+
+
+                        setError(
+                          ""
+                        );
+                      }
                     }
                     placeholder="HealthBridge Hospital"
-                    className="
+                    className={`
                       w-full
                       rounded-xl
                       border
-                      border-slate-200
                       px-3
                       py-2.5
                       text-sm
                       outline-none
-                      focus:border-blue-500
-                      focus:ring-2
-                      focus:ring-blue-100
-                    "
+                      ${
+                        showError(
+                          "hospitalName"
+                        )
+                          ? (
+                            "border-red-300 "
+                            + "focus:border-red-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-red-100"
+                          )
+                          : (
+                            "border-slate-200 "
+                            + "focus:border-teal-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-teal-100"
+                          )
+                      }
+                    `}
                   />
+
+
+                  <div
+                    className="
+                      mt-1.5
+                      flex
+                      items-start
+                      justify-between
+                      gap-3
+                    "
+                  >
+
+                    <div>
+
+                      {showError(
+                        "hospitalName"
+                      ) && (
+
+                        <p
+                          className="
+                            text-xs
+                            font-medium
+                            text-red-600
+                          "
+                        >
+                          {
+                            validationErrors
+                              .hospitalName
+                          }
+                        </p>
+
+                      )}
+
+                    </div>
+
+
+                    <span
+                      className="
+                        ml-auto
+                        shrink-0
+                        text-[11px]
+                        text-slate-400
+                      "
+                    >
+                      {
+                        hospitalName.length
+                      }
+                      /120
+                    </span>
+
+                  </div>
+
                 </div>
 
 
+                {/* RECORD TYPE */}
                 <div>
+
                   <label
                     className="
                       mb-1.5
@@ -1748,61 +2721,118 @@ export default function CreateMedicalRecordPage() {
                     Record Type *
                   </label>
 
+
                   <select
-                    value={recordType}
+                    value={
+                      recordType
+                    }
+                    required
+                    aria-invalid={
+                      showError(
+                        "recordType"
+                      )
+                    }
+                    onBlur={
+                      () =>
+                        markTouched(
+                          "recordType"
+                        )
+                    }
                     onChange={
                       (
                         event
-                      ) =>
+                      ) => {
+
                         setRecordType(
                           event.target.value
-                        )
+                        );
+
+
+                        setError(
+                          ""
+                        );
+                      }
                     }
-                    className="
+                    className={`
                       w-full
                       rounded-xl
                       border
-                      border-slate-200
                       bg-white
                       px-3
                       py-2.5
                       text-sm
-                    "
+                      outline-none
+                      ${
+                        showError(
+                          "recordType"
+                        )
+                          ? (
+                            "border-red-300 "
+                            + "focus:border-red-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-red-100"
+                          )
+                          : (
+                            "border-slate-200 "
+                            + "focus:border-teal-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-teal-100"
+                          )
+                      }
+                    `}
                   >
-                    <option value="Consultation">
-                      Consultation
-                    </option>
 
-                    <option value="Follow-up">
-                      Follow-up
-                    </option>
+                    {RECORD_TYPES.map(
+                      (
+                        type
+                      ) => (
 
-                    <option value="Emergency">
-                      Emergency
-                    </option>
+                        <option
+                          key={
+                            type
+                          }
+                          value={
+                            type
+                          }
+                        >
+                          {type}
+                        </option>
 
-                    <option value="Admission">
-                      Admission
-                    </option>
+                      )
+                    )}
 
-                    <option value="Discharge">
-                      Discharge
-                    </option>
-
-                    <option value="Procedure">
-                      Procedure
-                    </option>
-
-                    <option value="Other">
-                      Other
-                    </option>
                   </select>
+
+
+                  {showError(
+                    "recordType"
+                  ) && (
+
+                    <p
+                      className="
+                        mt-1.5
+                        text-xs
+                        font-medium
+                        text-red-600
+                      "
+                    >
+                      {
+                        validationErrors.recordType
+                      }
+                    </p>
+
+                  )}
+
                 </div>
+
               </div>
+
             </section>
 
 
-            {/* CLINICAL DETAILS */}
+            {/* ============================================
+                CLINICAL DETAILS
+                ============================================ */}
             <section
               className="
                 rounded-2xl
@@ -1813,6 +2843,7 @@ export default function CreateMedicalRecordPage() {
                 shadow-sm
               "
             >
+
               <h2
                 className="
                   text-lg
@@ -1823,8 +2854,16 @@ export default function CreateMedicalRecordPage() {
               </h2>
 
 
-              <div className="mt-5 space-y-4">
+              <div
+                className="
+                  mt-5
+                  space-y-4
+                "
+              >
+
+                {/* DIAGNOSIS */}
                 <div>
+
                   <label
                     className="
                       mb-1.5
@@ -1836,35 +2875,126 @@ export default function CreateMedicalRecordPage() {
                     Primary Diagnosis *
                   </label>
 
+
                   <input
-                    value={diagnosis}
+                    type="text"
+                    value={
+                      diagnosis
+                    }
+                    required
+                    minLength={2}
+                    maxLength={150}
+                    aria-invalid={
+                      showError(
+                        "diagnosis"
+                      )
+                    }
+                    onBlur={
+                      () =>
+                        markTouched(
+                          "diagnosis"
+                        )
+                    }
                     onChange={
                       (
                         event
-                      ) =>
+                      ) => {
+
                         setDiagnosis(
                           event.target.value
-                        )
+                        );
+
+
+                        setError(
+                          ""
+                        );
+                      }
                     }
                     placeholder="e.g. Hypertension"
-                    className="
+                    className={`
                       w-full
                       rounded-xl
                       border
-                      border-slate-200
                       px-3
                       py-2.5
                       text-sm
                       outline-none
-                      focus:border-blue-500
-                      focus:ring-2
-                      focus:ring-blue-100
-                    "
+                      ${
+                        showError(
+                          "diagnosis"
+                        )
+                          ? (
+                            "border-red-300 "
+                            + "focus:border-red-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-red-100"
+                          )
+                          : (
+                            "border-slate-200 "
+                            + "focus:border-teal-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-teal-100"
+                          )
+                      }
+                    `}
                   />
+
+
+                  <div
+                    className="
+                      mt-1.5
+                      flex
+                      items-start
+                      justify-between
+                      gap-3
+                    "
+                  >
+
+                    <div>
+
+                      {showError(
+                        "diagnosis"
+                      ) && (
+
+                        <p
+                          className="
+                            text-xs
+                            font-medium
+                            text-red-600
+                          "
+                        >
+                          {
+                            validationErrors.diagnosis
+                          }
+                        </p>
+
+                      )}
+
+                    </div>
+
+
+                    <span
+                      className="
+                        ml-auto
+                        shrink-0
+                        text-[11px]
+                        text-slate-400
+                      "
+                    >
+                      {
+                        diagnosis.length
+                      }
+                      /150
+                    </span>
+
+                  </div>
+
                 </div>
 
 
+                {/* CLINICAL SUMMARY */}
                 <div>
+
                   <label
                     className="
                       mb-1.5
@@ -1876,72 +3006,169 @@ export default function CreateMedicalRecordPage() {
                     Clinical Summary *
                   </label>
 
+
                   <textarea
                     rows={4}
-                    value={clinicalSummary}
+                    value={
+                      clinicalSummary
+                    }
+                    required
+                    minLength={10}
+                    maxLength={2000}
+                    aria-invalid={
+                      showError(
+                        "clinicalSummary"
+                      )
+                    }
+                    onBlur={
+                      () =>
+                        markTouched(
+                          "clinicalSummary"
+                        )
+                    }
                     onChange={
                       (
                         event
-                      ) =>
+                      ) => {
+
                         setClinicalSummary(
                           event.target.value
-                        )
+                        );
+
+
+                        setError(
+                          ""
+                        );
+                      }
                     }
-                    className="
+                    placeholder="Summarize the patient's condition, assessment and key clinical findings..."
+                    className={`
                       w-full
                       rounded-xl
                       border
-                      border-slate-200
                       px-3
                       py-2.5
                       text-sm
                       outline-none
-                      focus:border-blue-500
-                      focus:ring-2
-                      focus:ring-blue-100
-                    "
+                      ${
+                        showError(
+                          "clinicalSummary"
+                        )
+                          ? (
+                            "border-red-300 "
+                            + "focus:border-red-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-red-100"
+                          )
+                          : (
+                            "border-slate-200 "
+                            + "focus:border-teal-500 "
+                            + "focus:ring-2 "
+                            + "focus:ring-teal-100"
+                          )
+                      }
+                    `}
                   />
+
+
+                  <div
+                    className="
+                      mt-1.5
+                      flex
+                      items-start
+                      justify-between
+                      gap-3
+                    "
+                  >
+
+                    <div>
+
+                      {showError(
+                        "clinicalSummary"
+                      ) && (
+
+                        <p
+                          className="
+                            text-xs
+                            font-medium
+                            text-red-600
+                          "
+                        >
+                          {
+                            validationErrors
+                              .clinicalSummary
+                          }
+                        </p>
+
+                      )}
+
+                    </div>
+
+
+                    <span
+                      className="
+                        ml-auto
+                        shrink-0
+                        text-[11px]
+                        text-slate-400
+                      "
+                    >
+                      {
+                        clinicalSummary.length
+                      }
+                      /2000
+                    </span>
+
+                  </div>
+
                 </div>
+
               </div>
+
             </section>
 
 
-            {/* POST-CREATION CLINICAL MANAGEMENT NOTE */}
+            {/* POST CREATION NOTE */}
             <section
               className="
                 rounded-2xl
                 border
-                border-indigo-100
-                bg-indigo-50/60
+                border-teal-100
+                bg-teal-50/60
                 p-4
               "
             >
+
               <p
                 className="
                   text-sm
                   font-semibold
-                  text-indigo-900
+                  text-teal-900
                 "
               >
-                Additional diagnoses and treatment records are managed
-                after this Medical Record is created.
+                Additional diagnoses and treatment records
+                are managed after this Medical Record is created.
               </p>
+
 
               <p
                 className="
                   mt-1
                   text-xs
                   leading-5
-                  text-indigo-700
+                  text-teal-700
                 "
               >
-                After saving, use Manage Diagnoses and Manage Treatments
-                on the Medical Record Details page.
+                After saving, use Manage Diagnoses and
+                Manage Treatments on the Medical Record Details page.
               </p>
+
             </section>
 
 
-            {/* CONSULTATION NOTES */}
+            {/* ============================================
+                CONSULTATION NOTES
+                ============================================ */}
             <section
               className="
                 rounded-2xl
@@ -1952,40 +3179,147 @@ export default function CreateMedicalRecordPage() {
                 shadow-sm
               "
             >
-              <h2 className="text-lg font-bold">
+
+              <h2
+                className="
+                  text-lg
+                  font-bold
+                "
+              >
                 Consultation Notes
               </h2>
 
+
+              <p
+                className="
+                  mt-1
+                  text-xs
+                  text-slate-500
+                "
+              >
+                Optional. Maximum 5000 characters.
+              </p>
+
+
               <textarea
                 rows={6}
-                value={consultationNotes}
+                value={
+                  consultationNotes
+                }
+                maxLength={5000}
+                aria-invalid={
+                  showError(
+                    "consultationNotes"
+                  )
+                }
+                onBlur={
+                  () =>
+                    markTouched(
+                      "consultationNotes"
+                    )
+                }
                 onChange={
                   (
                     event
-                  ) =>
+                  ) => {
+
                     setConsultationNotes(
                       event.target.value
-                    )
+                    );
+
+
+                    setError(
+                      ""
+                    );
+                  }
                 }
                 placeholder="Clinical observations, advice and follow-up notes..."
-                className="
+                className={`
                   mt-4
                   w-full
                   rounded-xl
                   border
-                  border-slate-200
                   px-3
                   py-2.5
                   text-sm
                   outline-none
-                  focus:border-blue-500
-                  focus:ring-2
-                  focus:ring-blue-100
-                "
+                  ${
+                    showError(
+                      "consultationNotes"
+                    )
+                      ? (
+                        "border-red-300 "
+                        + "focus:border-red-500 "
+                        + "focus:ring-2 "
+                        + "focus:ring-red-100"
+                      )
+                      : (
+                        "border-slate-200 "
+                        + "focus:border-teal-500 "
+                        + "focus:ring-2 "
+                        + "focus:ring-teal-100"
+                      )
+                  }
+                `}
               />
+
+
+              <div
+                className="
+                  mt-1.5
+                  flex
+                  items-start
+                  justify-between
+                  gap-3
+                "
+              >
+
+                <div>
+
+                  {showError(
+                    "consultationNotes"
+                  ) && (
+
+                    <p
+                      className="
+                        text-xs
+                        font-medium
+                        text-red-600
+                      "
+                    >
+                      {
+                        validationErrors
+                          .consultationNotes
+                      }
+                    </p>
+
+                  )}
+
+                </div>
+
+
+                <span
+                  className="
+                    ml-auto
+                    shrink-0
+                    text-[11px]
+                    text-slate-400
+                  "
+                >
+                  {
+                    consultationNotes.length
+                  }
+                  /5000
+                </span>
+
+              </div>
+
             </section>
 
 
+            {/* ============================================
+                FINAL CONFIRMATION
+                ============================================ */}
             <div
               className="
                 flex
@@ -1993,26 +3327,29 @@ export default function CreateMedicalRecordPage() {
                 gap-4
                 rounded-2xl
                 border
-                border-blue-100
-                bg-blue-50/60
+                border-teal-100
+                bg-teal-50/60
                 p-4
                 sm:flex-row
                 sm:items-center
                 sm:justify-between
               "
             >
+
               <div>
+
                 <p
                   className="
                     text-xs
                     font-semibold
                     uppercase
                     tracking-wide
-                    text-blue-600
+                    text-teal-600
                   "
                 >
                   Patient Confirmation
                 </p>
+
 
                 <p
                   className="
@@ -2028,7 +3365,9 @@ export default function CreateMedicalRecordPage() {
                   }
                 </p>
 
+
                 {selectedPatient && (
+
                   <p
                     className="
                       mt-1
@@ -2038,9 +3377,29 @@ export default function CreateMedicalRecordPage() {
                     "
                   >
                     Patient ID:{" "}
-                    {selectedPatient.id}
+                    {
+                      selectedPatient.id
+                    }
                   </p>
+
                 )}
+
+
+                {!formValid && (
+
+                  <p
+                    className="
+                      mt-2
+                      text-xs
+                      text-slate-500
+                    "
+                  >
+                    Complete all required fields correctly
+                    to enable record creation.
+                  </p>
+
+                )}
+
               </div>
 
 
@@ -2056,19 +3415,21 @@ export default function CreateMedicalRecordPage() {
                   justify-center
                   gap-2
                   rounded-xl
-                  bg-blue-600
+                  bg-teal-600
                   px-6
                   py-3
                   text-sm
                   font-semibold
                   text-white
                   transition
-                  hover:bg-blue-700
+                  hover:bg-teal-700
                   disabled:cursor-not-allowed
                   disabled:opacity-50
                 "
               >
+
                 {submitting && (
+
                   <Loader2
                     className="
                       h-4
@@ -2076,19 +3437,30 @@ export default function CreateMedicalRecordPage() {
                       animate-spin
                     "
                   />
+
                 )}
+
 
                 {submitting
                   ? "Creating..."
                   : selectedPatient
-                    ? `Create Record for ${selectedPatient.fullName}`
+                    ? (
+                      `Create Record for ${
+                        selectedPatient.fullName
+                      }`
+                    )
                     : "Create Medical Record"
                 }
+
               </button>
+
             </div>
+
           </form>
         )}
+
       </div>
+
     </DashboardLayout>
   );
 }

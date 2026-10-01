@@ -1,10 +1,10 @@
 "use client";
-
 import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { prescriptionService } from "@/services/prescriptionService";
 import PrescriptionForm from "@/components/prescription/PrescriptionForm";
+import { ArrowLeft, Loader2 } from "lucide-react";
 
 export default function EditPrescriptionPage() {
   const params = useParams();
@@ -13,24 +13,23 @@ export default function EditPrescriptionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [initialData, setInitialData] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const data = await prescriptionService.getPrescriptionById(id);
+    prescriptionService
+      .getPrescriptionById(id)
+      .then((data) => {
         setInitialData({
+          patientId: data.patientId,
           patientName: data.patientName,
           patientPhone: data.patientPhone,
+          diagnosis: data.diagnosis || "",
           notes: data.notes || "",
           items: data.items,
         });
-      } catch (error) {
-        console.error("Error fetching prescription:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+      })
+      .catch(() => setLoadError(true))
+      .finally(() => setLoading(false));
   }, [id]);
 
   const handleSubmit = async (data: any) => {
@@ -38,12 +37,11 @@ export default function EditPrescriptionPage() {
     try {
       await prescriptionService.updatePrescription(id, {
         notes: data.notes,
+        diagnosis: data.diagnosis,
         items: data.items,
       });
-      alert("Prescription updated successfully!");
       router.push(`/prescriptions/${id}`);
     } catch (error) {
-      console.error(error);
       alert("Failed to update prescription.");
     } finally {
       setIsSubmitting(false);
@@ -51,22 +49,22 @@ export default function EditPrescriptionPage() {
   };
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center bg-[#f7f9fc]"><p className="text-sm text-slate-500">Loading prescription data...</p></div>;
+    return (
+      <div className="flex min-h-64 items-center justify-center">
+        <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+      </div>
+    );
+  }
+
+  if (loadError || !initialData) {
+    return <div className="text-center text-sm text-rose-600">Failed to load prescription. Please go back and try again.</div>;
   }
 
   return (
-    <main className="min-h-screen w-full overflow-x-hidden bg-[#f7f9fc]">
-      <div className="mx-auto w-full max-w-6xl px-3 py-5 sm:px-5 lg:px-8 lg:py-8">
-        <Link href={`/prescriptions/${id}`} className="text-xs font-semibold text-blue-600 hover:text-blue-700">← Back to Details</Link>
-        <header className="mt-5">
-          <p className="text-xs font-bold uppercase tracking-[0.15em] text-blue-600">Prescription Management</p>
-          <h1 className="mt-1 text-2xl font-bold text-slate-950 sm:text-3xl">Edit Prescription</h1>
-        </header>
-        
-        <div className="mt-6">
-          <PrescriptionForm initialData={initialData} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
-        </div>
-      </div>
-    </main>
+    <div className="space-y-6">
+      <Link href={`/prescriptions/${id}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-blue-600"><ArrowLeft className="w-4 h-4" /> Back to Details</Link>
+      <div><h1 className="text-2xl font-bold text-slate-900">Edit Prescription</h1></div>
+      <PrescriptionForm mode="edit" initialData={initialData} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
+    </div>
   );
 }

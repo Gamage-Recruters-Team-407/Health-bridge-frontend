@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/Badge";
+import { clearAuthData } from "@/lib/auth";
 
 export interface SidebarProps {
   collapsed?: boolean;
@@ -203,8 +204,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <div className="p-3 border-t border-slate-800/80 bg-slate-900/50">
         <div
           className={cn(
-            "flex items-center gap-3 p-2 rounded-xl bg-slate-800/40 border border-slate-800 transition-all",
-            collapsed && "justify-center p-1.5"
+            "flex items-center gap-3 p-2 rounded-xl bg-slate-900 border border-slate-800 transition-all",
+            collapsed && "flex-col justify-center p-1.5 gap-2"
           )}
         >
           <div className="relative shrink-0">
@@ -221,15 +222,16 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
           )}
 
-          {!collapsed && (
-            <button
-              onClick={() => alert("Logging out...")}
-              className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
-              title="Logout"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              clearAuthData();
+              window.location.href = "/login";
+            }}
+            className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-slate-800 transition-colors"
+            title="Logout"
+          >
+            <LogOut className="w-4 h-4" />
+          </button>
         </div>
       </div>
     </div>
