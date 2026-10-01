@@ -1,5 +1,8 @@
-const API_BASE =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:8088";
+const API_BASE = (
+  process.env.NEXT_PUBLIC_API_BASE_URL ||
+  process.env.NEXT_PUBLIC_API_URL ||
+  "http://localhost:8088"
+).replace(/\/api\/?$/, "");
 
 export interface Notification {
   id: string;
@@ -45,7 +48,18 @@ async function request<T>(
     );
   }
 
-  return response.json();
+  const payload = await response.json();
+
+  if (
+    payload &&
+    typeof payload === "object" &&
+    payload.success === true &&
+    Object.prototype.hasOwnProperty.call(payload, "data")
+  ) {
+    return payload.data as T;
+  }
+
+  return payload as T;
 }
 
 export async function getNotifications() {
