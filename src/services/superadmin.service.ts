@@ -21,7 +21,9 @@ export interface SuperAdminStatsDto {
 
 export interface UserProfileResponse {
   id: string;
-  fullName: string;
+  firstName?: string;
+  lastName?: string;
+  fullName?: string;
   email: string;
   phoneNumber?: string;
   role: string;
@@ -104,12 +106,23 @@ export const superAdminService = {
   },
 
   async getAllStaff(): Promise<UserProfileResponse[]> {
-    // TODO: Create a dedicated /staff endpoint on the backend in the future
-    return api.get<UserProfileResponse[]>("/users");
+    return api.get<UserProfileResponse[]>("/staff");
+  },
+
+  async createStaff(data: any): Promise<any> {
+    return api.post<any>("/staff", data);
+  },
+
+  async getStaffById(id: string): Promise<any> {
+    return api.get<any>(`/staff/${id}`);
+  },
+
+  async updateStaffDetails(id: string, data: any): Promise<any> {
+    return api.put<any>(`/staff/${id}`, data);
   },
 
   async updateUserStatus(id: string, status: string): Promise<UserProfileResponse> {
-    return api.put<UserProfileResponse>(`/users/${id}/status`, { status });
+    return api.patch<UserProfileResponse>(`/staff/${id}/account-status?status=${status}`);
   },
 
   async deleteUser(id: string): Promise<void> {

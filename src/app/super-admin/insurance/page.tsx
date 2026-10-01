@@ -1,10 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import axios from "@/lib/axios";
+import { toast } from "react-hot-toast";
+
 import { 
   Table, 
   TableHeader, 
@@ -24,59 +27,44 @@ import {
   Eye,
   UserCog,
   MoreVertical,
-  ChevronLeft
+  ChevronLeft,
+  X
 } from "lucide-react";
 
-// Mock Data
-const mockProviders = [
-  {
-    id: "PRV-84920",
-    logoText: "BC",
-    logoColor: "bg-indigo-100 text-indigo-700",
-    name: "BlueCross Health",
-    license: "LCN-2023-A991",
-    contactName: "Sarah Jenkins",
-    contactRole: "Compliance Officer",
-    regions: ["North America", "EU"],
-    status: "Approved"
-  },
-  {
-    id: "PRV-84921",
-    logoText: "MN",
-    logoColor: "bg-orange-100 text-orange-700",
-    name: "MediNet Global",
-    license: "LCN-2023-B442",
-    contactName: "David Chen",
-    contactRole: "Director of Ops",
-    regions: ["APAC"],
-    status: "Pending"
-  },
-  {
-    id: "PRV-84918",
-    logoText: "UA",
-    logoColor: "bg-red-100 text-red-700",
-    name: "United Assurance",
-    license: "LCN-2022-X109",
-    contactName: "Robert Vance",
-    contactRole: "Legal Rep",
-    regions: ["North America", "LATAM"],
-    status: "Suspended"
-  },
-  {
-    id: "PRV-84955",
-    logoText: "AE",
-    logoColor: "bg-blue-100 text-blue-700",
-    name: "Aetna Equinox",
-    license: "LCN-2024-C881",
-    contactName: "Maria Gonzalez",
-    contactRole: "VP Relations",
-    regions: ["Global"],
-    status: "Approved"
-  }
-];
-
 export default function InsuranceRegistryPage() {
+  const [providers, setProviders] = useState<any[]>([]);
   const [selectedRows, setSelectedRows] = useState<string[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedProvider, setSelectedProvider] = useState<any | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchProviders();
+  }, []);
+
+  const fetchProviders = async () => {
+    try {
+      setLoading(true);
+      const response: any = await axios.get('/admin/insurance-providers');
+      setProviders(response || []);
+    } catch (error) {
+      console.error("Failed to fetch providers", error);
+      toast.error("Failed to load providers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const updateProviderStatus = async (id: string, status: string) => {
+    try {
+      await axios.put(`/admin/insurance-providers/${id}/status`, { status });
+      toast.success(`Provider status updated to ${status}`);
+      setOpenDropdownId(null);
+      fetchProviders();
+    } catch (error) {
+      toast.error("Failed to update status");
+    }
+  };
 
   const toggleRowSelection = (id: string) => {
     setSelectedRows(prev => 
@@ -85,10 +73,10 @@ export default function InsuranceRegistryPage() {
   };
 
   const toggleAllRows = () => {
-    if (selectedRows.length === mockProviders.length) {
+    if (selectedRows.length === providers.length) {
       setSelectedRows([]);
     } else {
-      setSelectedRows(mockProviders.map(p => p.id));
+      setSelectedRows(providers.map(p => p.id));
     }
   };
 
@@ -122,7 +110,6 @@ export default function InsuranceRegistryPage() {
 
   return (
     <>
-      {/* We apply bg-[#F8FAFC] explicitly here to ensure the full page background matches the Figma design */}
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
         <div className="w-full space-y-6">
@@ -148,8 +135,8 @@ export default function InsuranceRegistryPage() {
                   </p>
                 </div>
                 <div className="flex items-center gap-3 shrink-0">
-                  <Button variant="outline" leftIcon={<Download size={16} />} className="font-bold text-[#0052CC] border-[#0052CC] hover:bg-blue-50 px-5">
-                    Export CSV
+                  <Button onClick={fetchProviders} variant="outline" className="font-bold text-[#0052CC] border-[#0052CC] hover:bg-blue-50 px-5">
+                    Refresh
                   </Button>
                   <Button variant="primary" leftIcon={<Plus size={16} />} className="font-bold bg-[#0052CC] hover:bg-blue-700 px-5">
                     Onboard Provider
@@ -234,7 +221,7 @@ export default function InsuranceRegistryPage() {
             {/* Table Header Area */}
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-[#0A2540] dark:text-white">Provider Directory</h2>
-              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">2,405 Total Records</span>
+              <span className="px-3 py-1 rounded-full bg-slate-100 text-slate-500 text-[11px] font-bold">{providers.length} Total Records</span>
             </div>
 
             <div className="overflow-x-auto">
@@ -246,7 +233,7 @@ export default function InsuranceRegistryPage() {
                         <input 
                           type="checkbox" 
                           className="w-4 h-4 rounded border-slate-300 text-[#0052CC] focus:ring-[#0052CC]" 
-                          checked={selectedRows.length === mockProviders.length}
+                          checked={selectedRows.length === providers.length && providers.length > 0}
                           onChange={toggleAllRows}
                         />
                       </div>
@@ -260,7 +247,15 @@ export default function InsuranceRegistryPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockProviders.map((provider) => (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">Loading providers...</TableCell>
+                    </TableRow>
+                  ) : providers.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-8 text-slate-500">No providers found. Click "Seed Data" to generate some.</TableCell>
+                    </TableRow>
+                  ) : providers.map((provider) => (
                     <TableRow key={provider.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors group">
                       
                       {/* Checkbox */}
@@ -283,14 +278,14 @@ export default function InsuranceRegistryPage() {
                           </div>
                           <div>
                             <p className="text-sm font-bold text-[#0A2540]">{provider.name}</p>
-                            <p className="text-[11px] font-medium text-slate-400">ID: {provider.id}</p>
+                            <p className="text-[11px] font-medium text-slate-400">ID: {provider.providerId}</p>
                           </div>
                         </div>
                       </TableCell>
 
                       {/* License */}
                       <TableCell className="py-4">
-                        <p className="text-sm font-bold text-[#0A2540] w-32">{provider.license}</p>
+                        <p className="text-sm font-bold text-[#0A2540] w-32">{provider.licenseNo}</p>
                       </TableCell>
 
                       {/* Contact */}
@@ -298,13 +293,13 @@ export default function InsuranceRegistryPage() {
                         <p className="text-sm font-bold text-[#0A2540]">{provider.contactName}</p>
                         <p className="text-[11px] font-medium text-slate-500">{provider.contactRole}</p>
                       </TableCell>
-
-                      {/* Coverage Regions */}
+                      
+                      {/* Regions */}
                       <TableCell className="py-4">
-                        <div className="flex flex-wrap items-center gap-1.5 w-40">
-                          {provider.regions.map((region, idx) => (
-                            <span key={idx} className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600 border border-slate-200/60">
-                              {region}
+                        <div className="flex flex-wrap gap-1.5 w-40">
+                          {provider.coverageRegions?.map((r: string, i: number) => (
+                            <span key={i} className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[10px] font-bold">
+                              {r}
                             </span>
                           ))}
                         </div>
@@ -316,17 +311,56 @@ export default function InsuranceRegistryPage() {
                       </TableCell>
 
                       {/* Actions */}
-                      <TableCell className="py-4 pr-6">
-                        <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <button className="p-1.5 text-slate-400 hover:text-[#0052CC] hover:bg-blue-50 rounded-lg transition-colors">
+                      <TableCell className="py-4 pr-6 text-right">
+                        <div className="flex justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <button 
+                            onClick={() => setSelectedProvider(provider)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-[#0052CC] hover:bg-blue-50 transition-colors"
+                          >
                             <Eye size={16} />
                           </button>
-                          <button className="p-1.5 text-slate-400 hover:text-[#0052CC] hover:bg-blue-50 rounded-lg transition-colors">
+                          <button className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors">
                             <UserCog size={16} />
                           </button>
-                          <button className="p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
-                            <MoreVertical size={16} />
-                          </button>
+                          <div className="relative">
+                            <button 
+                              onClick={() => setOpenDropdownId(openDropdownId === provider.id ? null : provider.id)}
+                              className="w-8 h-8 rounded-lg flex items-center justify-center text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                            >
+                              <MoreVertical size={16} />
+                            </button>
+
+                            {openDropdownId === provider.id && (
+                              <div className="absolute right-0 top-10 w-48 bg-white border border-slate-200 shadow-xl rounded-lg overflow-hidden z-50">
+                                <ul className="flex flex-col py-1">
+                                  <li>
+                                    <button 
+                                      onClick={() => updateProviderStatus(provider.providerId, 'Approved')}
+                                      className="w-full text-left px-4 py-2 text-sm font-bold text-green-600 hover:bg-green-50"
+                                    >
+                                      ✓ Set as Approved
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button 
+                                      onClick={() => updateProviderStatus(provider.providerId, 'Pending')}
+                                      className="w-full text-left px-4 py-2 text-sm font-bold text-orange-500 hover:bg-orange-50"
+                                    >
+                                      ⚠ Set as Pending
+                                    </button>
+                                  </li>
+                                  <li>
+                                    <button 
+                                      onClick={() => updateProviderStatus(provider.providerId, 'Suspended')}
+                                      className="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                                    >
+                                      ✗ Suspend License
+                                    </button>
+                                  </li>
+                                </ul>
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </TableCell>
 
@@ -335,42 +369,74 @@ export default function InsuranceRegistryPage() {
                 </TableBody>
               </Table>
             </div>
+          </Card>
+          
+        </div>
+      </div>
 
-            {/* Pagination Footer */}
-            <div className="flex flex-col sm:flex-row items-center justify-between p-4 border-t border-slate-100 bg-slate-50/50">
-              <p className="text-xs font-medium text-slate-500 mb-4 sm:mb-0">
-                Showing <span className="font-bold text-slate-700">1</span> to <span className="font-bold text-slate-700">4</span> of <span className="font-bold text-slate-700">2,405</span> entries
-              </p>
-              
-              <div className="flex items-center gap-1">
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-                  <ChevronLeft size={16} />
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg bg-blue-100 text-[#0052CC] text-xs font-bold transition-colors">
-                  1
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-bold transition-colors">
-                  2
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-bold transition-colors">
-                  3
-                </button>
-                <span className="w-8 h-8 flex items-center justify-center text-slate-400 text-xs font-bold">
-                  ...
-                </span>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 text-xs font-bold transition-colors">
-                  241
-                </button>
-                <button className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors">
-                  <ChevronRight size={16} />
-                </button>
+      {/* Provider Details Modal */}
+      {selectedProvider && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-slate-100 bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-lg font-bold ${selectedProvider.logoColor}`}>
+                  {selectedProvider.logoText}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-[#0A2540]">{selectedProvider.name}</h3>
+                  <p className="text-xs font-medium text-slate-500">ID: {selectedProvider.providerId}</p>
+                </div>
+              </div>
+              <button 
+                onClick={() => setSelectedProvider(null)}
+                className="w-8 h-8 flex items-center justify-center rounded-full text-slate-400 hover:text-slate-600 hover:bg-slate-100 transition-colors"
+              >
+                <X size={18} />
+              </button>
+            </div>
+            
+            {/* Body */}
+            <div className="p-6 space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">License No</p>
+                  <p className="text-sm font-bold text-[#0A2540]">{selectedProvider.licenseNo}</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">Status</p>
+                  <div>{renderStatusBadge(selectedProvider.status)}</div>
+                </div>
+              </div>
+
+              <div className="bg-slate-50 rounded-xl p-4 border border-slate-100">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Primary Contact</p>
+                <p className="text-sm font-bold text-[#0A2540]">{selectedProvider.contactName}</p>
+                <p className="text-xs font-medium text-slate-500">{selectedProvider.contactRole}</p>
+              </div>
+
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-2">Coverage Regions</p>
+                <div className="flex flex-wrap gap-2">
+                  {selectedProvider.coverageRegions?.map((r: string, i: number) => (
+                    <span key={i} className="px-2.5 py-1 rounded-md bg-[#0052CC]/10 text-[#0052CC] text-xs font-bold">
+                      {r}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
 
-          </Card>
-
+            {/* Footer */}
+            <div className="p-4 border-t border-slate-100 bg-slate-50 flex justify-end">
+              <Button onClick={() => setSelectedProvider(null)} variant="outline" className="font-bold text-slate-600">
+                Close
+              </Button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
     </>
   );
 }

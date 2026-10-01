@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
+import axios from "@/lib/axios";
 
 import { 
   Search,
@@ -16,66 +17,34 @@ import {
   Building2
 } from "lucide-react";
 
-const mockRegistrations = [
-  {
-    id: 1,
-    name: "GreenLine Diagnostics",
-    address: "123/saman lane-Negombo, Western",
-    license: "LB-WP-123",
-    owner: "S. Perera",
-    requestDate: "2026/5/4",
-    approvedDate: "-",
-    status: "Pending"
-  },
-  {
-    id: 2,
-    name: "CityLab Analytics",
-    address: "45/A High Level Rd, Colombo 06",
-    license: "LB-WP-442",
-    owner: "K. Silva",
-    requestDate: "2026/5/3",
-    approvedDate: "-",
-    status: "Pending"
-  },
-  {
-    id: 3,
-    name: "MediTest Hub",
-    address: "12 Kandy Road, Kiribathgoda",
-    license: "LB-WP-891",
-    owner: "M. Fernando",
-    requestDate: "2026/5/2",
-    approvedDate: "-",
-    status: "Pending"
-  },
-  {
-    id: 4,
-    name: "Apex Clinical Labs",
-    address: "88 Galle Road, Mount Lavinia",
-    license: "LB-WP-105",
-    owner: "R. Jayawardena",
-    requestDate: "2026/4/15",
-    approvedDate: "2026/4/18",
-    status: "Approved"
-  },
-  {
-    id: 5,
-    name: "Lanka Bio Services",
-    address: "210 Baseline Road, Colombo 08",
-    license: "LB-WP-334",
-    owner: "T. Bandara",
-    requestDate: "2026/4/10",
-    approvedDate: "2026/4/12",
-    status: "Approved"
-  }
-];
-
 export default function LaboratoryRegistrationsPage() {
   const [activeTab, setActiveTab] = useState("Pending");
+  const [laboratories, setLaboratories] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter the mock data based on the selected tab
+  useEffect(() => {
+    fetchLaboratories();
+  }, []);
+
+  const fetchLaboratories = async () => {
+    try {
+      const data = await axios.get('/admin/laboratories');
+      setLaboratories(data);
+    } catch (error) {
+      console.error("Failed to fetch laboratories:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const pendingCount = laboratories.filter(l => l.status === "Pending").length;
+  const approvedCount = laboratories.filter(l => l.status === "Approved").length;
+  const rejectedCount = laboratories.filter(l => l.status === "Rejected").length;
+  const totalCount = laboratories.length;
+
   const filteredRegistrations = activeTab === "All" 
-    ? mockRegistrations 
-    : mockRegistrations.filter(lab => lab.status === activeTab);
+    ? laboratories 
+    : laboratories.filter(lab => lab.status === activeTab);
 
   return (
     <>
@@ -111,7 +80,7 @@ export default function LaboratoryRegistrationsPage() {
                 </div>
                 <span className="text-sm font-bold text-orange-500">Pending</span>
               </div>
-              <p className="text-3xl font-bold text-orange-500 ml-11">4</p>
+              <p className="text-3xl font-bold text-orange-500 ml-11">{pendingCount}</p>
             </Card>
 
             <Card className="p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
@@ -121,7 +90,7 @@ export default function LaboratoryRegistrationsPage() {
                 </div>
                 <span className="text-sm font-bold text-emerald-500">Approved</span>
               </div>
-              <p className="text-3xl font-bold text-emerald-500 ml-11">2</p>
+              <p className="text-3xl font-bold text-emerald-500 ml-11">{approvedCount}</p>
             </Card>
 
             <Card className="p-6 rounded-2xl border border-slate-100 shadow-sm flex flex-col justify-center">
@@ -131,7 +100,7 @@ export default function LaboratoryRegistrationsPage() {
                 </div>
                 <span className="text-sm font-bold text-red-500">Rejected</span>
               </div>
-              <p className="text-3xl font-bold text-red-500 ml-11">1</p>
+              <p className="text-3xl font-bold text-red-500 ml-11">{rejectedCount}</p>
             </Card>
 
           </div>
@@ -151,7 +120,7 @@ export default function LaboratoryRegistrationsPage() {
                 <span className="text-sm font-bold">Pending</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === "Pending" ? "bg-slate-100 text-slate-800" : "bg-slate-50 text-slate-400"
-                }`}>4</span>
+                }`}>{pendingCount}</span>
               </button>
 
               <button 
@@ -164,7 +133,7 @@ export default function LaboratoryRegistrationsPage() {
                 <span className="text-sm font-bold">Approved</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === "Approved" ? "bg-slate-100 text-slate-800" : "bg-slate-50 text-slate-400"
-                }`}>2</span>
+                }`}>{approvedCount}</span>
               </button>
 
               <button 
@@ -177,7 +146,7 @@ export default function LaboratoryRegistrationsPage() {
                 <span className="text-sm font-bold">Rejected</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === "Rejected" ? "bg-slate-100 text-slate-800" : "bg-slate-50 text-slate-400"
-                }`}>1</span>
+                }`}>{rejectedCount}</span>
               </button>
 
               <button 
@@ -190,7 +159,7 @@ export default function LaboratoryRegistrationsPage() {
                 <span className="text-sm font-bold">All</span>
                 <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                   activeTab === "All" ? "bg-slate-100 text-slate-800" : "bg-slate-50 text-slate-400"
-                }`}>7</span>
+                }`}>{totalCount}</span>
               </button>
 
             </div>
@@ -203,7 +172,7 @@ export default function LaboratoryRegistrationsPage() {
           {/* List View */}
           <div className="space-y-4 pt-4">
             {filteredRegistrations.map((item) => (
-              <div key={item.id} className="flex flex-col xl:flex-row xl:items-center gap-6 p-4 rounded-xl hover:bg-slate-50 transition-colors group">
+              <div key={item.labId} className="flex flex-col xl:flex-row xl:items-center gap-6 p-4 rounded-xl hover:bg-slate-50 transition-colors group">
                 
                 {/* Image and Name */}
                 <div className="flex items-center gap-4 w-full xl:w-[350px] shrink-0">
@@ -243,13 +212,13 @@ export default function LaboratoryRegistrationsPage() {
                 {/* Action */}
                 <div className="shrink-0 flex items-center justify-end">
                   {item.status === "Pending" ? (
-                    <Link href={`/admin/laboratories/approvals/${item.id}`}>
+                    <Link href={`/super-admin/laboratories/approvals/${item.labId}`}>
                       <button className="px-5 py-2 rounded-full bg-slate-100 hover:bg-slate-200 text-xs font-bold text-slate-700 transition-colors">
                         Review
                       </button>
                     </Link>
                   ) : (
-                    <Link href={`/admin/laboratories/${item.id}`}>
+                    <Link href={`/super-admin/laboratories/${item.labId}`}>
                       <button className="px-5 py-2 rounded-full bg-blue-50 text-[#0052CC] hover:bg-blue-100 text-xs font-bold transition-colors">
                         View Active
                       </button>
