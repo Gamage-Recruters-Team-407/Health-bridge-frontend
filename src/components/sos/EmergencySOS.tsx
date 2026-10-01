@@ -402,9 +402,9 @@ export const EmergencySOS: React.FC = () => {
       {isEmergencyActive && <ActiveEmergencyBanner initialMinutes={5} hasArrived={hasArrived} />}
       
       {!isEmergencyActive && (
-        <div style={{ textAlign: 'center', marginBottom: '16px', fontSize: '13px', color: isListening ? '#16A34A' : '#64748B' }}>
+        <div className={`text-center mb-4 text-sm ${isListening ? 'text-green-600' : 'text-slate-500'}`}>
           {isListening ? '🎤 Voice Activation Active (Say "Emergency Help")' : '🎤 Voice Activation Unavailable'}
-          <div id="voice-transcript-display" style={{ marginTop: '4px', fontStyle: 'italic', color: '#94A3B8', minHeight: '20px' }}></div>
+          <div id="voice-transcript-display" className="mt-1 italic text-slate-400 min-h-[20px]"></div>
           {isListening && <VoiceWave />}
         </div>
       )}
@@ -418,13 +418,8 @@ export const EmergencySOS: React.FC = () => {
         hasArrived={hasArrived}
       />
       
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))',
-        gap: '24px',
-        marginTop: '32px'
-      }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+        <div className="flex flex-col gap-6">
           <PatientInfoCard patient={patient} />
           <EmergencyContacts 
             contacts={contacts} 
@@ -434,7 +429,7 @@ export const EmergencySOS: React.FC = () => {
           />
         </div>
         
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+        <div className="flex flex-col gap-6">
           <ResponseLog isActive={isEmergencyActive} hasArrived={hasArrived} alertStatus={alertStatus} />
           <LocationCard 
             location={location}
@@ -458,28 +453,23 @@ export const EmergencySOS: React.FC = () => {
       </div>
       
       {/* SOS History Section */}
-      <div style={{ marginTop: '32px', backgroundColor: 'white', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '24px' }}>
-        <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A', marginBottom: '16px' }}>Past Emergencies</h3>
+      <div className="mt-8 bg-white rounded-xl border border-slate-200 p-4 md:p-6">
+        <h3 className="text-lg font-bold text-slate-900 mb-4">Past Emergencies</h3>
         {alertHistory.length === 0 ? (
-          <p style={{ color: '#64748B', fontSize: '14px' }}>No emergency history found.</p>
+          <p className="text-slate-500 text-sm">No emergency history found.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div className="flex flex-col gap-3">
             {alertHistory.map((alert, i) => (
-              <div key={alert.id || i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px', backgroundColor: '#F8FAFC', borderRadius: '8px', border: '1px solid #F1F5F9' }}>
+              <div key={alert.id || i} className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 p-3 bg-slate-50 rounded-lg border border-slate-100">
                 <div>
-                  <div style={{ fontWeight: 600, color: '#334155' }}>{alert.emergencyType || 'General Emergency'}</div>
-                  <div style={{ fontSize: '12px', color: '#64748B', marginTop: '4px' }}>
+                  <div className="font-semibold text-slate-700">{alert.emergencyType || 'General Emergency'}</div>
+                  <div className="text-xs text-slate-500 mt-1">
                     {new Date(alert.triggeredAt).toLocaleString()}
                   </div>
                 </div>
-                <div style={{ 
-                  padding: '4px 10px', 
-                  borderRadius: '999px', 
-                  fontSize: '12px', 
-                  fontWeight: 'bold',
-                  backgroundColor: alert.status === 'ACTIVE' ? '#FEE2E2' : '#F1F5F9',
-                  color: alert.status === 'ACTIVE' ? '#DC2626' : '#64748B'
-                }}>
+                <div className={`self-start sm:self-auto px-3 py-1 rounded-full text-xs font-bold ${
+                  alert.status === 'ACTIVE' ? 'bg-red-100 text-red-600' : 'bg-slate-100 text-slate-500'
+                }`}>
                   {alert.status}
                 </div>
               </div>

@@ -184,40 +184,6 @@ export default function InsuranceOfficerDashboard() {
           </div>
         </div>
 
-        {/* Tab Sub-Navigation (Matching Figma Prototype) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Reports
-          </Link>
-        </div>
-
         {error && (
           <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-xs text-amber-800 flex items-center justify-between">
             <span>{error}</span>

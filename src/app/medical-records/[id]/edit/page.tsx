@@ -45,6 +45,80 @@ interface EditMedicalRecordPageProps {
 }
 
 
+type ValidationField =
+  | "visitDate"
+  | "hospitalName"
+  | "recordType"
+  | "diagnosis"
+  | "clinicalSummary"
+  | "consultationNotes";
+
+
+type ValidationErrors =
+  Partial<
+    Record<
+      ValidationField,
+      string
+    >
+  >;
+
+
+type TouchedFields =
+  Record<
+    ValidationField,
+    boolean
+  >;
+
+
+const RECORD_TYPES = [
+  "Consultation",
+  "Follow-up",
+  "Emergency",
+  "Admission",
+  "Discharge",
+  "Procedure",
+  "Other",
+] as const;
+
+
+const INITIAL_TOUCHED_FIELDS:
+  TouchedFields = {
+    visitDate: false,
+    hospitalName: false,
+    recordType: false,
+    diagnosis: false,
+    clinicalSummary: false,
+    consultationNotes: false,
+  };
+
+
+function today(): string {
+  const date =
+    new Date();
+
+  const year =
+    date.getFullYear();
+
+  const month =
+    String(
+      date.getMonth() + 1
+    ).padStart(
+      2,
+      "0"
+    );
+
+  const day =
+    String(
+      date.getDate()
+    ).padStart(
+      2,
+      "0"
+    );
+
+  return `${year}-${month}-${day}`;
+}
+
+
 function getErrorMessage(
   error: unknown
 ): string {
@@ -208,6 +282,17 @@ export default function EditMedicalRecordPage({
   ] = useState("");
 
 
+  const [
+    touchedFields,
+    setTouchedFields,
+  ] =
+    useState<TouchedFields>(
+      {
+        ...INITIAL_TOUCHED_FIELDS,
+      }
+    );
+
+
   /*
    * =========================================================
    * AUTH + ROUTE PARAM
@@ -348,6 +433,13 @@ export default function EditMedicalRecordPage({
               ?? ""
             );
 
+
+            setTouchedFields(
+              {
+                ...INITIAL_TOUCHED_FIELDS,
+              }
+            );
+
           } catch (
             requestError
           ) {
@@ -378,26 +470,182 @@ export default function EditMedicalRecordPage({
   );
 
 
-  const formValid =
-    useMemo(
-      () =>
-        Boolean(
-          patientId.trim()
-          && hospitalName.trim()
-          && visitDate
-          && recordType.trim()
-          && diagnosis.trim()
-          && clinicalSummary.trim()
-        ),
+  /*
+   * =========================================================
+   * FIELD VALIDATION
+   * =========================================================
+   *
+   * Clinical text is intentionally NOT restricted to letters.
+   * Real medical text may contain numbers, slashes, hyphens,
+   * percentages, brackets and other clinically useful symbols.
+   */
+  const validationErrors =
+    useMemo<ValidationErrors>(
+      () => {
+
+        const errors:
+          ValidationErrors = {};
+
+
+        if (!visitDate) {
+
+          errors.visitDate =
+            "Visit date is required.";
+
+        } else if (
+          visitDate > today()
+        ) {
+
+          errors.visitDate =
+            "Visit date cannot be in the future.";
+        }
+
+
+        const hospital =
+          hospitalName.trim();
+
+
+        if (!hospital) {
+
+          errors.hospitalName =
+            "Hospital / Clinic is required.";
+
+        } else if (
+          hospital.length < 2
+        ) {
+
+          errors.hospitalName =
+            "Hospital / Clinic must be at least 2 characters.";
+
+        } else if (
+          hospital.length > 120
+        ) {
+
+          errors.hospitalName =
+            "Hospital / Clinic cannot exceed 120 characters.";
+        }
+
+
+        if (
+          !RECORD_TYPES.includes(
+            recordType as
+              typeof RECORD_TYPES[number]
+          )
+        ) {
+
+          errors.recordType =
+            "Please select a valid Record Type.";
+        }
+
+
+        const primaryDiagnosis =
+          diagnosis.trim();
+
+
+        if (!primaryDiagnosis) {
+
+          errors.diagnosis =
+            "Primary Diagnosis is required.";
+
+        } else if (
+          primaryDiagnosis.length < 2
+        ) {
+
+          errors.diagnosis =
+            "Primary Diagnosis must be at least 2 characters.";
+
+        } else if (
+          primaryDiagnosis.length > 150
+        ) {
+
+          errors.diagnosis =
+            "Primary Diagnosis cannot exceed 150 characters.";
+        }
+
+
+        const summary =
+          clinicalSummary.trim();
+
+
+        if (!summary) {
+
+          errors.clinicalSummary =
+            "Clinical Summary is required.";
+
+        } else if (
+          summary.length < 10
+        ) {
+
+          errors.clinicalSummary =
+            "Clinical Summary must be at least 10 characters.";
+
+        } else if (
+          summary.length > 2000
+        ) {
+
+          errors.clinicalSummary =
+            "Clinical Summary cannot exceed 2000 characters.";
+        }
+
+
+        if (
+          consultationNotes.length > 5000
+        ) {
+
+          errors.consultationNotes =
+            "Consultation Notes cannot exceed 5000 characters.";
+        }
+
+
+        return errors;
+      },
       [
-        patientId,
-        hospitalName,
         visitDate,
+        hospitalName,
         recordType,
         diagnosis,
         clinicalSummary,
+        consultationNotes,
       ]
     );
+
+
+  const formValid =
+    Boolean(
+      patientId.trim()
+    )
+    && Object.keys(
+      validationErrors
+    ).length === 0;
+
+
+  const markFieldTouched =
+    (
+      field:
+      ValidationField
+    ) => {
+
+      setTouchedFields(
+        (
+          current
+        ) => ({
+          ...current,
+          [field]: true,
+        })
+      );
+    };
+
+
+  const shouldShowError =
+    (
+      field:
+      ValidationField
+    ) =>
+      touchedFields[field]
+      && Boolean(
+        validationErrors[field]
+      );
+
 
 
   /*
@@ -445,9 +693,21 @@ export default function EditMedicalRecordPage({
         return;
       }
 
+      setTouchedFields(
+        {
+          visitDate: true,
+          hospitalName: true,
+          recordType: true,
+          diagnosis: true,
+          clinicalSummary: true,
+          consultationNotes: true,
+        }
+      );
+
+
       if (!formValid) {
         setError(
-          "Please complete all required fields."
+          "Please fix the highlighted fields before saving changes."
         );
 
         return;
@@ -578,9 +838,9 @@ export default function EditMedicalRecordPage({
               gap-2
               text-sm
               font-semibold
-              text-blue-600
+              text-teal-600
               transition
-              hover:text-blue-700
+              hover:text-teal-700
             "
           >
             <ArrowLeft
@@ -610,8 +870,8 @@ export default function EditMedicalRecordPage({
                 items-center
                 justify-center
                 rounded-2xl
-                bg-blue-50
-                text-blue-600
+                bg-teal-50
+                text-teal-600
               "
             >
               <Stethoscope
@@ -755,7 +1015,7 @@ export default function EditMedicalRecordPage({
                   h-8
                   w-8
                   animate-spin
-                  text-blue-600
+                  text-teal-600
                 "
               />
 
@@ -784,6 +1044,7 @@ export default function EditMedicalRecordPage({
               onSubmit={
                 handleSubmit
               }
+              noValidate
               className="
                 space-y-5
               "
@@ -800,8 +1061,8 @@ export default function EditMedicalRecordPage({
                   className="
                     rounded-2xl
                     border
-                    border-blue-100
-                    bg-blue-50/60
+                    border-teal-100
+                    bg-teal-50/60
                     p-4
                   "
                 >
@@ -816,7 +1077,7 @@ export default function EditMedicalRecordPage({
                       className="
                         h-5
                         w-5
-                        text-blue-600
+                        text-teal-600
                       "
                     />
 
@@ -826,7 +1087,7 @@ export default function EditMedicalRecordPage({
                           text-xs
                           font-semibold
                           uppercase
-                          text-blue-500
+                          text-teal-500
                         "
                       >
                         Doctor
@@ -939,7 +1200,7 @@ export default function EditMedicalRecordPage({
                     className="
                       h-5
                       w-5
-                      text-blue-600
+                      text-teal-600
                     "
                   />
 
@@ -980,28 +1241,101 @@ export default function EditMedicalRecordPage({
                       value={
                         hospitalName
                       }
+                      required
+                      minLength={2}
+                      maxLength={120}
+                      aria-invalid={
+                        shouldShowError(
+                          "hospitalName"
+                        )
+                      }
+                      onBlur={
+                        () =>
+                          markFieldTouched(
+                            "hospitalName"
+                          )
+                      }
                       onChange={
                         (
                           event
-                        ) =>
+                        ) => {
                           setHospitalName(
                             event.target.value
-                          )
+                          );
+
+                          setError("");
+                        }
                       }
-                      className="
+                      className={`
                         w-full
                         rounded-xl
                         border
-                        border-slate-200
                         px-3
                         py-2.5
                         text-sm
                         outline-none
-                        focus:border-blue-500
-                        focus:ring-2
-                        focus:ring-blue-100
-                      "
+                        ${
+                          shouldShowError(
+                            "hospitalName"
+                          )
+                            ? (
+                              "border-red-300 "
+                              + "focus:border-red-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-red-100"
+                            )
+                            : (
+                              "border-slate-200 "
+                              + "focus:border-teal-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-teal-100"
+                            )
+                        }
+                      `}
                     />
+
+
+                    <div
+                      className="
+                        mt-1.5
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
+                      "
+                    >
+
+                      <div>
+                        {shouldShowError(
+                          "hospitalName"
+                        ) && (
+                          <p
+                            className="
+                              text-xs
+                              font-medium
+                              text-red-600
+                            "
+                          >
+                            {
+                              validationErrors.hospitalName
+                            }
+                          </p>
+                        )}
+                      </div>
+
+
+                      <span
+                        className="
+                          ml-auto
+                          shrink-0
+                          text-[11px]
+                          text-slate-400
+                        "
+                      >
+                        {hospitalName.length}/120
+                      </span>
+
+                    </div>
                   </div>
 
 
@@ -1023,28 +1357,75 @@ export default function EditMedicalRecordPage({
                       value={
                         visitDate
                       }
+                      required
+                      max={today()}
+                      aria-invalid={
+                        shouldShowError(
+                          "visitDate"
+                        )
+                      }
+                      onBlur={
+                        () =>
+                          markFieldTouched(
+                            "visitDate"
+                          )
+                      }
                       onChange={
                         (
                           event
-                        ) =>
+                        ) => {
                           setVisitDate(
                             event.target.value
-                          )
+                          );
+
+                          setError("");
+                        }
                       }
-                      className="
+                      className={`
                         w-full
                         rounded-xl
                         border
-                        border-slate-200
                         px-3
                         py-2.5
                         text-sm
                         outline-none
-                        focus:border-blue-500
-                        focus:ring-2
-                        focus:ring-blue-100
-                      "
+                        ${
+                          shouldShowError(
+                            "visitDate"
+                          )
+                            ? (
+                              "border-red-300 "
+                              + "focus:border-red-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-red-100"
+                            )
+                            : (
+                              "border-slate-200 "
+                              + "focus:border-teal-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-teal-100"
+                            )
+                        }
+                      `}
                     />
+
+
+                    {shouldShowError(
+                      "visitDate"
+                    ) && (
+                      <p
+                        className="
+                          mt-1.5
+                          text-xs
+                          font-medium
+                          text-red-600
+                        "
+                      >
+                        {
+                          validationErrors.visitDate
+                        }
+                      </p>
+                    )}
                   </div>
 
 
@@ -1069,57 +1450,88 @@ export default function EditMedicalRecordPage({
                       value={
                         recordType
                       }
+                      required
+                      aria-invalid={
+                        shouldShowError(
+                          "recordType"
+                        )
+                      }
+                      onBlur={
+                        () =>
+                          markFieldTouched(
+                            "recordType"
+                          )
+                      }
                       onChange={
                         (
                           event
-                        ) =>
+                        ) => {
                           setRecordType(
                             event.target.value
-                          )
+                          );
+
+                          setError("");
+                        }
                       }
-                      className="
+                      className={`
                         w-full
                         rounded-xl
                         border
-                        border-slate-200
                         bg-white
                         px-3
                         py-2.5
                         text-sm
                         outline-none
-                        focus:border-blue-500
-                        focus:ring-2
-                        focus:ring-blue-100
-                      "
+                        ${
+                          shouldShowError(
+                            "recordType"
+                          )
+                            ? (
+                              "border-red-300 "
+                              + "focus:border-red-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-red-100"
+                            )
+                            : (
+                              "border-slate-200 "
+                              + "focus:border-teal-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-teal-100"
+                            )
+                        }
+                      `}
                     >
-                      <option value="Consultation">
-                        Consultation
-                      </option>
-
-                      <option value="Follow-up">
-                        Follow-up
-                      </option>
-
-                      <option value="Emergency">
-                        Emergency
-                      </option>
-
-                      <option value="Admission">
-                        Admission
-                      </option>
-
-                      <option value="Discharge">
-                        Discharge
-                      </option>
-
-                      <option value="Procedure">
-                        Procedure
-                      </option>
-
-                      <option value="Other">
-                        Other
-                      </option>
+                      {RECORD_TYPES.map(
+                        (
+                          type
+                        ) => (
+                          <option
+                            key={type}
+                            value={type}
+                          >
+                            {type}
+                          </option>
+                        )
+                      )}
                     </select>
+
+
+                    {shouldShowError(
+                      "recordType"
+                    ) && (
+                      <p
+                        className="
+                          mt-1.5
+                          text-xs
+                          font-medium
+                          text-red-600
+                        "
+                      >
+                        {
+                          validationErrors.recordType
+                        }
+                      </p>
+                    )}
                   </div>
                 </div>
               </section>
@@ -1166,31 +1578,105 @@ export default function EditMedicalRecordPage({
                     </label>
 
                     <input
+                      type="text"
                       value={
                         diagnosis
+                      }
+                      required
+                      minLength={2}
+                      maxLength={150}
+                      aria-invalid={
+                        shouldShowError(
+                          "diagnosis"
+                        )
+                      }
+                      onBlur={
+                        () =>
+                          markFieldTouched(
+                            "diagnosis"
+                          )
                       }
                       onChange={
                         (
                           event
-                        ) =>
+                        ) => {
                           setDiagnosis(
                             event.target.value
-                          )
+                          );
+
+                          setError("");
+                        }
                       }
-                      className="
+                      className={`
                         w-full
                         rounded-xl
                         border
-                        border-slate-200
                         px-3
                         py-2.5
                         text-sm
                         outline-none
-                        focus:border-blue-500
-                        focus:ring-2
-                        focus:ring-blue-100
-                      "
+                        ${
+                          shouldShowError(
+                            "diagnosis"
+                          )
+                            ? (
+                              "border-red-300 "
+                              + "focus:border-red-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-red-100"
+                            )
+                            : (
+                              "border-slate-200 "
+                              + "focus:border-teal-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-teal-100"
+                            )
+                        }
+                      `}
                     />
+
+
+                    <div
+                      className="
+                        mt-1.5
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
+                      "
+                    >
+
+                      <div>
+                        {shouldShowError(
+                          "diagnosis"
+                        ) && (
+                          <p
+                            className="
+                              text-xs
+                              font-medium
+                              text-red-600
+                            "
+                          >
+                            {
+                              validationErrors.diagnosis
+                            }
+                          </p>
+                        )}
+                      </div>
+
+
+                      <span
+                        className="
+                          ml-auto
+                          shrink-0
+                          text-[11px]
+                          text-slate-400
+                        "
+                      >
+                        {diagnosis.length}/150
+                      </span>
+
+                    </div>
                   </div>
 
 
@@ -1212,30 +1698,103 @@ export default function EditMedicalRecordPage({
                       value={
                         clinicalSummary
                       }
+                      required
+                      minLength={10}
+                      maxLength={2000}
+                      aria-invalid={
+                        shouldShowError(
+                          "clinicalSummary"
+                        )
+                      }
+                      onBlur={
+                        () =>
+                          markFieldTouched(
+                            "clinicalSummary"
+                          )
+                      }
                       onChange={
                         (
                           event
-                        ) =>
+                        ) => {
                           setClinicalSummary(
                             event.target.value
-                          )
+                          );
+
+                          setError("");
+                        }
                       }
-                      className="
+                      className={`
                         w-full
                         resize-y
                         rounded-xl
                         border
-                        border-slate-200
                         px-3
                         py-2.5
                         text-sm
                         leading-6
                         outline-none
-                        focus:border-blue-500
-                        focus:ring-2
-                        focus:ring-blue-100
-                      "
+                        ${
+                          shouldShowError(
+                            "clinicalSummary"
+                          )
+                            ? (
+                              "border-red-300 "
+                              + "focus:border-red-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-red-100"
+                            )
+                            : (
+                              "border-slate-200 "
+                              + "focus:border-teal-500 "
+                              + "focus:ring-2 "
+                              + "focus:ring-teal-100"
+                            )
+                        }
+                      `}
                     />
+
+
+                    <div
+                      className="
+                        mt-1.5
+                        flex
+                        items-start
+                        justify-between
+                        gap-3
+                      "
+                    >
+
+                      <div>
+                        {shouldShowError(
+                          "clinicalSummary"
+                        ) && (
+                          <p
+                            className="
+                              text-xs
+                              font-medium
+                              text-red-600
+                            "
+                          >
+                            {
+                              validationErrors.clinicalSummary
+                            }
+                          </p>
+                        )}
+                      </div>
+
+
+                      <span
+                        className="
+                          ml-auto
+                          shrink-0
+                          text-[11px]
+                          text-slate-400
+                        "
+                      >
+                        {clinicalSummary.length}/2000
+                      </span>
+
+                    </div>
                   </div>
                 </div>
               </section>
@@ -1246,8 +1805,8 @@ export default function EditMedicalRecordPage({
                 className="
                   rounded-2xl
                   border
-                  border-indigo-100
-                  bg-indigo-50/60
+                  border-teal-100
+                  bg-teal-50/60
                   p-4
                 "
               >
@@ -1255,7 +1814,7 @@ export default function EditMedicalRecordPage({
                   className="
                     text-sm
                     font-semibold
-                    text-indigo-900
+                    text-teal-900
                   "
                 >
                   Diagnoses and treatment records are managed separately.
@@ -1266,7 +1825,7 @@ export default function EditMedicalRecordPage({
                     mt-1
                     text-xs
                     leading-5
-                    text-indigo-700
+                    text-teal-700
                   "
                 >
                   Return to the Medical Record Details page and use
@@ -1297,7 +1856,7 @@ export default function EditMedicalRecordPage({
                     className="
                       h-5
                       w-5
-                      text-blue-600
+                      text-teal-600
                     "
                   />
 
@@ -1312,36 +1871,118 @@ export default function EditMedicalRecordPage({
                   </h2>
                 </div>
 
+                <p
+                  className="
+                    mt-1
+                    text-xs
+                    text-slate-500
+                  "
+                >
+                  Optional. Maximum 5000 characters.
+                </p>
+
+
                 <textarea
                   rows={6}
                   value={
                     consultationNotes
                   }
+                  maxLength={5000}
+                  aria-invalid={
+                    shouldShowError(
+                      "consultationNotes"
+                    )
+                  }
+                  onBlur={
+                    () =>
+                      markFieldTouched(
+                        "consultationNotes"
+                      )
+                  }
                   onChange={
                     (
                       event
-                    ) =>
+                    ) => {
                       setConsultationNotes(
                         event.target.value
-                      )
+                      );
+
+                      setError("");
+                    }
                   }
-                  className="
+                  className={`
                     mt-4
                     w-full
                     resize-y
                     rounded-xl
                     border
-                    border-slate-200
                     px-3
                     py-2.5
                     text-sm
                     leading-6
                     outline-none
-                    focus:border-blue-500
-                    focus:ring-2
-                    focus:ring-blue-100
-                  "
+                    ${
+                      shouldShowError(
+                        "consultationNotes"
+                      )
+                        ? (
+                          "border-red-300 "
+                          + "focus:border-red-500 "
+                          + "focus:ring-2 "
+                          + "focus:ring-red-100"
+                        )
+                        : (
+                          "border-slate-200 "
+                          + "focus:border-teal-500 "
+                          + "focus:ring-2 "
+                          + "focus:ring-teal-100"
+                        )
+                    }
+                  `}
                 />
+
+
+                <div
+                  className="
+                    mt-1.5
+                    flex
+                    items-start
+                    justify-between
+                    gap-3
+                  "
+                >
+
+                  <div>
+                    {shouldShowError(
+                      "consultationNotes"
+                    ) && (
+                      <p
+                        className="
+                          text-xs
+                          font-medium
+                          text-red-600
+                        "
+                      >
+                        {
+                          validationErrors.consultationNotes
+                        }
+                      </p>
+                    )}
+                  </div>
+
+
+                  <span
+                    className="
+                      ml-auto
+                      shrink-0
+                      text-[11px]
+                      text-slate-400
+                    "
+                  >
+                    {consultationNotes.length}/5000
+                  </span>
+
+                </div>
               </section>
 
 
@@ -1384,6 +2025,29 @@ export default function EditMedicalRecordPage({
                   Cancel
                 </Link>
 
+                <div
+                  className="
+                    flex
+                    flex-col
+                    items-stretch
+                    gap-2
+                    sm:items-end
+                  "
+                >
+
+                  {!formValid && (
+                    <p
+                      className="
+                        text-xs
+                        text-slate-500
+                      "
+                    >
+                      Complete all required fields correctly
+                      to enable saving.
+                    </p>
+                  )}
+
+
                 <button
                   type="submit"
                   disabled={
@@ -1396,14 +2060,14 @@ export default function EditMedicalRecordPage({
                     justify-center
                     gap-2
                     rounded-xl
-                    bg-blue-600
+                    bg-teal-600
                     px-6
                     py-2.5
                     text-sm
                     font-semibold
                     text-white
                     transition
-                    hover:bg-blue-700
+                    hover:bg-teal-700
                     disabled:cursor-not-allowed
                     disabled:opacity-50
                   "
@@ -1433,6 +2097,8 @@ export default function EditMedicalRecordPage({
                     : "Save Changes"
                   }
                 </button>
+
+                </div>
               </section>
             </form>
           )

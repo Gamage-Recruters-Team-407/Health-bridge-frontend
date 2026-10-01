@@ -69,9 +69,12 @@ export default function LoginPage() {
     } catch (err: unknown) {
       // ✅ Proper error handling without 'any'
       const apiError = err as ApiError;
-      const message =
+      let message =
         apiError.response?.data?.message ||
         "Invalid email or password. Please try again.";
+      if (typeof message === "string" && message.toLowerCase().includes("operation successful")) {
+        message = "Operation unsuccessful";
+      }
       setError(message);
     } finally {
       setLoading(false);

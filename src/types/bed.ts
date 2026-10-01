@@ -25,6 +25,8 @@ export interface Bed {
   status: BedStatus;
   bedType?: string; // e.g. "ICU Standard", "Electric", "Isolation"
   patient?: PatientInfo;
+  branchId?: string;
+  branchCode?: string;
 }
 
 export interface BedOverviewStats {

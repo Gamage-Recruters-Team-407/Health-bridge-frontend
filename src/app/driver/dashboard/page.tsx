@@ -206,42 +206,46 @@ export default function DriverDashboard() {
   }, [isDispatchActive, currentLocation, pendingAlert]);
 
   return (
-    <div style={{ padding: '24px', maxWidth: '600px', margin: '0 auto', fontFamily: 'system-ui, sans-serif', backgroundColor: '#FFFFFF', minHeight: '100vh', color: '#0F172A' }}>
-      <header style={{ marginBottom: '32px', textAlign: 'center' }}>
-        <h1 style={{ fontSize: '24px', fontWeight: 'bold', color: '#0F172A', marginBottom: '8px' }}>Ambulance Driver Portal</h1>
-        <p style={{ color: '#64748B' }}>HealthBridge Emergency Network</p>
+    <div className="w-full max-w-4xl mx-auto p-4 md:p-6 lg:p-8 min-h-screen bg-white text-slate-900 font-sans">
+      <header className="mb-8 text-center">
+        <h1 className="text-2xl md:text-3xl font-bold text-slate-900 mb-2">Ambulance Driver Portal</h1>
+        <p className="text-slate-500">HealthBridge Emergency Network</p>
       </header>
 
       {/* Active Emergency Info Card */}
       {pendingAlert ? (
-        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#0F172A' }}>Pending Dispatch #{pendingAlert.id?.slice(-4).toUpperCase() || 'NEW'}</h2>
-            <span style={{ backgroundColor: '#FEE2E2', color: '#DC2626', padding: '4px 12px', borderRadius: '999px', fontSize: '12px', fontWeight: 'bold' }}>Priority 1</span>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 md:p-6 mb-6">
+          <div className="flex justify-between items-center mb-4">
+            <h2 className="text-base md:text-lg font-semibold text-slate-900">Pending Dispatch #{pendingAlert.id?.slice(-4).toUpperCase() || 'NEW'}</h2>
+            <span className="bg-red-100 text-red-600 px-3 py-1 rounded-full text-xs font-bold tracking-wide">Priority 1</span>
           </div>
-          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Patient:</strong> {pendingAlert.patientInfo?.name && pendingAlert.patientInfo.name !== 'null null' ? pendingAlert.patientInfo.name : 'Unknown'}</p>
-          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Emergency Type:</strong> {pendingAlert.emergencyType || 'Critical'}</p>
-          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Medical History:</strong> {pendingAlert.patientInfo?.conditions?.length > 0 ? pendingAlert.patientInfo.conditions.join(', ') : 'None reported'}</p>
-          <p style={{ fontSize: '14px', color: '#475569', marginBottom: '8px' }}><strong>Allergies:</strong> {pendingAlert.patientInfo?.allergies?.length > 0 ? pendingAlert.patientInfo.allergies.join(', ') : 'None reported'}</p>
-          <p style={{ fontSize: '14px', color: '#475569' }}><strong>Address:</strong> {pendingAlert.location?.address || 'GPS Location'}</p>
+          <p className="text-sm md:text-base text-slate-600 mb-2"><strong>Patient:</strong> {pendingAlert.patientInfo?.name && pendingAlert.patientInfo.name !== 'null null' ? pendingAlert.patientInfo.name : 'Unknown'}</p>
+          <p className="text-sm md:text-base text-slate-600 mb-2"><strong>Emergency Type:</strong> {pendingAlert.emergencyType || 'Critical'}</p>
+          <p className="text-sm md:text-base text-slate-600 mb-2"><strong>Medical History:</strong> {pendingAlert.patientInfo?.conditions?.length > 0 ? pendingAlert.patientInfo.conditions.join(', ') : 'None reported'}</p>
+          <p className="text-sm md:text-base text-slate-600 mb-2"><strong>Allergies:</strong> {pendingAlert.patientInfo?.allergies?.length > 0 ? pendingAlert.patientInfo.allergies.join(', ') : 'None reported'}</p>
+          <p className="text-sm md:text-base text-slate-600"><strong>Address:</strong> {pendingAlert.location?.address || 'GPS Location'}</p>
         </div>
       ) : (
-        <div style={{ backgroundColor: '#F8FAFC', border: '1px solid #E2E8F0', borderRadius: '12px', padding: '20px', marginBottom: '24px', textAlign: 'center' }}>
+        <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 md:p-6 mb-6 text-center">
           {cancelledMessage ? (
-            <p style={{ color: '#DC2626', fontWeight: 'bold' }}>{cancelledMessage}</p>
+            <p className="text-red-600 font-bold">{cancelledMessage}</p>
           ) : (
-            <p style={{ color: '#64748B' }}>No pending dispatch. Waiting for alerts...</p>
+            <p className="text-slate-500">No pending dispatch. Waiting for alerts...</p>
           )}
         </div>
       )}
 
       {/* Main Action Area */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', marginBottom: '32px' }}>
+      <div className="flex flex-col gap-4 mb-8">
         {!isDispatchActive ? (
           <button 
             onClick={startTracking}
             disabled={!pendingAlert}
-            style={{ backgroundColor: pendingAlert ? '#2563EB' : '#94A3B8', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: pendingAlert ? 'pointer' : 'not-allowed', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: pendingAlert ? '0 4px 6px -1px rgba(37, 99, 235, 0.4)' : 'none' }}
+            className={`w-full p-4 rounded-xl text-lg md:text-xl font-bold flex items-center justify-center gap-3 transition-all ${
+              pendingAlert 
+                ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-[0_4px_6px_-1px_rgba(37,99,235,0.4)] cursor-pointer' 
+                : 'bg-slate-400 text-white cursor-not-allowed'
+            }`}
           >
             <Navigation size={24} />
             Accept Dispatch & Start Tracking
@@ -249,7 +253,7 @@ export default function DriverDashboard() {
         ) : (
           <button 
             onClick={stopTracking}
-            style={{ backgroundColor: '#DC2626', color: 'white', border: 'none', padding: '16px', borderRadius: '12px', fontSize: '18px', fontWeight: 'bold', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px', boxShadow: '0 4px 6px -1px rgba(220, 38, 38, 0.4)' }}
+            className="w-full p-4 rounded-xl text-lg md:text-xl font-bold flex items-center justify-center gap-3 bg-red-600 text-white hover:bg-red-700 shadow-[0_4px_6px_-1px_rgba(220,38,38,0.4)] transition-all"
           >
             <StopCircle size={24} />
             Arrived / End Tracking
@@ -259,28 +263,28 @@ export default function DriverDashboard() {
 
       {/* Live Telemetry Display */}
       {isDispatchActive && (
-        <div style={{ backgroundColor: '#ECFDF5', border: '1px solid #10B981', borderRadius: '12px', padding: '20px', marginBottom: '24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px', color: '#059669' }}>
+        <div className="bg-emerald-50 border border-emerald-500 rounded-xl p-4 md:p-6 mb-6">
+          <div className="flex items-center gap-2 mb-4 text-emerald-600">
             <MapPin size={20} />
-            <h3 style={{ fontSize: '16px', fontWeight: 600 }}>Live Telemetry Active</h3>
+            <h3 className="text-base font-semibold">Live Telemetry Active</h3>
           </div>
           
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }}>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div>
-              <p style={{ fontSize: '12px', color: '#64748B', textTransform: 'uppercase', fontWeight: 600 }}>Latitude</p>
-              <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A', fontFamily: 'monospace' }}>{currentLocation?.lat.toFixed(6) || '---'}</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold">Latitude</p>
+              <p className="text-lg font-bold text-slate-900 font-mono">{currentLocation?.lat.toFixed(6) || '---'}</p>
             </div>
             <div>
-              <p style={{ fontSize: '12px', color: '#64748B', textTransform: 'uppercase', fontWeight: 600 }}>Longitude</p>
-              <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A', fontFamily: 'monospace' }}>{currentLocation?.lng.toFixed(6) || '---'}</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold">Longitude</p>
+              <p className="text-lg font-bold text-slate-900 font-mono">{currentLocation?.lng.toFixed(6) || '---'}</p>
             </div>
             <div>
-              <p style={{ fontSize: '12px', color: '#64748B', textTransform: 'uppercase', fontWeight: 600 }}>Accuracy</p>
-              <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A' }}>{currentLocation ? `±${Math.round(currentLocation.accuracy)}m` : '---'}</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold">Accuracy</p>
+              <p className="text-lg font-bold text-slate-900">{currentLocation ? `±${Math.round(currentLocation.accuracy)}m` : '---'}</p>
             </div>
             <div>
-              <p style={{ fontSize: '12px', color: '#64748B', textTransform: 'uppercase', fontWeight: 600 }}>Speed</p>
-              <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#0F172A' }}>{currentLocation?.speed ? `${Math.round(currentLocation.speed * 3.6)} km/h` : '0 km/h'}</p>
+              <p className="text-xs text-slate-500 uppercase font-semibold">Speed</p>
+              <p className="text-lg font-bold text-slate-900">{currentLocation?.speed ? `${Math.round(currentLocation.speed * 3.6)} km/h` : '0 km/h'}</p>
             </div>
           </div>
         </div>
@@ -288,8 +292,8 @@ export default function DriverDashboard() {
 
       {/* Live Map */}
       {(currentLocation || defaultLocation) && (
-        <div style={{ marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase' }}>Live Route Map</h3>
+        <div className="mb-6">
+          <h3 className="text-sm font-semibold text-slate-500 mb-3 uppercase">Live Route Map</h3>
           <DriverMap 
             driverLat={currentLocation?.lat || defaultLocation!.lat} 
             driverLng={currentLocation?.lng || defaultLocation!.lng} 
@@ -301,10 +305,10 @@ export default function DriverDashboard() {
 
       {/* System Logs */}
       <div>
-        <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#64748B', marginBottom: '12px', textTransform: 'uppercase' }}>Transmission Logs</h3>
-        <div style={{ backgroundColor: '#1E293B', color: '#38BDF8', padding: '16px', borderRadius: '12px', fontFamily: 'monospace', fontSize: '12px', minHeight: '150px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <h3 className="text-sm font-semibold text-slate-500 mb-3 uppercase">Transmission Logs</h3>
+        <div className="bg-slate-900 text-sky-400 p-4 rounded-xl font-mono text-xs min-h-[150px] flex flex-col gap-2 overflow-y-auto">
           {logs.length === 0 ? (
-            <span style={{ color: '#64748B' }}>System idle. Waiting for dispatch...</span>
+            <span className="text-slate-500">System idle. Waiting for dispatch...</span>
           ) : (
             logs.map((log, i) => (
               <div key={i} style={{ opacity: 1 - (i * 0.1) }}>{log}</div>

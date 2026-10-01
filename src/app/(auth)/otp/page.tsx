@@ -19,12 +19,21 @@ function OtpVerificationContent() {
   const [resending, setResending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [devOtp, setDevOtp] = useState<string | null>(null);
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   useEffect(() => {
     if (emailParam) {
       setEmail(emailParam);
+      if (typeof window !== "undefined") {
+        const cached = sessionStorage.getItem(`dev_otp_${emailParam.trim().toLowerCase()}`);
+        if (cached) {
+          setDevOtp(cached);
+        } else {
+          setDevOtp(null);
+        }
+      }
     }
   }, [emailParam]);
 
@@ -105,6 +114,10 @@ function OtpVerificationContent() {
         otp: fullOtp,
       });
 
+      if (typeof window !== "undefined") {
+        sessionStorage.removeItem(`dev_otp_${email.trim().toLowerCase()}`);
+      }
+
       // Route to reset password with email and otp parameters
       router.push(
         `/reset-password?email=${encodeURIComponent(
@@ -128,8 +141,20 @@ function OtpVerificationContent() {
     setResending(true);
 
     try {
-      await authService.forgotPassword(email.trim());
-      setSuccess("A new 6-digit code has been sent to your email!");
+      const res: any = await authService.forgotPassword(email.trim());
+      const receivedDevOtp = res?.devOtp || res?.data?.devOtp;
+      if (receivedDevOtp) {
+        setDevOtp(receivedDevOtp);
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem(`dev_otp_${email.trim().toLowerCase()}`, receivedDevOtp);
+        }
+      } else {
+        setDevOtp(null);
+        if (typeof window !== "undefined") {
+          sessionStorage.removeItem(`dev_otp_${email.trim().toLowerCase()}`);
+        }
+      }
+      setSuccess("A new 6-digit code has been generated and sent to your email!");
       setTimer(60);
       setCanResend(false);
       setOtp(["", "", "", "", "", ""]);
@@ -179,6 +204,31 @@ function OtpVerificationContent() {
         <div className="mt-5 w-full p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-medium flex items-center gap-2 text-left">
           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
           {success}
+        </div>
+      )}
+
+      {devOtp && (
+        <div className="mt-5 w-full p-4 rounded-2xl bg-amber-50 border border-amber-200/90 text-amber-900 text-left shadow-sm">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold text-amber-900 flex items-center gap-1.5">
+              <span>⚠️</span> Verification Code
+            </span>
+            <button
+              type="button"
+              onClick={() => {
+                const chars = devOtp.split("").slice(0, 6);
+                setOtp(chars);
+                setError(null);
+                inputRefs.current[5]?.focus();
+              }}
+              className="text-xs px-2.5 py-1 font-bold bg-amber-200 hover:bg-amber-300 text-amber-950 rounded-lg transition active:scale-95 shadow-sm cursor-pointer"
+            >
+              Auto-fill ({devOtp})
+            </button>
+          </div>
+          <p className="mt-1.5 text-[11px] text-amber-800 leading-relaxed">
+            Google SMTP daily quota is reached on the test email account. You can click <strong>Auto-fill</strong> or type the 6-digit code above to verify immediately.
+          </p>
         </div>
       )}
 

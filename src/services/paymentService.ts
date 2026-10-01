@@ -17,6 +17,8 @@ export interface InitiatePaymentResponse {
   maskedCard: string;
   amount: number;
   status: string;
+  emailSent?: boolean;
+  devOtp?: string;
 }
 
 export interface ConfirmPaymentResponse {

@@ -34,22 +34,14 @@ export interface InventoryItem {
 export interface Delivery {
     id: string;
     deliveryCode: string;
-<<<<<<< HEAD
-    orderCode: string;
+    orderCode?: string;
     pharmacyId: string;
     patientId: string;
-    items: { medicineId: string; medicineName: string; quantity: number }[];
+    items?: { medicineId: string; medicineName: string; quantity: number }[];
     deliveryAddress: string;
     status: string;
     assignedRiderName?: string;
     fulfillmentType?: "PICKUP" | "DELIVERY";
-    actionRequired: boolean;
+    actionRequired?: boolean;
     courierService?: string;
-=======
-    pharmacyId: string;
-    patientId: string;
-    deliveryAddress: string;
-    status: string;
-    assignedRiderName?: string;
->>>>>>> 86968a85e262a531503ab17e9f003d686fa4e5e1
 }

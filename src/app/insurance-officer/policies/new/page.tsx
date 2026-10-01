@@ -253,22 +253,22 @@ export default function NewPolicyPage() {
               {/* Coverage Amount */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Total Coverage Limit ($) <span className="text-red-500">*</span>
+                  Total Coverage Limit (Rs.) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">Rs.</span>
                   <input
                     type="number"
                     min="100"
                     step="100"
                     value={coverageAmount}
                     onChange={(e) => setCoverageAmount(Number(e.target.value))}
-                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 font-semibold text-slate-800"
+                    className="w-full pl-10 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 font-semibold text-slate-800"
                     required
                   />
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Preview: ${Number(coverageAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                  Preview: Rs. {Number(coverageAmount || 0).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                 </p>
               </div>
 

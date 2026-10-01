@@ -46,4 +46,8 @@ export interface TicketSummary {
   replyCount: number;
   createdAt: string;
   updatedAt: string;
+  feedback?: TicketFeedback | null;
+  feedbackRating?: number | null;
+  feedbackComment?: string | null;
+  feedbackCreatedAt?: string | null;
 }

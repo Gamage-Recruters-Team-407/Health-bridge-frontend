@@ -58,7 +58,7 @@ export const getPharmacyById = (id: string) =>
     api.get<unknown>(`/v1/pharmacy/pharmacies/${id}`);
 
 // ============================================================
-// Deliveries
+// Deliveries & Orders
 // ============================================================
 
 export const getDeliveriesByPharmacy = (pharmacyId: string) =>
@@ -72,3 +72,22 @@ export const updateDeliveryStatus = (id: string, status: string) =>
 
 export const createDelivery = (data: Partial<Delivery> & { items: unknown[] }) =>
     api.post<Delivery>("/v1/pharmacy/deliveries", data);
+
+export const assignDeliveryRider = (
+    deliveryId: string,
+    riderData: { assignedRiderName: string; courierService?: string }
+) =>
+    api.patch<Delivery>(`/v1/pharmacy/deliveries/${deliveryId}/assign-rider`, riderData);
+
+export const cancelDelivery = (deliveryId: string, reason?: string) =>
+    api.patch<Delivery>(`/v1/pharmacy/deliveries/${deliveryId}/cancel`, { reason });
+
+// ============================================================
+// Prescriptions (Backend Integration for Pharmacy)
+// ============================================================
+
+export const getPharmacyPrescriptions = () =>
+    api.get<Record<string, unknown>[]>("/prescriptions");
+
+export const getPharmacyPrescriptionById = (id: string) =>
+    api.get<Record<string, unknown>>(`/prescriptions/${id}`);
