@@ -9,6 +9,8 @@ export interface Department {
   description?: string;
   contactEmail?: string;
   contactPhone?: string;
+  branchId?: string;
+  branchCode?: string;
   createdAt?: string;
 }
 

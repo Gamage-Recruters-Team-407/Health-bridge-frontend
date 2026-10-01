@@ -172,6 +172,17 @@ export default function ClaimsListPage() {
     loadClaims();
   };
 
+  const handleStartReview = async (claimId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await insuranceService.startClaimReview(claimId);
+      showSuccess("Claim marked as Under Review.");
+      loadClaims();
+    } catch {
+      showError("Failed to update claim review status.");
+    }
+  };
+
   return (
     <DashboardLayout pageTitle="Insurance Claims" userRole="INSURANCE_OFFICER">
       <div className="space-y-6">
@@ -437,6 +448,15 @@ export default function ClaimsListPage() {
                           <div className="flex items-center justify-end gap-1.5">
                             {isPending ? (
                               <>
+                                {c.status === "SUBMITTED" && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => handleStartReview(c.id, e)}
+                                    className="px-2.5 py-1 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 rounded-lg text-xs font-semibold transition-colors"
+                                  >
+                                    Start Review
+                                  </button>
+                                )}
                                 <button
                                   type="button"
                                   onClick={() => openDecisionModal(c, "APPROVE")}

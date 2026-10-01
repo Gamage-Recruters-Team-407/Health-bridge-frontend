@@ -23,9 +23,7 @@ export default function EditPrescriptionPage() {
           patientId: data.patientId,
           patientName: data.patientName,
           patientPhone: data.patientPhone,
-          // ✅ FIXED: diagnosis and status weren't being loaded/saved before
           diagnosis: data.diagnosis || "",
-          status: data.status || "ACTIVE",
           notes: data.notes || "",
           items: data.items,
         });
@@ -40,11 +38,8 @@ export default function EditPrescriptionPage() {
       await prescriptionService.updatePrescription(id, {
         notes: data.notes,
         diagnosis: data.diagnosis,
-        //status: data.status,
         items: data.items,
       });
-      // ✅ Improved UX: back to the prescription's own details page instead of
-      // the full list, so the doctor sees exactly what they just changed.
       router.push(`/prescriptions/${id}`);
     } catch (error) {
       alert("Failed to update prescription.");

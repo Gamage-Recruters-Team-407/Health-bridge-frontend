@@ -35,6 +35,7 @@ import {
   AlertTriangle,
   CalendarClock,
   Truck,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -92,6 +93,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
           ...(isAdmin
             ? [
+                { title: "Branch Management", href: "/hospital-admin/branch-management", icon: Landmark },
                 { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
                 { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
                 { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },

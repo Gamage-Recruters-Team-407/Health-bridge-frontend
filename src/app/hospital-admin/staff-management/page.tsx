@@ -5,6 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { StaffMember, DutyStatus, StaffOverviewStats } from '@/types/staff';
 import { staffService } from '@/services/staffService';
 import { departmentService } from '@/services/departmentService';
+import { branchService, Branch } from '@/services/branchService';
 import { Department } from '@/types/department';
 import {
   Users,
@@ -29,13 +30,16 @@ import {
   ShieldAlert,
   ArrowRight,
   Check,
-  Edit2
+  Edit2,
+  Building
 } from 'lucide-react';
 
 const INITIAL_STAFF: StaffMember[] = [];
 
 export default function StaffManagementPage() {
   const [staffList, setStaffList] = useState<StaffMember[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchFilter, setBranchFilter] = useState('All');
   const [loading, setLoading] = useState(false);
   const [realStats, setRealStats] = useState<StaffOverviewStats | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -98,19 +102,21 @@ export default function StaffManagementPage() {
     fetchStaffData();
   }, [deptFilter, statusFilter, searchTerm]);
 
-  // Fetch Department List from Backend API
+  // Fetch Department & Branch List from Backend API
   useEffect(() => {
-    const fetchDepartments = async () => {
+    const fetchDepartmentsAndBranches = async () => {
       try {
-        const data = await departmentService.getAll();
-        if (data && Array.isArray(data)) {
-          setDepartments(data);
-        }
+        const [data, bList] = await Promise.all([
+          departmentService.getAll(),
+          branchService.getAllBranches().catch(() => [])
+        ]);
+        if (data && Array.isArray(data)) setDepartments(data);
+        if (bList) setBranches(bList);
       } catch (err) {
         console.warn('Backend department list fetch failed, using fallback:', err);
       }
     };
-    fetchDepartments();
+    fetchDepartmentsAndBranches();
   }, []);
 
   // Department List Options (dynamic from backend)
@@ -133,6 +139,7 @@ export default function StaffManagementPage() {
   // Filtered Staff
   const filteredStaff = useMemo(() => {
     return staffList.filter((s) => {
+      const matchesBranch = branchFilter === 'All' ? true : (s.branchCode === branchFilter || s.branchId === branchFilter);
       const fullName = `${s.firstName} ${s.lastName}`.toLowerCase();
       const matchesSearch =
         fullName.includes(searchTerm.toLowerCase()) ||
@@ -144,9 +151,9 @@ export default function StaffManagementPage() {
       const matchesRole = roleFilter === 'All' ? true : s.role?.includes(roleFilter);
       const matchesStatus = statusFilter === 'All' ? true : s.dutyStatus === statusFilter;
 
-      return matchesSearch && matchesDept && matchesRole && matchesStatus;
+      return matchesBranch && matchesSearch && matchesDept && matchesRole && matchesStatus;
     });
-  }, [staffList, searchTerm, deptFilter, roleFilter, statusFilter]);
+  }, [staffList, branchFilter, searchTerm, deptFilter, roleFilter, statusFilter]);
 
   // Pagination
   const totalPages = Math.ceil(filteredStaff.length / itemsPerPage) || 1;
@@ -453,6 +460,21 @@ export default function StaffManagementPage() {
 
           {/* Dropdown Filters */}
           <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+            <div className="relative flex-1 sm:flex-initial">
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="w-full appearance-none pl-3 pr-7 py-2 bg-slate-100 hover:bg-slate-200/60 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200 cursor-pointer outline-none"
+              >
+                <option value="All">Branch: All</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.branchCode}>
+                    Branch: {b.branchName} ({b.branchCode})
+                  </option>
+                ))}
+              </select>
+            </div>
+
             <div className="relative flex-1 sm:flex-initial">
               <select
                 value={deptFilter}

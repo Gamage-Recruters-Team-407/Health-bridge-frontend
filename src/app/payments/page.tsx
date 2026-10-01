@@ -6,6 +6,9 @@ import Link from "next/link";
 import DashboardLayout from "@/app/dashboard/layout";
 import { getStoredUser, AuthUser } from "@/lib/auth";
 import { paymentService, PaymentRequestData } from "@/services/paymentService";
+import { prescriptionBillingService, DispensedPrescriptionBill } from "@/services/prescriptionBillingService";
+import { prescriptionService } from "@/services/prescriptionService";
+import { getAllMedicines } from "@/services/pharmacyService";
 import {
   CreditCard,
   ShieldCheck,
@@ -112,10 +115,10 @@ export const LAB_TEST_OPTIONS: LabTestOption[] = [
 const CATEGORIES: CategoryOption[] = [
   { id: "CONSULTATION", name: "Doctor Consultation", icon: Stethoscope, defaultAmount: 3000 },
   { id: "LAB_TEST", name: "Laboratory Test", icon: FlaskConical, defaultAmount: 1500 },
+  { id: "PRESCRIPTION", name: "Medical Prescription Bills", icon: Pill, defaultAmount: 0 },
   { id: "X_RAY", name: "X-Ray", icon: Scan, defaultAmount: 3500 },
-  { id: "INSURANCE", name: "Insurance Copay", icon: Shield, defaultAmount: 1000 },
   { id: "OTHER", name: "Medical Service", icon: FileText, defaultAmount: 5000 },
-  { id: "CHECKUP", name: "Medical Checkup", icon: Pill, defaultAmount: 5000 },
+  { id: "CHECKUP", name: "Medical Checkup", icon: ShieldCheck, defaultAmount: 5000 },
 ];
 
 export default function PaymentsPage() {
@@ -140,6 +143,72 @@ export default function PaymentsPage() {
   const selectedLabTests = LAB_TEST_OPTIONS.filter((t) => selectedLabTestIds.includes(t.id));
   const totalLabAmount = selectedLabTests.reduce((sum, t) => sum + t.price, 0);
   const hasFastingRequired = selectedLabTests.some((t) => t.fastingRequired);
+
+  // Medical Prescription Bills State
+  const [prescriptionBills, setPrescriptionBills] = useState<DispensedPrescriptionBill[]>([]);
+  const [selectedPrescriptionBillId, setSelectedPrescriptionBillId] = useState<string | null>(null);
+  const [loadingPrescriptions, setLoadingPrescriptions] = useState<boolean>(false);
+
+  // Load prescription bills for the logged in patient
+  const loadPrescriptionBills = async (currentUser?: AuthUser | null) => {
+    const targetUser = currentUser || user || getStoredUser();
+    setLoadingPrescriptions(true);
+    try {
+      // 1. Get bills recorded upon "Verify and dispense" from local store
+      const localBills = prescriptionBillingService.getDispensedBillsForPatient(
+        targetUser?.id,
+        targetUser?.fullName
+      );
+
+      let mergedBills = [...localBills];
+
+      // 2. Query backend prescriptions if patient ID exists
+      if (targetUser?.id) {
+        try {
+          const backendPrescriptions = await prescriptionService.getPatientPrescriptions(targetUser.id);
+          const dispensed = (backendPrescriptions || []).filter(
+            (p) => p.status?.toUpperCase() === "COMPLETED" || p.status?.toLowerCase() === "dispensed"
+          );
+
+          if (dispensed.length > 0) {
+            const medRes = await getAllMedicines().catch(() => []);
+            const medList = Array.isArray(medRes) ? medRes : ((medRes as any)?.data || []);
+
+            dispensed.forEach((p) => {
+              if (!mergedBills.some((b) => b.id === p.id)) {
+                const built = prescriptionBillingService.buildBill(p, medList);
+                prescriptionBillingService.saveDispensedBill(built);
+                mergedBills.push(built);
+              }
+            });
+          }
+        } catch (backendErr) {
+          console.warn("Backend prescription fetch warn:", backendErr);
+        }
+      }
+
+      setPrescriptionBills(mergedBills);
+
+      // If in PRESCRIPTION category, set active bill
+      if (category === "PRESCRIPTION") {
+        const unpaid = mergedBills.filter((b) => b.status !== "PAID");
+        const activeBill = unpaid.length > 0 ? unpaid[0] : mergedBills[0];
+        if (activeBill) {
+          setSelectedPrescriptionBillId(activeBill.id);
+          setAmount(activeBill.totalAmount.toFixed(2));
+          setDescription(`Medical Prescription Bill: ${activeBill.prescriptionNumber} (${activeBill.patientName})`);
+        } else {
+          setSelectedPrescriptionBillId(null);
+          setAmount("0.00");
+          setDescription("Medical Prescription Bills");
+        }
+      }
+    } catch (err) {
+      console.error("Failed to load prescription bills:", err);
+    } finally {
+      setLoadingPrescriptions(false);
+    }
+  };
 
   // OTP State
   const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
@@ -166,6 +235,15 @@ export default function PaymentsPage() {
     }
     setUser(currentUser);
     setCardHolderName(currentUser.fullName || "");
+    void loadPrescriptionBills(currentUser);
+
+    const handleDispenseEvent = () => {
+      void loadPrescriptionBills(currentUser);
+    };
+    window.addEventListener("healthbridge_prescription_dispensed", handleDispenseEvent);
+    return () => {
+      window.removeEventListener("healthbridge_prescription_dispensed", handleDispenseEvent);
+    };
   }, [router]);
 
   // Helper to sync lab tests with amount & description
@@ -268,6 +346,16 @@ export default function PaymentsPage() {
     if (category === "LAB_TEST" && selectedLabTestIds.length === 0) {
       setErrorMsg("Please select at least one laboratory test to proceed.");
       return;
+    }
+    if (category === "PRESCRIPTION") {
+      if (prescriptionBills.length === 0) {
+        setErrorMsg("No prescriptions available.");
+        return;
+      }
+      if (!selectedPrescriptionBillId) {
+        setErrorMsg("Please select an individual medical prescription bill to proceed.");
+        return;
+      }
     }
     const numAmount = parseFloat(amount);
     if (isNaN(numAmount) || numAmount <= 0) {
@@ -394,6 +482,10 @@ export default function PaymentsPage() {
     setLoading(true);
     try {
       const res = await paymentService.confirmPayment(activePaymentId, fullCode);
+      if (category === "PRESCRIPTION" && selectedPrescriptionBillId) {
+        prescriptionBillingService.markAsPaid(selectedPrescriptionBillId, res.paymentId);
+        void loadPrescriptionBills();
+      }
       setConfirmedPayment({
         id: res.paymentId,
         amount: res.amount || parseFloat(amount),
@@ -455,6 +547,7 @@ export default function PaymentsPage() {
     setDescription("Doctor Consultation");
     setCategory("CONSULTATION");
     setSelectedLabTestIds(["CBC"]);
+    setSelectedPrescriptionBillId(null);
     setCardNumber("");
     setExpiryDate("");
     setCvv("");
@@ -556,6 +649,20 @@ export default function PaymentsPage() {
                           const activeIds =
                             selectedLabTestIds.length > 0 ? selectedLabTestIds : [LAB_TEST_OPTIONS[0].id];
                           updateLabTestSelection(activeIds);
+                        } else if (cat.id === "PRESCRIPTION") {
+                          setErrorMsg(null);
+                          void loadPrescriptionBills();
+                          const unpaid = prescriptionBills.filter((b) => b.status !== "PAID");
+                          const activeBill = unpaid.length > 0 ? unpaid[0] : prescriptionBills[0];
+                          if (activeBill) {
+                            setSelectedPrescriptionBillId(activeBill.id);
+                            setAmount(activeBill.totalAmount.toFixed(2));
+                            setDescription(`Medical Prescription Bill: ${activeBill.prescriptionNumber} (${activeBill.patientName})`);
+                          } else {
+                            setSelectedPrescriptionBillId(null);
+                            setAmount("0.00");
+                            setDescription("Medical Prescription Bills");
+                          }
                         } else {
                           setErrorMsg(null);
                           setAmount(cat.defaultAmount.toFixed(2));
@@ -584,6 +691,10 @@ export default function PaymentsPage() {
                                   selectedLabTestIds.length > 1 ? "s" : ""
                                 } Selected (RS ${Number(amount).toLocaleString()})`
                               : "5 Tests (Choose 1 or more)"
+                            : cat.id === "PRESCRIPTION"
+                            ? isSelected && selectedPrescriptionBillId
+                              ? `1 Bill Selected (RS ${Number(amount).toLocaleString()})`
+                              : `${prescriptionBills.length} Bill${prescriptionBills.length === 1 ? "" : "s"} Available`
                             : `Fee: RS ${cat.defaultAmount.toLocaleString()}`}
                         </div>
                       </div>
@@ -774,6 +885,180 @@ export default function PaymentsPage() {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {/* MEDICAL PRESCRIPTION BILLS SECTION */}
+              {category === "PRESCRIPTION" && (
+                <div className="rounded-3xl border-2 border-indigo-200/90 bg-gradient-to-br from-indigo-50/70 via-blue-50/40 to-white p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-indigo-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-indigo-600 text-white flex items-center justify-center shadow-md shadow-indigo-600/20 shrink-0">
+                        <Pill className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-slate-900">
+                            Medical Prescription Bills
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 text-xs font-bold">
+                            Individual Patient Bills
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Select a dispensed prescription bill below to proceed with payment.
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => void loadPrescriptionBills()}
+                        disabled={loadingPrescriptions}
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-100 hover:bg-indigo-200 text-indigo-700 transition flex items-center gap-1.5"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${loadingPrescriptions ? "animate-spin" : ""}`} />
+                        <span>Refresh Bills</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* NO DISPENSED PRESCRIPTIONS AVAILABLE */}
+                  {prescriptionBills.length === 0 ? (
+                    <div className="bg-white rounded-2xl border border-slate-200 p-8 text-center shadow-sm">
+                      <div className="w-14 h-14 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                        <Pill className="w-7 h-7" />
+                      </div>
+                      <p className="text-sm font-semibold text-slate-600 mt-4">No prescription bills yet</p>
+                      <p className="text-xs text-slate-400 mt-1">Dispensed prescriptions will appear here automatically.</p>
+                    </div>
+                  ) : (
+                    /* LIST OF INDIVIDUAL MEDICAL PRESCRIPTION BILLS */
+                    <div className="space-y-4">
+                      {prescriptionBills.map((bill) => {
+                        const isSelected = selectedPrescriptionBillId === bill.id;
+                        const isPaid = bill.status === "PAID";
+
+                        return (
+                          <div
+                            key={bill.id}
+                            onClick={() => {
+                              if (isPaid) return;
+                              setSelectedPrescriptionBillId(bill.id);
+                              setAmount(bill.totalAmount.toFixed(2));
+                              setDescription(`Medical Prescription Bill: ${bill.prescriptionNumber} (${bill.patientName})`);
+                              setErrorMsg(null);
+                            }}
+                            className={`rounded-2xl border-2 transition-all p-5 cursor-pointer relative bg-white ${
+                              isSelected
+                                ? "border-indigo-600 shadow-md ring-2 ring-indigo-500/20 bg-indigo-50/20"
+                                : isPaid
+                                ? "border-emerald-200 bg-emerald-50/30 opacity-80 cursor-default"
+                                : "border-slate-200 hover:border-indigo-300"
+                            }`}
+                          >
+                            {/* Bill Card Header */}
+                            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100">
+                              <div className="flex items-center gap-3">
+                                <div
+                                  className={`w-6 h-6 rounded-full flex items-center justify-center border-2 shrink-0 transition-colors ${
+                                    isSelected
+                                      ? "border-indigo-600 bg-indigo-600 text-white"
+                                      : isPaid
+                                      ? "border-emerald-600 bg-emerald-600 text-white"
+                                      : "border-slate-300 bg-white"
+                                  }`}
+                                >
+                                  {isSelected || isPaid ? <Check className="w-3.5 h-3.5 stroke-[3]" /> : null}
+                                </div>
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-bold text-slate-900 text-sm">{bill.prescriptionNumber}</span>
+                                    <span
+                                      className={`text-[10px] font-bold uppercase px-2.5 py-0.5 rounded-full ${
+                                        isPaid
+                                          ? "bg-emerald-100 text-emerald-800"
+                                          : "bg-indigo-100 text-indigo-800"
+                                      }`}
+                                    >
+                                      {isPaid ? "Paid & Cleared" : "Dispensed - Ready for Payment"}
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-slate-500 mt-0.5">
+                                    Patient: <strong className="font-semibold text-slate-800">{bill.patientName}</strong> &middot; ID:{" "}
+                                    <span className="font-mono text-slate-700">{bill.patientId}</span>
+                                    {bill.doctorName && (
+                                      <span> &middot; Doctor: {bill.doctorName}</span>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="text-right shrink-0">
+                                <div className="text-lg font-black text-indigo-700 font-mono">
+                                  RS {bill.totalAmount.toLocaleString()}
+                                </div>
+                                <span
+                                  className={`text-[10px] font-bold uppercase tracking-wider block mt-0.5 ${
+                                    isSelected
+                                      ? "text-indigo-600 font-bold"
+                                      : isPaid
+                                      ? "text-emerald-600"
+                                      : "text-slate-400"
+                                  }`}
+                                >
+                                  {isSelected ? "Selected for Payment" : isPaid ? "Paid" : "Click to Select Bill"}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* Medications Table with Drug Name and QTY */}
+                            <div className="mt-3 overflow-hidden rounded-xl border border-slate-100 bg-slate-50/50">
+                              <table className="w-full text-left text-xs">
+                                <thead className="bg-slate-100/70 text-[11px] uppercase tracking-wider text-slate-500">
+                                  <tr>
+                                    <th className="py-2.5 px-3 font-semibold">Drug Name</th>
+                                    <th className="py-2.5 px-3 font-semibold">Dosage & Frequency</th>
+                                    <th className="py-2.5 px-3 font-semibold text-center">QTY</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Unit Price</th>
+                                    <th className="py-2.5 px-3 font-semibold text-right">Subtotal</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-slate-100 text-slate-700 bg-white">
+                                  {bill.items.map((item, idx) => (
+                                    <tr key={idx} className="hover:bg-slate-50/70">
+                                      <td className="py-2.5 px-3 font-bold text-slate-900">{item.medicineName}</td>
+                                      <td className="py-2.5 px-3 text-slate-500">
+                                        {item.dosage} {item.frequency ? `• ${item.frequency}` : ""}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-center font-black text-indigo-700 font-mono">
+                                        {item.quantity}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right text-slate-600 font-mono">
+                                        RS {item.unitPrice.toLocaleString()}
+                                      </td>
+                                      <td className="py-2.5 px-3 text-right font-bold text-slate-900 font-mono">
+                                        RS {item.totalPrice.toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+
+                            {/* Card Footer with Dispense info */}
+                            <div className="mt-3 pt-2 border-t border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+                              <span className="flex items-center gap-1.5">
+                                <Clock className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Dispensed on: {new Date(bill.dispensedAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit" })}</span>
+                              </span>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

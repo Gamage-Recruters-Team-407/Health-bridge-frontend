@@ -24,6 +24,8 @@ export interface StaffMember {
   emergencyContactPhone?: string;
   locationFloor?: string;
   accountStatus?: 'Active' | 'Suspended';
+  branchId?: string;
+  branchCode?: string;
 }
 
 export interface StaffOverviewStats {

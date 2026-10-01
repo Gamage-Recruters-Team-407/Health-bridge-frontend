@@ -13,11 +13,16 @@ import {
 } from "@/services/pharmacyService";
 import type { Medicine } from "@/types/pharmacy";
 
-export default function AddEditMedicinePage() {
+interface MedicineFormProps {
+    mode?: "add" | "edit";
+    initialMedicine?: Medicine;
+}
+
+export default function AddEditMedicinePage({ mode: initialMode = "add", initialMedicine }: MedicineFormProps = {}) {
     const router = useRouter();
     const { pharmacyId } = usePharmacyId();
 
-    const [mode, setMode] = useState<"add" | "edit">("add");
+    const [mode, setMode] = useState<"add" | "edit">(initialMode);
     const [existingMedicines, setExistingMedicines] = useState<Medicine[]>([]);
     const [selectedMedicineId, setSelectedMedicineId] = useState<string>("");
     const [loadingList, setLoadingList] = useState(false);

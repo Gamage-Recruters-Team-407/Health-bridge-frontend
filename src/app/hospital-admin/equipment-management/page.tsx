@@ -5,6 +5,7 @@ import toast, { Toaster } from 'react-hot-toast';
 import { EquipmentAsset, EquipmentStatus, EquipmentOverviewStats } from '@/types/equipment';
 import { equipmentService } from '@/services/equipmentService';
 import { departmentService } from '@/services/departmentService';
+import { branchService, Branch } from '@/services/branchService';
 import {
   Package,
   CheckCircle2,
@@ -37,6 +38,8 @@ import {
 
 export default function EquipmentManagementPage() {
   const [equipmentList, setEquipmentList] = useState<EquipmentAsset[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchFilter, setBranchFilter] = useState<string>('All');
   const [stats, setStats] = useState<EquipmentOverviewStats>({
     totalInventory: 0,
     operationalRate: 0,
@@ -211,6 +214,7 @@ export default function EquipmentManagementPage() {
 
   useEffect(() => {
     fetchDepartments();
+    branchService.getAllBranches().then(b => setBranches(b || [])).catch(() => []);
   }, []);
 
   // Dynamic / Computed Stats from current equipment state
@@ -235,6 +239,7 @@ export default function EquipmentManagementPage() {
   // Filter & Search Logic
   const filteredEquipment = useMemo(() => {
     return equipmentList.filter((item) => {
+      const matchesBranch = branchFilter === 'All' || item.branchCode === branchFilter || item.branchId === branchFilter;
       const matchesCategory = categoryFilter === 'All' || item.category === categoryFilter;
       const targetDept = departmentFilter.trim().toLowerCase();
       const itemDept = (item.department || '').trim().toLowerCase();
@@ -250,9 +255,9 @@ export default function EquipmentManagementPage() {
         item.assetId.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.serialNo.toLowerCase().includes(searchTerm.toLowerCase());
 
-      return matchesCategory && matchesDepartment && matchesStatus && matchesSearch;
+      return matchesBranch && matchesCategory && matchesDepartment && matchesStatus && matchesSearch;
     });
-  }, [equipmentList, categoryFilter, departmentFilter, statusFilter, searchTerm]);
+  }, [equipmentList, branchFilter, categoryFilter, departmentFilter, statusFilter, searchTerm]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredEquipment.length / itemsPerPage) || 1;
@@ -561,6 +566,19 @@ export default function EquipmentManagementPage() {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             {/* Left Filter Dropdowns */}
             <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
+              <select
+                value={branchFilter}
+                onChange={(e) => setBranchFilter(e.target.value)}
+                className="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-blue-100 outline-none"
+              >
+                <option value="All">All Branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.branchCode}>
+                    {b.branchName} ({b.branchCode})
+                  </option>
+                ))}
+              </select>
+
               <select
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
