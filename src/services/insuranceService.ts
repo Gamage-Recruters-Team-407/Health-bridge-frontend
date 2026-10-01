@@ -55,6 +55,10 @@ export const insuranceService = {
     const res: any = await api.patch(`${BASE}/claims/${id}/decision`, decision);
     return res?.data ?? res;
   },
+  startClaimReview: async (id: string): Promise<InsuranceClaim> => {
+    const res: any = await api.patch(`${BASE}/claims/${id}/review`);
+    return res?.data ?? res;
+  },
   getPolicyById: async (id: string): Promise<InsurancePolicy> => {
     const res: any = await api.get(`${BASE}/policies/${id}`);
     return res?.data ?? res;

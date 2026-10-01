@@ -31,6 +31,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generateClaimTrackingPdf } from "@/lib/insurancePdfGenerator";
 import ClaimDecisionModal from "../ClaimDecisionModal";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
@@ -48,6 +49,7 @@ export default function ClaimDetailsPage() {
   const [claim, setClaim] = useState<InsuranceClaim | null>(null);
   const [policy, setPolicy] = useState<InsurancePolicy | null>(null);
   const [loading, setLoading] = useState(true);
+  const [reviewing, setReviewing] = useState(false);
 
   // Decision Modal State
   const [showDecisionModal, setShowDecisionModal] = useState(false);
@@ -104,6 +106,38 @@ export default function ClaimDetailsPage() {
     setShowDecisionModal(false);
     showSuccess("Claim decision recorded successfully.");
     loadClaimDetails();
+  };
+
+  const handleStartReview = async () => {
+    if (!claim) return;
+    setReviewing(true);
+    try {
+      const updated = await insuranceService.startClaimReview(claim.id);
+      setClaim(updated);
+      showSuccess("Claim is now marked as Under Review.");
+    } catch {
+      showError("Failed to update claim review status.");
+    } finally {
+      setReviewing(false);
+    }
+  };
+
+  const handleExportPdf = () => {
+    if (!claim) return;
+    try {
+      const blob = generateClaimTrackingPdf(claim, policy);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Claim_${claim.claimNumber}_Statement.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showSuccess("Claim statement PDF exported successfully.");
+    } catch {
+      showError("Failed to generate PDF statement.");
+    }
   };
 
   // Generate itemized charges breakdown based on claim amount and description
@@ -240,7 +274,13 @@ export default function ClaimDetailsPage() {
                   Claim ID #{claim.claimNumber}
                 </h1>
                 <Badge variant={statusVariant[claim.status]} className="text-xs font-semibold px-3 py-1">
-                  {claim.status === "APPROVED" ? "Approved" : claim.status === "REJECTED" ? "Rejected" : "Pending"}
+                  {claim.status === "APPROVED"
+                    ? "Approved"
+                    : claim.status === "REJECTED"
+                    ? "Rejected"
+                    : claim.status === "UNDER_REVIEW"
+                    ? "Under Review"
+                    : "Submitted"}
                 </Badge>
               </div>
               <p className="text-xs text-slate-500 mt-1">
@@ -248,22 +288,48 @@ export default function ClaimDetailsPage() {
               </p>
             </div>
 
-            {/* Approve / Reject Action Buttons (Matching Figma Design) */}
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={() => openDecision("APPROVE")}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+            {/* Quick Action Toolbar */}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={handleExportPdf}
+                className="gap-1.5 text-slate-600"
               >
-                Approve
-              </button>
-              <button
-                type="button"
-                onClick={() => openDecision("REJECT")}
-                className="px-5 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold transition-colors"
-              >
-                Reject
-              </button>
+                <Download className="w-3.5 h-3.5" />
+                <span>Export PDF</span>
+              </Button>
+
+              {claim.status === "SUBMITTED" && (
+                <Button
+                  size="sm"
+                  onClick={handleStartReview}
+                  disabled={reviewing}
+                  className="gap-1.5 bg-amber-500 hover:bg-amber-600 text-white shadow-xs"
+                >
+                  <Clock className="w-3.5 h-3.5" />
+                  <span>{reviewing ? "Updating..." : "Start Review"}</span>
+                </Button>
+              )}
+
+              {isPending && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => openDecision("APPROVE")}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    Approve
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => openDecision("REJECT")}
+                    className="px-4 py-2 bg-white hover:bg-rose-50 text-rose-600 border border-rose-200 rounded-xl text-xs font-semibold transition-colors"
+                  >
+                    Reject
+                  </button>
+                </>
+              )}
             </div>
           </div>
 

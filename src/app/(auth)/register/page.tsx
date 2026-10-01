@@ -16,6 +16,7 @@ import {
   Activity,
   HeartPulse,
   ArrowLeft,
+  MapPin,
 } from "lucide-react";
 import HeaderLogo from "@/components/HeaderLogo";
 import RegisterIllustration from "@/components/RegisterIllustration";
@@ -30,6 +31,7 @@ export default function RegisterPage() {
     fullName: "",
     email: "",
     phoneNumber: "",
+    branch: "",
     password: "",
     confirmPassword: "",
   });
@@ -40,7 +42,7 @@ export default function RegisterPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
@@ -74,6 +76,7 @@ export default function RegisterPage() {
         fullName: formData.fullName.trim(),
         email: formData.email.trim(),
         phoneNumber: formData.phoneNumber.trim(),
+        branch: formData.branch,
         password: formData.password,
         confirmPassword: formData.confirmPassword,
       });
@@ -228,6 +231,36 @@ export default function RegisterPage() {
                         placeholder="Phone Number"
                         className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 text-sm text-slate-800 placeholder-slate-400 transition bg-slate-50/30 focus:bg-white"
                       />
+                    </div>
+                  </div>
+
+                  {/* Branch */}
+                  <div>
+                    <div className="relative">
+                      <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <select
+                        name="branch"
+                        required
+                        value={formData.branch}
+                        onChange={handleChange}
+                        className={`w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-600/30 focus:border-blue-600 text-sm transition bg-slate-50/30 focus:bg-white appearance-none cursor-pointer ${
+                          formData.branch ? "text-slate-800" : "text-slate-400"
+                        }`}
+                      >
+                        <option value="" disabled>Select Branch</option>
+                        <option value="Colombo">Colombo</option>
+                        <option value="Gampaha">Gampaha</option>
+                        <option value="Kalutara">Kalutara</option>
+                        <option value="Kegalle">Kegalle</option>
+                        <option value="Ratnapura">Ratnapura</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
                     </div>
                   </div>
 
