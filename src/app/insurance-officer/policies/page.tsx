@@ -229,7 +229,7 @@ export default function PolicyDirectoryPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadPolicies}
+              onClick={() => loadPolicies(true)}
               className="gap-1.5 text-slate-600"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />

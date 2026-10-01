@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Shield,
@@ -54,6 +54,7 @@ const claimStatusVariant: Record<ClaimStatus, "success" | "danger" | "warning" |
 
 export default function PolicyDetailsPage() {
   const { id } = useParams<{ id: string }>();
+  const router = useRouter();
 
   const [policy, setPolicy] = useState<InsurancePolicy | null>(null);
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);

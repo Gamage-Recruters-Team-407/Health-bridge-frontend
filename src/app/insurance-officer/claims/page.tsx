@@ -212,7 +212,7 @@ export default function ClaimsListPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadClaims}
+              onClick={() => loadClaims(true)}
               className="gap-1.5 text-slate-600"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />

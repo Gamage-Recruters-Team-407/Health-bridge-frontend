@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
@@ -50,6 +50,7 @@ const STEPS: { status: ClaimStatus; label: string; description: string }[] = [
 ];
 
 export default function PatientClaimTrackingPage() {
+  const router = useRouter();
   const { id } = useParams<{ id: string }>();
 
   const [claim, setClaim] = useState<InsuranceClaim | null>(null);

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
@@ -43,6 +44,7 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 };
 
 export default function PatientInsurancePage() {
+  const router = useRouter();
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
@@ -219,7 +221,7 @@ export default function PatientInsurancePage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadData}
+            onClick={() => loadData(true)}
             className="gap-1.5 text-slate-600"
           >
             <RefreshCw className="w-4 h-4" />
