@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Menu,
@@ -95,7 +95,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   // LOAD NOTIFICATIONS
   // ============================================================
 
-  const loadNotifications = async () => {
+  const loadNotifications = useCallback(async () => {
     if (!localStorage.getItem("healthbridge_token")) {
       setNotifications([]);
       setUnreadNotifications(0);
@@ -112,12 +112,28 @@ export const Navbar: React.FC<NavbarProps> = ({
       setNotifications([]);
       setUnreadNotifications(0);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    const task = window.setTimeout(() => void loadNotifications(), 0);
-    return () => window.clearTimeout(task);
-  }, []);
+    const initialLoad = window.setTimeout(() => void loadNotifications(), 0);
+
+    const refreshWhileVisible = () => {
+      if (document.visibilityState === "visible") {
+        void loadNotifications();
+      }
+    };
+    const interval = window.setInterval(refreshWhileVisible, 15000);
+
+    window.addEventListener("focus", refreshWhileVisible);
+    document.addEventListener("visibilitychange", refreshWhileVisible);
+
+    return () => {
+      window.clearTimeout(initialLoad);
+      window.clearInterval(interval);
+      window.removeEventListener("focus", refreshWhileVisible);
+      document.removeEventListener("visibilitychange", refreshWhileVisible);
+    };
+  }, [loadNotifications]);
 
   // ============================================================
   // HANDLE NOTIFICATION CLICK
@@ -282,7 +298,9 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="relative">
           <button
             onClick={() => {
-              setShowNotifications(!showNotifications);
+              const opening = !showNotifications;
+              setShowNotifications(opening);
+              if (opening) void loadNotifications();
               setShowProfileMenu(false);
             }}
             className="relative p-2 rounded-xl text-slate-600 hover:text-blue-600 hover:bg-blue-50 transition-colors"
