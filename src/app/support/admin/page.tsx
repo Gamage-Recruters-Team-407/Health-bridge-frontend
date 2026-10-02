@@ -316,7 +316,7 @@ export default function AdminTicketsPage() {
 
             <div className="flex-1 overflow-y-auto">
               {ticket.replies.map((r) => (
-                <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
+                <div key={r.id} className=" px-6 py-3">
                   <ChatBubble
                     reply={r}
                     isOwn={r.senderRole === "ADMIN"}

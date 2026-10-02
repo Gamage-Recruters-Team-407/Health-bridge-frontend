@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { ArrowLeft } from "lucide-react";
 
 import Navbar from "@/components/ui/Navbar";
 import Sidebar from "@/components/ui/Sidebar";
@@ -54,7 +55,7 @@ function DocumentDescription({ text }: { text: string }) {
   const shown = expanded || !isLong ? text : `${text.slice(0, DESCRIPTION_LIMIT)}…`;
 
   return (
-    <p className="mt-1 max-w-3xl text-sm leading-6 text-gray-600">
+    <p className="mt-1 w-full text-sm leading-6 text-gray-600">
       {shown}
       {isLong && (
         <button
@@ -75,6 +76,8 @@ export default function SupportDocumentsPage() {
   const [error, setError] = useState("");
 
   const [panelOpen, setPanelOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // State to manage the delete confirmation modal
   const [documentToDelete, setDocumentToDelete] = useState<string | null>(null);
@@ -123,16 +126,42 @@ export default function SupportDocumentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      
-      <div className="mx-auto max-w-5xl">
+    <div className="flex min-h-screen bg-gray-50">
+      <Sidebar
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed(!collapsed)}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+        userRole="ADMIN"
+      />
+
+      <div className="flex min-w-0 flex-1 flex-col">
+        <Navbar
+          title="Support Documents"
+          onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)}
+          userRole="ADMIN"
+        />
+
+        <main className="flex-1 p-6">
+          <div className="mx-auto max-w-6xl">
         {/* Header */}
         <div className="mb-8 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Support Documents</h1>
-            <p className="mt-1 text-sm text-gray-500">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => window.history.back()}
+                aria-label="Go back"
+                title="Go back"
+                className="rounded-full p-2 text-gray-600 transition hover:bg-gray-100 hover:text-gray-900"
+              >
+                <ArrowLeft size={22} />
+              </button>
+              <p className="mt-1 text-sm text-gray-500">
               View and manage documents available for patient support.
             </p>
+            </div>
+           
           </div>
 
           <button
@@ -180,7 +209,7 @@ export default function SupportDocumentsPage() {
                           className="flex items-center justify-between gap-4 border-b border-gray-100 pb-4"
                         >
                           {/* Document details */}
-                          <div className="min-w-0 flex-1">
+                          <div className="min-w-0 w-full max-w-[2000px]">
                             <DocumentDescription text={document.description ?? ""} />
                           </div>
 
@@ -237,13 +266,14 @@ export default function SupportDocumentsPage() {
             })}
           </div>
         )}
-      </div>
+          </div>
+        </main>
 
-      <AddDocumentPanel
-        open={panelOpen}
-        onClose={() => setPanelOpen(false)}
-        onCreated={handleCreated}
-      />
+        <AddDocumentPanel
+          open={panelOpen}
+          onClose={() => setPanelOpen(false)}
+          onCreated={handleCreated}
+        />
 
       {/* Custom Delete Confirmation Modal */}
       {documentToDelete !== null && (
@@ -274,6 +304,7 @@ export default function SupportDocumentsPage() {
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 }

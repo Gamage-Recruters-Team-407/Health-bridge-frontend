@@ -96,7 +96,7 @@ export default function CreateTicketModal({
   };
 
   return (
-   <div className="rounded-2xl border border-[#0F6CBD] bg-[#EAF4FF] shadow-sm">
+   <div className="rounded-2xl border  bg-[#EAF4FF] shadow-sm">
 
       {/* Header */}
       <div className="border-b border-slate-100 px-6 py-5">
@@ -381,7 +381,7 @@ className="w-full resize-none rounded-xl border border-slate-200 bg-white px-3.5
           type="button"
           onClick={handleSubmit}
           disabled={submitting}
-          className="inline-flex items-center gap-2 rounded-lg bg-[#0052cc] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#0044aa] disabled:cursor-not-allowed disabled:opacity-60"
+          className="inline-flex items-center gap-2 rounded-lg bg-[#0052CC] px-4 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-[#0044aa] disabled:cursor-not-allowed disabled:opacity-60"
         >
           {submitting && (
             <svg

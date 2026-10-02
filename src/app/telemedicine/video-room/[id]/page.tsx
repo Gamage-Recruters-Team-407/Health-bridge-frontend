@@ -67,6 +67,7 @@ export default function VideoRoomPage() {
 
   useEffect(() => {
     if (!isChatOpen && chatMessages.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setUnreadChat((prev) => prev + 1);
     }
   }, [chatMessages.length, isChatOpen]);
@@ -87,6 +88,8 @@ export default function VideoRoomPage() {
         requestAiSummary: true,
         screenSharingUsed: isScreenSharing,
       });
+    } catch (err) {
+      console.error("Failed to end telemedicine session", err);
     } finally {
       router.push(`/telemedicine/consultation-summary/${session.id}`);
     }
@@ -99,63 +102,63 @@ export default function VideoRoomPage() {
 
   if (!session) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <p className="text-slate-300 text-sm">Connecting to consultation...</p>
-      </div>
+        <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+          <p className="text-slate-300 text-sm">Connecting to consultation...</p>
+        </div>
     );
   }
 
   const isAudioOnly = session.consultationType === "AUDIO";
 
   return (
-    <div className="min-h-screen bg-slate-900 flex flex-col">
-      <div className="flex items-center justify-between px-6 py-4">
-        <div className="flex items-center gap-2 text-slate-200 text-sm">
-          <span className={`w-2 h-2 rounded-full ${callState === "connected" ? "bg-green-400" : "bg-amber-400"}`} />
-          {callState === "connected" ? formatDuration(elapsed) : connectingLabel(callState, peerJoined)}
+      <div className="min-h-screen bg-slate-900 flex flex-col">
+        <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center gap-2 text-slate-200 text-sm">
+            <span className={`w-2 h-2 rounded-full ${callState === "connected" ? "bg-green-400" : "bg-amber-400"}`} />
+            {callState === "connected" ? formatDuration(elapsed) : connectingLabel(callState, peerJoined)}
+          </div>
+          <span className="text-slate-400 text-xs font-mono">Room {session.roomCode}</span>
         </div>
-        <span className="text-slate-400 text-xs font-mono">Room {session.roomCode}</span>
-      </div>
 
-      <div className="flex-1 flex gap-4 px-6 pb-4 min-h-0">
-        <div className={`flex-1 grid ${isAudioOnly ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"} gap-4 min-h-0`}>
-          <VideoTile
-            stream={remoteStream}
-            label={role === "PATIENT" ? "Doctor" : "Patient"}
-            isCameraOff={isAudioOnly || !remoteStream}
-          />
-          {!isAudioOnly && (
-            <VideoTile stream={localStream} label="You" muted isCameraOff={isCameraOff} isLocal />
+        <div className="flex-1 flex gap-4 px-6 pb-4 min-h-0">
+          <div className={`flex-1 grid ${isAudioOnly ? "grid-cols-1" : "grid-cols-1 md:grid-cols-2"} gap-4 min-h-0`}>
+            <VideoTile
+                stream={remoteStream}
+                label={role === "PATIENT" ? "Doctor" : "Patient"}
+                isCameraOff={isAudioOnly || !remoteStream}
+            />
+            {!isAudioOnly && (
+                <VideoTile stream={localStream} label="You" muted isCameraOff={isCameraOff} isLocal />
+            )}
+          </div>
+
+          {isChatOpen && (
+              <div className="w-80 hidden lg:block">
+                <ChatPanel
+                    messages={chatMessages}
+                    currentUserId={user?.id ?? ""}
+                    onSend={sendChatMessage}
+                    onClose={() => setIsChatOpen(false)}
+                />
+              </div>
           )}
         </div>
 
-        {isChatOpen && (
-          <div className="w-80 hidden lg:block">
-            <ChatPanel
-              messages={chatMessages}
-              currentUserId={user?.id ?? ""}
-              onSend={sendChatMessage}
-              onClose={() => setIsChatOpen(false)}
-            />
-          </div>
-        )}
+        <div className="pb-8 flex justify-center">
+          <CallControls
+              isMicMuted={isMicMuted}
+              isCameraOff={isCameraOff}
+              isScreenSharing={isScreenSharing}
+              isAudioOnly={isAudioOnly}
+              onToggleMic={toggleMic}
+              onToggleCamera={toggleCamera}
+              onToggleScreenShare={handleToggleScreenShare}
+              onHangUp={handleHangUp}
+              onToggleChat={isChatOpen ? () => setIsChatOpen(false) : handleOpenChat}
+              unreadChatCount={unreadChat}
+          />
+        </div>
       </div>
-
-      <div className="pb-8 flex justify-center">
-        <CallControls
-          isMicMuted={isMicMuted}
-          isCameraOff={isCameraOff}
-          isScreenSharing={isScreenSharing}
-          isAudioOnly={isAudioOnly}
-          onToggleMic={toggleMic}
-          onToggleCamera={toggleCamera}
-          onToggleScreenShare={handleToggleScreenShare}
-          onHangUp={handleHangUp}
-          onToggleChat={isChatOpen ? () => setIsChatOpen(false) : handleOpenChat}
-          unreadChatCount={unreadChat}
-        />
-      </div>
-    </div>
   );
 }
 

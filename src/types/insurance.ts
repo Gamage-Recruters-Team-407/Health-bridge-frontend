@@ -23,9 +23,12 @@ export interface InsuranceClaim {
   providerName?: string;
   patientId: string;
   treatmentDescription: string;
+  hospitalName?: string;
+  branch?: string;
   claimAmount: number;
   approvedAmount?: number;
-  documentFileIds: string[];
+  documentUrls?: string[];
+  documentFileIds?: string[];
   status: ClaimStatus;
   reviewedByOfficerId?: string;
   rejectionReason?: string;
