@@ -1,15 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   FileText,
   CheckCircle2,
   Clock,
   AlertTriangle,
   ArrowRight,
-  ShieldCheck,
   TrendingUp,
   PlusCircle,
   FileCheck2,
@@ -54,13 +52,14 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 };
 
 export default function InsuranceOfficerDashboard() {
-  const router = useRouter();
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeClaim, setActiveClaim] = useState<InsuranceClaim | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     setLoading(true);
     insuranceService
       .getAllClaims()
@@ -70,13 +69,31 @@ export default function InsuranceOfficerDashboard() {
       })
       .catch(() => setError("Failed to load claims data from server"))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  const safeClaims = Array.isArray(claims) ? claims : [];
+  useEffect(() => {
+    let isMounted = true;
+    insuranceService
+      .getAllClaims()
+      .then((data) => {
+        if (isMounted) {
+          setClaims(Array.isArray(data) ? data : []);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setError("Failed to load claims data from server");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const safeClaims = useMemo(() => (Array.isArray(claims) ? claims : []), [claims]);
 
   // Metrics Calculations
   const totalClaimsCount = safeClaims.length;
@@ -86,14 +103,20 @@ export default function InsuranceOfficerDashboard() {
 
   const approvalRate = totalClaimsCount > 0 ? Math.round((approvedCount / totalClaimsCount) * 100) : 0;
 
-  // Pending claims queue (up to 5 recent)
-  const pendingClaims = useMemo(
+  // Pending claims queue with 6 items per page
+  const allPendingClaims = useMemo(
     () =>
       safeClaims
         .filter((c) => c.status === "SUBMITTED" || c.status === "UNDER_REVIEW")
-        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-        .slice(0, 5),
+        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()),
     [safeClaims]
+  );
+
+  const totalPages = Math.ceil(allPendingClaims.length / pageSize) || 1;
+
+  const paginatedPendingClaims = useMemo(
+    () => allPendingClaims.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [allPendingClaims, currentPage]
   );
 
   // Status Split Data for Donut Chart (Strictly dynamic from database)
@@ -250,7 +273,7 @@ export default function InsuranceOfficerDashboard() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                  <span className="text-slate-600">Payout ($k)</span>
+                  <span className="text-slate-600">Payout (Rs. &apos;000)</span>
                 </div>
               </div>
             </CardHeader>
@@ -293,7 +316,7 @@ export default function InsuranceOfficerDashboard() {
                     <Area
                       type="monotone"
                       dataKey="payout"
-                      name="Payout ($k)"
+                      name="Payout (Rs. '000)"
                       stroke="#06B6D4"
                       strokeWidth={2.5}
                       fillOpacity={1}
@@ -344,7 +367,7 @@ export default function InsuranceOfficerDashboard() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: any) => [`${value} claims`, "Count"]}
+                          formatter={(value) => [`${value} claims`, "Count"]}
                           contentStyle={{
                             backgroundColor: "#FFFFFF",
                             borderRadius: "12px",
@@ -407,11 +430,11 @@ export default function InsuranceOfficerDashboard() {
                   <TableHead>Claim Amount</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingClaims.length === 0 ? (
+                {paginatedPendingClaims.length === 0 ? (
                   <TableEmpty
                     colSpan={7}
                     message={
@@ -421,7 +444,7 @@ export default function InsuranceOfficerDashboard() {
                     }
                   />
                 ) : (
-                  pendingClaims.map((claim) => (
+                  paginatedPendingClaims.map((claim) => (
                     <TableRow key={claim.id}>
                       <TableCell className="font-semibold text-blue-600">
                         {claim.claimNumber}
@@ -433,7 +456,7 @@ export default function InsuranceOfficerDashboard() {
                         {claim.treatmentDescription || "General Medical Treatment"}
                       </TableCell>
                       <TableCell className="font-bold text-[#0A2540]">
-                        ${claim.claimAmount?.toFixed(2)}
+                        Rs. {claim.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-slate-500 text-xs">
                         {claim.submittedAt ? new Date(claim.submittedAt).toLocaleDateString() : "Recent"}
@@ -441,14 +464,14 @@ export default function InsuranceOfficerDashboard() {
                       <TableCell>
                         <Badge variant={statusVariant[claim.status]}>{claim.status}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/insurance-officer/claims/${claim.id}`}>
-                            <Button size="sm" variant="outline">
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                          <Link href={`/insurance-officer/claims/${claim.id}`} className="w-full max-w-[80px]">
+                            <Button size="sm" variant="outline" className="h-7 text-xs px-3.5 min-w-[76px] w-full whitespace-nowrap">
                               View
                             </Button>
                           </Link>
-                          <Button size="sm" onClick={() => setActiveClaim(claim)}>
+                          <Button size="sm" onClick={() => setActiveClaim(claim)} className="h-7 text-xs px-3 min-w-[76px] w-full max-w-[80px]">
                             Review
                           </Button>
                         </div>
@@ -458,6 +481,49 @@ export default function InsuranceOfficerDashboard() {
                 )}
               </TableBody>
             </Table>
+
+            {/* 6-Record Pagination Controls matching Screenshot 2 */}
+            {allPendingClaims.length > 0 && totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                <div>
+                  Showing <span className="font-semibold text-[#0A2540]">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                  <span className="font-semibold text-[#0A2540]">{Math.min(currentPage * pageSize, allPendingClaims.length)}</span> of{" "}
+                  <span className="font-semibold text-[#0A2540]">{allPendingClaims.length}</span> pending claims
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
