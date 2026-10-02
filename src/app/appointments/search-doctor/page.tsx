@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
-import { CalendarDays, Clock3, Hospital, Stethoscope, Users } from "lucide-react";
+import { CalendarDays, Clock3, Hospital, Stethoscope, Users, Video } from "lucide-react";
 import AppointmentModuleShell from "@/components/appointment/AppointmentModuleShell";
 import { appointmentService } from "@/services/appointmentService";
 import type { DoctorSession, SessionSearchFilters, SessionStatus } from "@/types/appointment";
@@ -36,15 +36,26 @@ export default function SearchDoctorPage() {
       <div className="mt-5 flex flex-wrap gap-3"><button type="submit" className="rounded-2xl bg-blue-600 px-6 py-3 text-sm font-semibold text-white hover:bg-blue-700">Search Sessions</button><button type="button" onClick={clear} className="rounded-2xl border border-slate-200 px-6 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50">Clear</button></div>
     </form>
     {loading ? <div className="rounded-3xl border border-slate-200 bg-white p-12 text-center text-sm text-slate-500">Loading available sessions...</div>
-    : error ? <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">{error}<button onClick={()=>void load(form)} className="ml-3 font-semibold underline">Retry</button></div>
-    : sessions.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center"><h2 className="text-xl font-semibold">No matching sessions</h2><p className="mt-2 text-sm text-slate-500">Try a different date or broaden your filters.</p></div>
-    : <section className="grid gap-5 lg:grid-cols-2">{sessions.map(session => {
-      const available = session.status === "AVAILABLE" && session.remainingAppointments > 0;
-      return <article key={session.sessionId} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
-        <div className="flex items-start justify-between gap-4"><div><h2 className="text-xl font-bold text-slate-900">{session.doctorName}</h2><p className="mt-1 font-medium text-blue-700">{session.specialization}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[session.status]}`}>{statusText[session.status]}</span></div>
-        <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2"><p className="flex items-center gap-2"><Hospital className="h-4 w-4 text-blue-600" />{session.hospitalName}</p><p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-blue-600" />{session.sessionDate} · {session.dayOfWeek}</p><p className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-blue-600" />{session.startTime}{session.endTime ? ` – ${session.endTime}` : ""}</p><p className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" />{session.activeAppointments} active · {session.remainingAppointments} remaining</p></div>
-        <div className="mt-6"><Link aria-disabled={!available} href={available ? `/appointments/book/${session.sessionId}` : "#"} className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold ${available ? "bg-blue-600 text-white hover:bg-blue-700" : "pointer-events-none bg-slate-100 text-slate-400"}`}><Stethoscope className="h-4 w-4" />{available ? "Book" : statusText[session.status]}</Link></div>
-      </article>;
-    })}</section>}
+        : error ? <div className="rounded-3xl border border-rose-200 bg-rose-50 p-8 text-center text-rose-700">{error}<button onClick={()=>void load(form)} className="ml-3 font-semibold underline">Retry</button></div>
+            : sessions.length === 0 ? <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-12 text-center"><h2 className="text-xl font-semibold">No matching sessions</h2><p className="mt-2 text-sm text-slate-500">Try a different date or broaden your filters.</p></div>
+                : <section className="grid gap-5 lg:grid-cols-2">{sessions.map(session => {
+                  const available = session.status === "AVAILABLE" && session.remainingAppointments > 0;
+                  return <article key={session.sessionId} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <div className="flex items-start justify-between gap-4">
+                      <div>
+                        <h2 className="text-xl font-bold text-slate-900">{session.doctorName}</h2>
+                        <p className="mt-1 font-medium text-blue-700">{session.specialization}</p>
+                        {session.appointmentType === "VIDEO" && (
+                            <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[11px] font-semibold text-blue-700">
+                <Video className="h-3 w-3" /> Video Consultation
+              </span>
+                        )}
+                      </div>
+                      <span className={`rounded-full px-3 py-1 text-xs font-bold ${statusTone[session.status]}`}>{statusText[session.status]}</span>
+                    </div>
+                    <div className="mt-5 grid gap-3 text-sm text-slate-600 sm:grid-cols-2"><p className="flex items-center gap-2"><Hospital className="h-4 w-4 text-blue-600" />{session.hospitalName}</p><p className="flex items-center gap-2"><CalendarDays className="h-4 w-4 text-blue-600" />{session.sessionDate} · {session.dayOfWeek}</p><p className="flex items-center gap-2"><Clock3 className="h-4 w-4 text-blue-600" />{session.startTime}{session.endTime ? ` – ${session.endTime}` : ""}</p><p className="flex items-center gap-2"><Users className="h-4 w-4 text-blue-600" />{session.activeAppointments} active · {session.remainingAppointments} remaining</p></div>
+                    <div className="mt-6"><Link aria-disabled={!available} href={available ? `/appointments/book/${session.sessionId}` : "#"} className={`inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-semibold ${available ? "bg-blue-600 text-white hover:bg-blue-700" : "pointer-events-none bg-slate-100 text-slate-400"}`}><Stethoscope className="h-4 w-4" />{available ? "Book" : statusText[session.status]}</Link></div>
+                  </article>;
+                })}</section>}
   </AppointmentModuleShell>;
 }
