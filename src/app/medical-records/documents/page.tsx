@@ -255,6 +255,32 @@ export default function MedicalDocumentsPage() {
     useState("");
 
 
+  /*
+   * When this page is opened from a specific
+   * Medical Record Details page, recordId is
+   * passed in the query string. Keep that
+   * context until the patient's EHR is loaded.
+   */
+  const [
+    requestedMedicalRecordId,
+    setRequestedMedicalRecordId,
+  ] =
+    useState("");
+
+
+  /*
+   * If a requested record does not belong to
+   * the authenticated doctor, do not silently
+   * fall back to another record. Require an
+   * explicit manual selection instead.
+   */
+  const [
+    recordContextRequiresManualSelection,
+    setRecordContextRequiresManualSelection,
+  ] =
+    useState(false);
+
+
   const [
     uploadDocumentType,
     setUploadDocumentType,
@@ -281,8 +307,12 @@ export default function MedicalDocumentsPage() {
     || user?.role === "SUPER_ADMIN";
 
 
-  const canUpload =
+  const isDoctor =
     user?.role === "DOCTOR";
+
+
+  const canUpload =
+    isDoctor;
 
 
   const canArchive =
@@ -620,6 +650,12 @@ export default function MedicalDocumentsPage() {
        *
        * Supports:
        * /medical-records/documents?patientId=...
+       *
+       * Doctor record-detail navigation may also pass:
+       * &recordId=...
+       *
+       * That recordId is used only as the upload target
+       * when it belongs to the authenticated doctor.
        */
       const parameters =
         new URLSearchParams(
@@ -631,6 +667,27 @@ export default function MedicalDocumentsPage() {
         parameters
           .get("patientId")
           ?.trim();
+
+
+      const recordIdFromUrl =
+        parameters
+          .get("recordId")
+          ?.trim();
+
+
+      if (
+        recordIdFromUrl
+      ) {
+
+        setRequestedMedicalRecordId(
+          recordIdFromUrl
+        );
+
+
+        setRecordContextRequiresManualSelection(
+          false
+        );
+      }
 
 
       if (
@@ -653,11 +710,27 @@ export default function MedicalDocumentsPage() {
 
 
   /*
-   * Auto select first doctor-owned
-   * MedicalRecord for upload.
+   * Select the MedicalRecord used for document upload.
+   *
+   * Priority:
+   * 1. If the page was opened with ?recordId=..., use that
+   *    exact record when it belongs to this doctor.
+   * 2. If the requested record is not owned by this doctor,
+   *    do NOT silently upload to another record. Require the
+   *    doctor to explicitly choose one of their own records.
+   * 3. Without a requested record, preserve the current valid
+   *    selection or default to the first doctor-owned record.
    */
   useEffect(
     () => {
+
+      if (
+        !history
+        || !isDoctor
+      ) {
+        return;
+      }
+
 
       if (
         doctorOwnedMedicalRecords
@@ -666,6 +739,77 @@ export default function MedicalDocumentsPage() {
 
         setUploadMedicalRecordId("");
 
+        return;
+      }
+
+
+      if (
+        requestedMedicalRecordId
+      ) {
+
+        const requestedRecord =
+          doctorOwnedMedicalRecords
+            .find(
+              (
+                record
+              ) =>
+                record.id
+                === requestedMedicalRecordId
+            );
+
+
+        if (
+          requestedRecord
+        ) {
+
+          setUploadMedicalRecordId(
+            requestedRecord.id
+          );
+
+
+          setRecordContextRequiresManualSelection(
+            false
+          );
+
+
+          setRequestedMedicalRecordId(
+            ""
+          );
+
+
+          return;
+        }
+
+
+        setUploadMedicalRecordId(
+          ""
+        );
+
+
+        setRecordContextRequiresManualSelection(
+          true
+        );
+
+
+        setRequestedMedicalRecordId(
+          ""
+        );
+
+
+        setError(
+          "The Medical Record opened from this link is not available "
+          + "for document upload by this doctor. "
+          + "Please select one of your own Medical Records."
+        );
+
+
+        return;
+      }
+
+
+      if (
+        recordContextRequiresManualSelection
+      ) {
         return;
       }
 
@@ -693,7 +837,11 @@ export default function MedicalDocumentsPage() {
 
     },
     [
+      history,
+      isDoctor,
       doctorOwnedMedicalRecords,
+      requestedMedicalRecordId,
+      recordContextRequiresManualSelection,
       uploadMedicalRecordId,
     ]
   );
@@ -710,6 +858,27 @@ export default function MedicalDocumentsPage() {
     ) => {
 
       event.preventDefault();
+
+
+      /*
+       * A manual patient lookup starts a new context.
+       * Do not keep a recordId that came from a
+       * previously opened Medical Record.
+       */
+      setRequestedMedicalRecordId(
+        ""
+      );
+
+
+      setRecordContextRequiresManualSelection(
+        false
+      );
+
+
+      setUploadMedicalRecordId(
+        ""
+      );
+
 
       void loadDocuments(
         patientIdInput
@@ -1119,7 +1288,19 @@ export default function MedicalDocumentsPage() {
               href={
                 backHref
               }
-              className="
+              className={
+              isDoctor
+                ? `
+                inline-flex
+                items-center
+                gap-2
+                text-sm
+                font-semibold
+                text-teal-600
+                transition
+                hover:text-teal-700
+              `
+                : `
                 inline-flex
                 items-center
                 gap-2
@@ -1128,7 +1309,8 @@ export default function MedicalDocumentsPage() {
                 text-blue-600
                 transition
                 hover:text-blue-700
-              "
+              `
+            }
             >
               <ArrowLeft
                 className="
@@ -1181,7 +1363,29 @@ export default function MedicalDocumentsPage() {
               disabled={
                 loading
               }
-              className="
+              className={
+              isDoctor
+                ? `
+                inline-flex
+                items-center
+                justify-center
+                gap-2
+                rounded-xl
+                border
+                border-slate-200
+                bg-white
+                px-4
+                py-2.5
+                text-sm
+                font-semibold
+                text-slate-700
+                shadow-sm
+                transition
+                hover:border-teal-300
+                hover:text-teal-600
+                disabled:opacity-50
+              `
+                : `
                 inline-flex
                 items-center
                 justify-center
@@ -1200,7 +1404,8 @@ export default function MedicalDocumentsPage() {
                 hover:border-blue-300
                 hover:text-blue-600
                 disabled:opacity-50
-              "
+              `
+            }
             >
 
               {loading
@@ -1239,13 +1444,23 @@ export default function MedicalDocumentsPage() {
             onSubmit={
               handleSearch
             }
-            className="
+            className={
+              isDoctor
+                ? `
+              rounded-2xl
+              border
+              border-teal-100
+              bg-teal-50/60
+              p-4
+            `
+                : `
               rounded-2xl
               border
               border-blue-100
               bg-blue-50/60
               p-4
-            "
+            `
+            }
           >
 
             <label
@@ -1306,7 +1521,25 @@ export default function MedicalDocumentsPage() {
                       )
                   }
                   placeholder="Enter patient User ID"
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    w-full
+                    rounded-xl
+                    border
+                    border-slate-200
+                    bg-white
+                    py-2.5
+                    pl-10
+                    pr-4
+                    text-sm
+                    outline-none
+                    transition
+                    focus:border-teal-500
+                    focus:ring-2
+                    focus:ring-teal-100
+                  `
+                : `
                     w-full
                     rounded-xl
                     border
@@ -1321,7 +1554,8 @@ export default function MedicalDocumentsPage() {
                     focus:border-blue-500
                     focus:ring-2
                     focus:ring-blue-100
-                  "
+                  `
+            }
                 />
 
               </div>
@@ -1334,7 +1568,25 @@ export default function MedicalDocumentsPage() {
                   || !patientIdInput
                     .trim()
                 }
-                className="
+                className={
+              isDoctor
+                ? `
+                  inline-flex
+                  items-center
+                  justify-center
+                  gap-2
+                  rounded-xl
+                  bg-teal-600
+                  px-5
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-white
+                  transition
+                  hover:bg-teal-700
+                  disabled:opacity-50
+                `
+                : `
                   inline-flex
                   items-center
                   justify-center
@@ -1349,7 +1601,8 @@ export default function MedicalDocumentsPage() {
                   transition
                   hover:bg-blue-700
                   disabled:opacity-50
-                "
+                `
+            }
               >
 
                 {loading
@@ -1498,13 +1751,23 @@ export default function MedicalDocumentsPage() {
                 "
               >
                 <Loader2
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    mx-auto
+                    h-8
+                    w-8
+                    animate-spin
+                    text-teal-600
+                  `
+                : `
                     mx-auto
                     h-8
                     w-8
                     animate-spin
                     text-blue-600
-                  "
+                  `
+            }
                 />
 
                 <p
@@ -1588,20 +1851,38 @@ export default function MedicalDocumentsPage() {
                 >
 
                   <div
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      rounded-xl
+                      bg-teal-50
+                      px-4
+                      py-3
+                      text-center
+                    `
+                : `
                       rounded-xl
                       bg-blue-50
                       px-4
                       py-3
                       text-center
-                    "
+                    `
+            }
                   >
                     <p
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        text-xl
+                        font-bold
+                        text-teal-700
+                      `
+                : `
                         text-xl
                         font-bold
                         text-blue-700
-                      "
+                      `
+            }
                     >
                       {
                         documents.length
@@ -1609,10 +1890,17 @@ export default function MedicalDocumentsPage() {
                     </p>
 
                     <p
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        text-xs
+                        text-teal-600
+                      `
+                : `
                         text-xs
                         text-blue-600
-                      "
+                      `
+            }
                     >
                       Active Documents
                     </p>
@@ -1650,7 +1938,20 @@ export default function MedicalDocumentsPage() {
                 >
 
                   <div
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      flex
+                      h-10
+                      w-10
+                      shrink-0
+                      items-center
+                      justify-center
+                      rounded-xl
+                      bg-teal-50
+                      text-teal-600
+                    `
+                : `
                       flex
                       h-10
                       w-10
@@ -1660,7 +1961,8 @@ export default function MedicalDocumentsPage() {
                       rounded-xl
                       bg-blue-50
                       text-blue-600
-                    "
+                    `
+            }
                   >
                     <Upload
                       className="
@@ -1757,12 +2059,40 @@ export default function MedicalDocumentsPage() {
                           onChange={
                             (
                               event
-                            ) =>
+                            ) => {
+
                               setUploadMedicalRecordId(
                                 event.target.value
-                              )
+                              );
+
+
+                              setRecordContextRequiresManualSelection(
+                                false
+                              );
+
+
+                              setError(
+                                ""
+                              );
+                            }
                           }
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            w-full
+                            rounded-xl
+                            border
+                            border-slate-200
+                            bg-white
+                            px-3
+                            py-2.5
+                            text-sm
+                            outline-none
+                            focus:border-teal-500
+                            focus:ring-2
+                            focus:ring-teal-100
+                          `
+                : `
                             w-full
                             rounded-xl
                             border
@@ -1775,8 +2105,17 @@ export default function MedicalDocumentsPage() {
                             focus:border-blue-500
                             focus:ring-2
                             focus:ring-blue-100
-                          "
+                          `
+            }
                         >
+                          <option
+                            value=""
+                            disabled
+                          >
+                            Select a Medical Record
+                          </option>
+
+
                           {doctorOwnedMedicalRecords
                             .map(
                               (
@@ -1836,7 +2175,22 @@ export default function MedicalDocumentsPage() {
                               )
                           }
                           placeholder="e.g. Scan, Report, Discharge Summary"
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            w-full
+                            rounded-xl
+                            border
+                            border-slate-200
+                            px-3
+                            py-2.5
+                            text-sm
+                            outline-none
+                            focus:border-teal-500
+                            focus:ring-2
+                            focus:ring-teal-100
+                          `
+                : `
                             w-full
                             rounded-xl
                             border
@@ -1848,7 +2202,8 @@ export default function MedicalDocumentsPage() {
                             focus:border-blue-500
                             focus:ring-2
                             focus:ring-blue-100
-                          "
+                          `
+            }
                         />
                       </div>
 
@@ -1882,7 +2237,30 @@ export default function MedicalDocumentsPage() {
                                 ?? null
                               )
                           }
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            block
+                            w-full
+                            rounded-xl
+                            border
+                            border-slate-200
+                            bg-white
+                            px-3
+                            py-2
+                            text-sm
+                            text-slate-600
+                            file:mr-3
+                            file:rounded-lg
+                            file:border-0
+                            file:bg-teal-50
+                            file:px-3
+                            file:py-1.5
+                            file:text-xs
+                            file:font-semibold
+                            file:text-teal-700
+                          `
+                : `
                             block
                             w-full
                             rounded-xl
@@ -1902,7 +2280,8 @@ export default function MedicalDocumentsPage() {
                             file:text-xs
                             file:font-semibold
                             file:text-blue-700
-                          "
+                          `
+            }
                         />
                       </div>
 
@@ -1934,7 +2313,22 @@ export default function MedicalDocumentsPage() {
                               )
                           }
                           placeholder="Optional description"
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            w-full
+                            rounded-xl
+                            border
+                            border-slate-200
+                            px-3
+                            py-2.5
+                            text-sm
+                            outline-none
+                            focus:border-teal-500
+                            focus:ring-2
+                            focus:ring-teal-100
+                          `
+                : `
                             w-full
                             rounded-xl
                             border
@@ -1946,7 +2340,8 @@ export default function MedicalDocumentsPage() {
                             focus:border-blue-500
                             focus:ring-2
                             focus:ring-blue-100
-                          "
+                          `
+            }
                         />
                       </div>
 
@@ -1966,7 +2361,26 @@ export default function MedicalDocumentsPage() {
                             || !uploadDocumentType
                               .trim()
                           }
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            inline-flex
+                            items-center
+                            justify-center
+                            gap-2
+                            rounded-xl
+                            bg-teal-600
+                            px-5
+                            py-2.5
+                            text-sm
+                            font-semibold
+                            text-white
+                            transition
+                            hover:bg-teal-700
+                            disabled:cursor-not-allowed
+                            disabled:opacity-50
+                          `
+                : `
                             inline-flex
                             items-center
                             justify-center
@@ -1982,7 +2396,8 @@ export default function MedicalDocumentsPage() {
                             hover:bg-blue-700
                             disabled:cursor-not-allowed
                             disabled:opacity-50
-                          "
+                          `
+            }
                         >
 
                           {actionLoading
@@ -2146,7 +2561,23 @@ export default function MedicalDocumentsPage() {
                             key={
                               document.id
                             }
-                            className="
+                            className={
+              isDoctor
+                ? `
+                              flex
+                              min-h-64
+                              flex-col
+                              rounded-2xl
+                              border
+                              border-slate-200
+                              bg-slate-50/60
+                              p-4
+                              transition
+                              hover:border-teal-200
+                              hover:bg-white
+                              hover:shadow-sm
+                            `
+                : `
                               flex
                               min-h-64
                               flex-col
@@ -2159,7 +2590,8 @@ export default function MedicalDocumentsPage() {
                               hover:border-blue-200
                               hover:bg-white
                               hover:shadow-sm
-                            "
+                            `
+            }
                           >
 
                             <div
@@ -2172,7 +2604,19 @@ export default function MedicalDocumentsPage() {
                             >
 
                               <div
-                                className="
+                                className={
+              isDoctor
+                ? `
+                                  flex
+                                  h-11
+                                  w-11
+                                  items-center
+                                  justify-center
+                                  rounded-xl
+                                  bg-teal-100
+                                  text-teal-600
+                                `
+                : `
                                   flex
                                   h-11
                                   w-11
@@ -2181,7 +2625,8 @@ export default function MedicalDocumentsPage() {
                                   rounded-xl
                                   bg-blue-100
                                   text-blue-600
-                                "
+                                `
+            }
                               >
                                 <FileText
                                   className="
@@ -2236,12 +2681,21 @@ export default function MedicalDocumentsPage() {
 
 
                               <p
-                                className="
+                                className={
+              isDoctor
+                ? `
+                                  mt-1
+                                  text-xs
+                                  font-semibold
+                                  text-teal-600
+                                `
+                : `
                                   mt-1
                                   text-xs
                                   font-semibold
                                   text-blue-600
-                                "
+                                `
+            }
                               >
                                 {
                                   document.documentType
@@ -2334,7 +2788,23 @@ export default function MedicalDocumentsPage() {
                                   }
                                   target="_blank"
                                   rel="noreferrer"
-                                  className="
+                                  className={
+              isDoctor
+                ? `
+                                    inline-flex
+                                    items-center
+                                    gap-1.5
+                                    rounded-lg
+                                    bg-teal-600
+                                    px-3
+                                    py-2
+                                    text-xs
+                                    font-semibold
+                                    text-white
+                                    transition
+                                    hover:bg-teal-700
+                                  `
+                : `
                                     inline-flex
                                     items-center
                                     gap-1.5
@@ -2347,7 +2817,8 @@ export default function MedicalDocumentsPage() {
                                     text-white
                                     transition
                                     hover:bg-blue-700
-                                  "
+                                  `
+            }
                                 >
                                   <FileText
                                     className="
@@ -2362,7 +2833,27 @@ export default function MedicalDocumentsPage() {
 
                                 {doctorCanModify && (
                                   <label
-                                    className="
+                                    className={
+              isDoctor
+                ? `
+                                      inline-flex
+                                      cursor-pointer
+                                      items-center
+                                      gap-1.5
+                                      rounded-lg
+                                      border
+                                      border-slate-200
+                                      bg-white
+                                      px-3
+                                      py-2
+                                      text-xs
+                                      font-semibold
+                                      text-slate-700
+                                      transition
+                                      hover:border-teal-300
+                                      hover:text-teal-600
+                                    `
+                : `
                                       inline-flex
                                       cursor-pointer
                                       items-center
@@ -2379,7 +2870,8 @@ export default function MedicalDocumentsPage() {
                                       transition
                                       hover:border-blue-300
                                       hover:text-blue-600
-                                    "
+                                    `
+            }
                                   >
                                     {actionLoading
                                       === `replace-${document.id}`
@@ -2752,12 +3244,21 @@ export default function MedicalDocumentsPage() {
 
 
                                 <p
-                                  className="
+                                  className={
+              isDoctor
+                ? `
+                                    mt-1
+                                    text-xs
+                                    font-semibold
+                                    text-teal-600
+                                  `
+                : `
                                     mt-1
                                     text-xs
                                     font-semibold
                                     text-blue-600
-                                  "
+                                  `
+            }
                                 >
                                   {
                                     document.documentType
@@ -2850,7 +3351,26 @@ export default function MedicalDocumentsPage() {
                                     }
                                     target="_blank"
                                     rel="noreferrer"
-                                    className="
+                                    className={
+              isDoctor
+                ? `
+                                      inline-flex
+                                      items-center
+                                      gap-1.5
+                                      rounded-lg
+                                      border
+                                      border-slate-200
+                                      bg-white
+                                      px-3
+                                      py-2
+                                      text-xs
+                                      font-semibold
+                                      text-slate-700
+                                      transition
+                                      hover:border-teal-300
+                                      hover:text-teal-600
+                                    `
+                : `
                                       inline-flex
                                       items-center
                                       gap-1.5
@@ -2866,7 +3386,8 @@ export default function MedicalDocumentsPage() {
                                       transition
                                       hover:border-blue-300
                                       hover:text-blue-600
-                                    "
+                                    `
+            }
                                   >
                                     <FileText
                                       className="

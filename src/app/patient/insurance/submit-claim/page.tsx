@@ -7,20 +7,16 @@ import {
   FileText,
   ArrowLeft,
   Building2,
-  Calendar,
-  DollarSign,
   UploadCloud,
-  FileCheck,
   CheckCircle2,
   AlertTriangle,
   X,
-  File,
+  File as FileIcon,
   Shield,
   ShieldCheck,
-  Plus,
+  Lock,
 } from "lucide-react";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
+import { Card } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
@@ -36,6 +32,14 @@ const CLAIM_TYPES = [
   "Specialist Clinic Visit",
 ];
 
+const HOSPITAL_BRANCHES = [
+  "Colombo",
+  "Gampaha",
+  "Kalutara",
+  "Kegalle",
+  "Ratnapura",
+];
+
 export default function SubmitClaimPage() {
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -49,7 +53,8 @@ export default function SubmitClaimPage() {
   const [dateOfService, setDateOfService] = useState(
     new Date().toISOString().split("T")[0]
   );
-  const [facilityName, setFacilityName] = useState("");
+  const hospitalName = "HealthBridge Hospital";
+  const [branch, setBranch] = useState(HOSPITAL_BRANCHES[0]);
   const [treatmentDescription, setTreatmentDescription] = useState("");
   const [claimAmount, setClaimAmount] = useState<number | "">("");
   const [files, setFiles] = useState<File[]>([]);
@@ -140,8 +145,8 @@ export default function SubmitClaimPage() {
       showError("Please select an active policy to claim against.");
       return;
     }
-    if (!facilityName.trim()) {
-      showError("Please enter the provider or medical facility name.");
+    if (!hospitalName.trim()) {
+      showError("Please enter the hospital name.");
       return;
     }
     if (!treatmentDescription.trim()) {
@@ -154,7 +159,7 @@ export default function SubmitClaimPage() {
     }
     if (Number(claimAmount) > remainingLimit) {
       showError(
-        `Claim amount exceeds your remaining policy coverage of $${remainingLimit.toFixed(2)}.`
+        `Claim amount exceeds your remaining policy coverage of Rs. ${remainingLimit.toFixed(2)}.`
       );
       return;
     }
@@ -163,8 +168,8 @@ export default function SubmitClaimPage() {
       return;
     }
 
-    // Combine facility name and claim type into the treatment description for clear audit trail
-    const formattedDescription = `[${claimType}] at ${facilityName.trim()} on ${dateOfService}: ${treatmentDescription.trim()}`;
+    // Combine hospital name, branch, and claim type into the treatment description for clear audit trail
+    const formattedDescription = `[${claimType}] at ${hospitalName.trim()} (${branch} Branch) on ${dateOfService}: ${treatmentDescription.trim()}`;
 
     setSubmitting(true);
     try {
@@ -172,6 +177,8 @@ export default function SubmitClaimPage() {
         {
           policyId,
           treatmentDescription: formattedDescription,
+          hospitalName: hospitalName.trim(),
+          branch,
           claimAmount: Number(claimAmount),
         },
         files
@@ -181,9 +188,11 @@ export default function SubmitClaimPage() {
       setTimeout(() => {
         router.push("/patient/insurance");
       }, 1500);
-    } catch (err: any) {
+    } catch (err: unknown) {
       const msg =
-        err?.response?.data?.message || err?.message || "Failed to submit insurance claim.";
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        "Failed to submit insurance claim.";
       showError(msg);
       setSubmitting(false);
     }
@@ -298,21 +307,41 @@ export default function SubmitClaimPage() {
                 </div>
               </div>
 
-              {/* Row 2: Provider / Facility Name */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Provider / Facility Name <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    placeholder="e.g. City General Hospital, Asiri Medical, Nawaloka Hospital"
-                    value={facilityName}
-                    onChange={(e) => setFacilityName(e.target.value)}
-                    className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 font-medium"
+              {/* Row 2: Hospital Name & Hospital Branch */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Hospital Name <span className="text-red-500">*</span>
+                  </label>
+                  <div className="relative">
+                    <Building2 className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={hospitalName}
+                      readOnly
+                      tabIndex={-1}
+                      className="w-full pl-9 pr-9 py-2 text-xs rounded-xl border border-slate-200 bg-slate-100/90 text-slate-700 font-medium cursor-not-allowed select-none focus:outline-none"
+                    />
+                    <Lock className="w-3.5 h-3.5 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                    Hospital Branch <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={branch}
+                    onChange={(e) => setBranch(e.target.value)}
+                    className="w-full px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white focus:outline-none focus:border-blue-500"
                     required
-                  />
+                  >
+                    {HOSPITAL_BRANCHES.map((b) => (
+                      <option key={b} value={b}>
+                        {b} Branch
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -334,10 +363,10 @@ export default function SubmitClaimPage() {
               {/* Row 4: Estimated Amount */}
               <div>
                 <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                  Estimated Amount ($) <span className="text-red-500">*</span>
+                  Estimated Amount (Rs.) <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
-                  <DollarSign className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                  <span className="text-xs font-bold text-slate-400 absolute left-3 top-1/2 -translate-y-1/2">Rs.</span>
                   <input
                     type="number"
                     step="0.01"
@@ -346,13 +375,13 @@ export default function SubmitClaimPage() {
                     placeholder="0.00"
                     value={claimAmount}
                     onChange={(e) => setClaimAmount(e.target.value === "" ? "" : Number(e.target.value))}
-                    className="w-full pl-9 pr-4 py-2 text-xs font-bold text-slate-900 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
+                    className="w-full pl-10 pr-4 py-2 text-xs font-bold text-slate-900 rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
                     required
                   />
                 </div>
                 {claimAmount !== "" && Number(claimAmount) > 0 && (
                   <p className="text-[11px] text-slate-400 mt-1">
-                    Claim Amount: <strong className="text-slate-700">${Number(claimAmount).toFixed(2)}</strong>
+                    Claim Amount: <strong className="text-slate-700">Rs. {Number(claimAmount).toFixed(2)}</strong>
                   </p>
                 )}
               </div>
@@ -402,7 +431,7 @@ export default function SubmitClaimPage() {
                     <div className="pt-1 border-t border-blue-200/60 flex justify-between items-center text-[11px]">
                       <span className="text-slate-600">Remaining limit:</span>
                       <span className="font-extrabold text-blue-900">
-                        ${remainingLimit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                        Rs. {remainingLimit.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                       </span>
                     </div>
                   </div>
@@ -466,7 +495,7 @@ export default function SubmitClaimPage() {
                         className="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200/70 text-xs"
                       >
                         <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <File className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
+                          <FileIcon className="w-3.5 h-3.5 text-blue-500 flex-shrink-0" />
                           <span className="truncate font-medium text-slate-700">
                             {file.name}
                           </span>

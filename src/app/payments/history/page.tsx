@@ -146,8 +146,9 @@ export default function PaymentHistoryPage() {
               <option value="ALL">All Categories</option>
               <option value="CONSULTATION">Doctor Consultation</option>
               <option value="LAB_TEST">Laboratory Test</option>
+              <option value="X_RAY">X-Ray</option>
               <option value="CHECKUP">Medical Checkup</option>
-              <option value="INSURANCE">Insurance Copay</option>
+              <option value="PRESCRIPTION">Medical Prescription Bills</option>
               <option value="OTHER">Medical Service</option>
             </select>
 

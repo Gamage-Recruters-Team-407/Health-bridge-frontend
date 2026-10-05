@@ -1,19 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   FileText,
   CheckCircle2,
   Clock,
   AlertTriangle,
   ArrowRight,
-  ShieldCheck,
   TrendingUp,
   PlusCircle,
   FileCheck2,
   Building2,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   AreaChart,
@@ -54,13 +53,14 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 };
 
 export default function InsuranceOfficerDashboard() {
-  const router = useRouter();
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeClaim, setActiveClaim] = useState<InsuranceClaim | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
-  const loadData = () => {
+  const loadData = useCallback(() => {
     setLoading(true);
     insuranceService
       .getAllClaims()
@@ -70,13 +70,31 @@ export default function InsuranceOfficerDashboard() {
       })
       .catch(() => setError("Failed to load claims data from server"))
       .finally(() => setLoading(false));
-  };
-
-  useEffect(() => {
-    loadData();
   }, []);
 
-  const safeClaims = Array.isArray(claims) ? claims : [];
+  useEffect(() => {
+    let isMounted = true;
+    insuranceService
+      .getAllClaims()
+      .then((data) => {
+        if (isMounted) {
+          setClaims(Array.isArray(data) ? data : []);
+          setError(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) setError("Failed to load claims data from server");
+      })
+      .finally(() => {
+        if (isMounted) setLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const safeClaims = useMemo(() => (Array.isArray(claims) ? claims : []), [claims]);
 
   // Metrics Calculations
   const totalClaimsCount = safeClaims.length;
@@ -86,14 +104,20 @@ export default function InsuranceOfficerDashboard() {
 
   const approvalRate = totalClaimsCount > 0 ? Math.round((approvedCount / totalClaimsCount) * 100) : 0;
 
-  // Pending claims queue (up to 5 recent)
-  const pendingClaims = useMemo(
+  // Pending claims queue with 6 items per page
+  const allPendingClaims = useMemo(
     () =>
       safeClaims
         .filter((c) => c.status === "SUBMITTED" || c.status === "UNDER_REVIEW")
-        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime())
-        .slice(0, 5),
+        .sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()),
     [safeClaims]
+  );
+
+  const totalPages = Math.ceil(allPendingClaims.length / pageSize) || 1;
+
+  const paginatedPendingClaims = useMemo(
+    () => allPendingClaims.slice((currentPage - 1) * pageSize, currentPage * pageSize),
+    [allPendingClaims, currentPage]
   );
 
   // Status Split Data for Donut Chart (Strictly dynamic from database)
@@ -147,8 +171,6 @@ export default function InsuranceOfficerDashboard() {
     }));
   }, [safeClaims]);
 
-  if (loading) return <Loader />;
-
   return (
     <DashboardLayout pageTitle="Insurance" userRole="INSURANCE_OFFICER">
       <div className="space-y-6">
@@ -170,52 +192,25 @@ export default function InsuranceOfficerDashboard() {
 
           <div className="flex flex-wrap items-center gap-2">
             <Link href="/insurance-officer/policies/new">
-              <Button size="sm" variant="outline" className="gap-1.5">
-                <PlusCircle className="w-4 h-4" />
-                <span>New Policy</span>
+              <Button
+                size="sm"
+                variant="outline"
+                leftIcon={<PlusCircle className="w-4 h-4" />}
+                className="whitespace-nowrap"
+              >
+                New Policy
               </Button>
             </Link>
             <Link href="/insurance-officer/claims">
-              <Button size="sm" className="gap-1.5">
-                <FileCheck2 className="w-4 h-4" />
-                <span>All Claims</span>
+              <Button
+                size="sm"
+                leftIcon={<FileCheck2 className="w-4 h-4" />}
+                className="whitespace-nowrap"
+              >
+                All Claims
               </Button>
             </Link>
           </div>
-        </div>
-
-        {/* Tab Sub-Navigation (Matching Figma Prototype) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Reports
-          </Link>
         </div>
 
         {error && (
@@ -227,19 +222,19 @@ export default function InsuranceOfficerDashboard() {
           </div>
         )}
 
-        {/* Stat Cards Grid (100% Live DB Data) */}
+        {/* Stat Cards Grid (Instant Render with Live DB Data) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <StatCard
             title="Total Claims"
-            value={totalClaimsCount.toLocaleString()}
+            value={loading ? "—" : totalClaimsCount.toLocaleString()}
             icon={<FileText className="w-5 h-5 text-blue-600" />}
             iconBgColor="bg-blue-50"
-            subtitle={`${safeClaims.length} recorded`}
+            subtitle={loading ? "Fetching data..." : `${safeClaims.length} recorded`}
           />
 
           <StatCard
             title="Approved"
-            value={approvedCount.toLocaleString()}
+            value={loading ? "—" : approvedCount.toLocaleString()}
             icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
             iconBgColor="bg-emerald-50"
             trend={{
@@ -251,18 +246,18 @@ export default function InsuranceOfficerDashboard() {
 
           <StatCard
             title="Pending Review"
-            value={pendingCount.toLocaleString()}
+            value={loading ? "—" : pendingCount.toLocaleString()}
             icon={<Clock className="w-5 h-5 text-amber-600" />}
             iconBgColor="bg-amber-50"
-            subtitle={pendingCount > 0 ? "Awaiting action" : "No pending claims"}
+            subtitle={loading ? "Checking queue..." : pendingCount > 0 ? "Awaiting action" : "No pending claims"}
           />
 
           <StatCard
             title="Flagged / Rejected"
-            value={rejectedCount.toLocaleString()}
+            value={loading ? "—" : rejectedCount.toLocaleString()}
             icon={<AlertTriangle className="w-5 h-5 text-red-600" />}
             iconBgColor="bg-red-50"
-            subtitle={rejectedCount > 0 ? "Needs attention" : "Zero rejected claims"}
+            subtitle={loading ? "Checking status..." : rejectedCount > 0 ? "Needs attention" : "Zero rejected claims"}
           />
         </div>
 
@@ -284,58 +279,64 @@ export default function InsuranceOfficerDashboard() {
                 </div>
                 <div className="flex items-center gap-1.5">
                   <span className="w-2.5 h-2.5 rounded-full bg-cyan-400" />
-                  <span className="text-slate-600">Payout ($k)</span>
+                  <span className="text-slate-600">Payout (Rs. &apos;000)</span>
                 </div>
               </div>
             </CardHeader>
 
             <CardContent className="pt-4">
-              <div className="h-64 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <defs>
-                      <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
-                      </linearGradient>
-                      <linearGradient id="colorPayout" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
-                    <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                    <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "#FFFFFF",
-                        borderRadius: "12px",
-                        boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
-                        border: "1px solid #E2E8F0",
-                        fontSize: "12px",
-                      }}
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="volume"
-                      name="Claims Volume"
-                      stroke="#3B82F6"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#colorVolume)"
-                    />
-                    <Area
-                      type="monotone"
-                      dataKey="payout"
-                      name="Payout ($k)"
-                      stroke="#06B6D4"
-                      strokeWidth={2.5}
-                      fillOpacity={1}
-                      fill="url(#colorPayout)"
-                    />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </div>
+              {loading ? (
+                <div className="h-64 w-full flex items-center justify-center">
+                  <Loader />
+                </div>
+              ) : (
+                <div className="h-64 w-full">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart data={monthlyTrendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                      <defs>
+                        <linearGradient id="colorVolume" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.0} />
+                        </linearGradient>
+                        <linearGradient id="colorPayout" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#06B6D4" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#06B6D4" stopOpacity={0.0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#F1F5F9" vertical={false} />
+                      <XAxis dataKey="month" stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                      <YAxis stroke="#94A3B8" fontSize={11} tickLine={false} axisLine={false} />
+                      <Tooltip
+                        contentStyle={{
+                          backgroundColor: "#FFFFFF",
+                          borderRadius: "12px",
+                          boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1)",
+                          border: "1px solid #E2E8F0",
+                          fontSize: "12px",
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="volume"
+                        name="Claims Volume"
+                        stroke="#3B82F6"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorVolume)"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="payout"
+                        name="Payout (Rs. '000)"
+                        stroke="#06B6D4"
+                        strokeWidth={2.5}
+                        fillOpacity={1}
+                        fill="url(#colorPayout)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -349,7 +350,11 @@ export default function InsuranceOfficerDashboard() {
             </CardHeader>
 
             <CardContent className="pt-2">
-              {totalClaimsCount === 0 ? (
+              {loading ? (
+                <div className="h-56 w-full flex items-center justify-center">
+                  <Loader />
+                </div>
+              ) : totalClaimsCount === 0 ? (
                 <div className="h-56 w-full flex flex-col items-center justify-center text-center p-4">
                   <div className="w-16 h-16 rounded-full border-4 border-dashed border-slate-200 flex items-center justify-center mb-3">
                     <Clock className="w-6 h-6 text-slate-300" />
@@ -378,7 +383,7 @@ export default function InsuranceOfficerDashboard() {
                           ))}
                         </Pie>
                         <Tooltip
-                          formatter={(value: any) => [`${value} claims`, "Count"]}
+                          formatter={(value) => [`${value} claims`, "Count"]}
                           contentStyle={{
                             backgroundColor: "#FFFFFF",
                             borderRadius: "12px",
@@ -441,11 +446,19 @@ export default function InsuranceOfficerDashboard() {
                   <TableHead>Claim Amount</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Action</TableHead>
+                  <TableHead className="text-center">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pendingClaims.length === 0 ? (
+                {loading ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="h-44 text-center">
+                      <div className="flex items-center justify-center py-8">
+                        <Loader />
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ) : paginatedPendingClaims.length === 0 ? (
                   <TableEmpty
                     colSpan={7}
                     message={
@@ -455,7 +468,7 @@ export default function InsuranceOfficerDashboard() {
                     }
                   />
                 ) : (
-                  pendingClaims.map((claim) => (
+                  paginatedPendingClaims.map((claim) => (
                     <TableRow key={claim.id}>
                       <TableCell className="font-semibold text-blue-600">
                         {claim.claimNumber}
@@ -467,7 +480,7 @@ export default function InsuranceOfficerDashboard() {
                         {claim.treatmentDescription || "General Medical Treatment"}
                       </TableCell>
                       <TableCell className="font-bold text-[#0A2540]">
-                        ${claim.claimAmount?.toFixed(2)}
+                        Rs. {claim.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell className="text-slate-500 text-xs">
                         {claim.submittedAt ? new Date(claim.submittedAt).toLocaleDateString() : "Recent"}
@@ -475,14 +488,19 @@ export default function InsuranceOfficerDashboard() {
                       <TableCell>
                         <Badge variant={statusVariant[claim.status]}>{claim.status}</Badge>
                       </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          <Link href={`/insurance-officer/claims/${claim.id}`}>
-                            <Button size="sm" variant="outline">
+                      <TableCell className="text-center">
+                        <div className="flex flex-col items-center justify-center gap-1.5 py-1">
+                          <Link href={`/insurance-officer/claims/${claim.id}`} className="w-full max-w-[80px]">
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                              className="h-7 text-xs px-2.5 min-w-[76px] w-full whitespace-nowrap"
+                            >
                               View
                             </Button>
                           </Link>
-                          <Button size="sm" onClick={() => setActiveClaim(claim)}>
+                          <Button size="sm" onClick={() => setActiveClaim(claim)} className="h-7 text-xs px-3 min-w-[76px] w-full max-w-[80px]">
                             Review
                           </Button>
                         </div>
@@ -492,6 +510,49 @@ export default function InsuranceOfficerDashboard() {
                 )}
               </TableBody>
             </Table>
+
+            {/* 6-Record Pagination Controls matching Screenshot 2 */}
+            {allPendingClaims.length > 0 && totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                <div>
+                  Showing <span className="font-semibold text-[#0A2540]">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                  <span className="font-semibold text-[#0A2540]">{Math.min(currentPage * pageSize, allPendingClaims.length)}</span> of{" "}
+                  <span className="font-semibold text-[#0A2540]">{allPendingClaims.length}</span> pending claims
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                  >
+                    Previous
+                  </button>
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

@@ -413,16 +413,27 @@ export default function MedicalRecordDetailsPage({
 
 
   /*
+   * Doctor workspace colour theme.
+   *
+   * Only DOCTOR users receive the teal/green Medical Records
+   * appearance. Patient/Admin/Super Admin keep the existing
+   * blue/indigo appearance.
+   */
+  const isDoctor =
+    currentUser?.role
+    === "DOCTOR";
+
+
+  /*
    * Doctor can modify/archive only
    * a record created by that doctor.
    */
   const canEdit =
     Boolean(
       record
-      && currentUser?.role
-        === "DOCTOR"
+      && isDoctor
       && record.doctorId
-        === currentUser.id
+        === currentUser?.id
     );
 
 
@@ -629,7 +640,18 @@ export default function MedicalRecordDetailsPage({
               href={
                 backHref
               }
-              className="
+              className={
+              isDoctor
+                ? `
+                inline-flex
+                items-center
+                gap-2
+                text-sm
+                font-semibold
+                text-teal-600
+                hover:text-teal-700
+              `
+                : `
                 inline-flex
                 items-center
                 gap-2
@@ -637,7 +659,8 @@ export default function MedicalRecordDetailsPage({
                 font-semibold
                 text-blue-600
                 hover:text-blue-700
-              "
+              `
+            }
             >
               <ArrowLeft
                 className="
@@ -692,7 +715,22 @@ export default function MedicalRecordDetailsPage({
                   href={
                     editHref
                   }
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    bg-teal-600
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-semibold
+                    text-white
+                    hover:bg-teal-700
+                  `
+                : `
                     inline-flex
                     items-center
                     gap-2
@@ -704,7 +742,8 @@ export default function MedicalRecordDetailsPage({
                     font-semibold
                     text-white
                     hover:bg-blue-700
-                  "
+                  `
+            }
                 >
                   <Pencil
                     className="
@@ -725,7 +764,24 @@ export default function MedicalRecordDetailsPage({
                   href={
                     diagnosesHref
                   }
-                  className="
+                  className={
+              isDoctor
+                ? `
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-teal-200
+                    bg-teal-50
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-semibold
+                    text-teal-700
+                    hover:bg-teal-100
+                  `
+                : `
                     inline-flex
                     items-center
                     gap-2
@@ -739,7 +795,8 @@ export default function MedicalRecordDetailsPage({
                     font-semibold
                     text-indigo-700
                     hover:bg-indigo-100
-                  "
+                  `
+            }
                 >
                   <Stethoscope
                     className="
@@ -852,7 +909,24 @@ export default function MedicalRecordDetailsPage({
                 href={
                   historyHref
                 }
-                className="
+                className={
+              isDoctor
+                ? `
+                  inline-flex
+                  items-center
+                  rounded-xl
+                  border
+                  border-slate-200
+                  bg-white
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  hover:border-teal-300
+                  hover:text-teal-600
+                `
+                : `
                   inline-flex
                   items-center
                   rounded-xl
@@ -866,7 +940,8 @@ export default function MedicalRecordDetailsPage({
                   text-slate-700
                   hover:border-blue-300
                   hover:text-blue-600
-                "
+                `
+            }
               >
                 Full History
               </Link>
@@ -876,7 +951,24 @@ export default function MedicalRecordDetailsPage({
                 href={
                   documentsHref
                 }
-                className="
+                className={
+              isDoctor
+                ? `
+                  inline-flex
+                  items-center
+                  rounded-xl
+                  border
+                  border-slate-200
+                  bg-white
+                  px-4
+                  py-2.5
+                  text-sm
+                  font-semibold
+                  text-slate-700
+                  hover:border-teal-300
+                  hover:text-teal-600
+                `
+                : `
                   inline-flex
                   items-center
                   rounded-xl
@@ -890,7 +982,8 @@ export default function MedicalRecordDetailsPage({
                   text-slate-700
                   hover:border-blue-300
                   hover:text-blue-600
-                "
+                `
+            }
               >
                 Documents
               </Link>
@@ -988,12 +1081,21 @@ export default function MedicalRecordDetailsPage({
             "
           >
             <Loader2
-              className="
+              className={
+              isDoctor
+                ? `
+                h-8
+                w-8
+                animate-spin
+                text-teal-600
+              `
+                : `
                 h-8
                 w-8
                 animate-spin
                 text-blue-600
-              "
+              `
+            }
             />
           </div>
 
@@ -1042,7 +1144,18 @@ export default function MedicalRecordDetailsPage({
                       "
                     >
                       <span
-                        className="
+                        className={
+              isDoctor
+                ? `
+                          rounded-full
+                          bg-teal-50
+                          px-3
+                          py-1
+                          text-xs
+                          font-semibold
+                          text-teal-700
+                        `
+                : `
                           rounded-full
                           bg-blue-50
                           px-3
@@ -1050,7 +1163,8 @@ export default function MedicalRecordDetailsPage({
                           text-xs
                           font-semibold
                           text-blue-700
-                        "
+                        `
+            }
                       >
                         {record.recordType}
                       </span>
@@ -1140,11 +1254,19 @@ export default function MedicalRecordDetailsPage({
                         "
                       >
                         <CalendarDays
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            h-4
+                            w-4
+                            text-teal-600
+                          `
+                : `
                             h-4
                             w-4
                             text-blue-600
-                          "
+                          `
+            }
                         />
 
                         Visit Date
@@ -1181,11 +1303,19 @@ export default function MedicalRecordDetailsPage({
                         "
                       >
                         <Building2
-                          className="
+                          className={
+              isDoctor
+                ? `
+                            h-4
+                            w-4
+                            text-teal-600
+                          `
+                : `
                             h-4
                             w-4
                             text-blue-600
-                          "
+                          `
+            }
                         />
 
                         Hospital
@@ -1236,11 +1366,19 @@ export default function MedicalRecordDetailsPage({
                     "
                   >
                     <UserRound
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        h-5
+                        w-5
+                        text-teal-600
+                      `
+                : `
                         h-5
                         w-5
                         text-blue-600
-                      "
+                      `
+            }
                     />
 
                     <div>
@@ -1289,11 +1427,19 @@ export default function MedicalRecordDetailsPage({
                     "
                   >
                     <Stethoscope
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        h-5
+                        w-5
+                        text-teal-600
+                      `
+                : `
                         h-5
                         w-5
                         text-indigo-600
-                      "
+                      `
+            }
                     />
 
                     <div>
@@ -1354,11 +1500,19 @@ export default function MedicalRecordDetailsPage({
                     "
                   >
                     <Stethoscope
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        h-5
+                        w-5
+                        text-teal-600
+                      `
+                : `
                         h-5
                         w-5
                         text-indigo-600
-                      "
+                      `
+            }
                     />
 
                     <h2
@@ -1372,7 +1526,18 @@ export default function MedicalRecordDetailsPage({
                     </h2>
 
                     <span
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        rounded-full
+                        bg-teal-50
+                        px-2.5
+                        py-1
+                        text-xs
+                        font-bold
+                        text-teal-700
+                      `
+                : `
                         rounded-full
                         bg-indigo-50
                         px-2.5
@@ -1380,7 +1545,8 @@ export default function MedicalRecordDetailsPage({
                         text-xs
                         font-bold
                         text-indigo-700
-                      "
+                      `
+            }
                     >
                       {diagnoses.length}
                     </span>
@@ -1393,7 +1559,21 @@ export default function MedicalRecordDetailsPage({
                       href={
                         diagnosesHref
                       }
-                      className="
+                      className={
+              isDoctor
+                ? `
+                        rounded-xl
+                        border
+                        border-teal-200
+                        bg-teal-50
+                        px-3
+                        py-2
+                        text-xs
+                        font-semibold
+                        text-teal-700
+                        hover:bg-teal-100
+                      `
+                : `
                         rounded-xl
                         border
                         border-indigo-200
@@ -1404,7 +1584,8 @@ export default function MedicalRecordDetailsPage({
                         font-semibold
                         text-indigo-700
                         hover:bg-indigo-100
-                      "
+                      `
+            }
                     >
                       Manage Diagnoses
                     </Link>
@@ -1746,11 +1927,19 @@ export default function MedicalRecordDetailsPage({
                   "
                 >
                   <FileText
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      h-5
+                      w-5
+                      text-teal-600
+                    `
+                : `
                       h-5
                       w-5
                       text-blue-600
-                    "
+                    `
+            }
                   />
 
                   <h2
@@ -1851,12 +2040,21 @@ export default function MedicalRecordDetailsPage({
                     href={
                       documentsHref
                     }
-                    className="
+                    className={
+              isDoctor
+                ? `
+                      text-sm
+                      font-semibold
+                      text-teal-600
+                      hover:text-teal-700
+                    `
+                : `
                       text-sm
                       font-semibold
                       text-blue-600
                       hover:text-blue-700
-                    "
+                    `
+            }
                   >
                     {canEdit
                       ? "Upload / View documents"
@@ -1918,11 +2116,19 @@ export default function MedicalRecordDetailsPage({
                               "
                             >
                               <FileText
-                                className="
+                                className={
+              isDoctor
+                ? `
+                                  h-5
+                                  w-5
+                                  text-teal-600
+                                `
+                : `
                                   h-5
                                   w-5
                                   text-blue-600
-                                "
+                                `
+            }
                               />
 
                               <span
@@ -1958,12 +2164,21 @@ export default function MedicalRecordDetailsPage({
 
 
                             <p
-                              className="
+                              className={
+              isDoctor
+                ? `
+                                mt-1
+                                text-xs
+                                font-semibold
+                                text-teal-600
+                              `
+                : `
                                 mt-1
                                 text-xs
                                 font-semibold
                                 text-blue-600
-                              "
+                              `
+            }
                             >
                               {document.documentType}
                             </p>
@@ -1991,7 +2206,21 @@ export default function MedicalRecordDetailsPage({
                               }
                               target="_blank"
                               rel="noreferrer"
-                              className="
+                              className={
+              isDoctor
+                ? `
+                                mt-3
+                                inline-flex
+                                rounded-lg
+                                bg-teal-600
+                                px-3
+                                py-2
+                                text-xs
+                                font-semibold
+                                text-white
+                                hover:bg-teal-700
+                              `
+                : `
                                 mt-3
                                 inline-flex
                                 rounded-lg
@@ -2002,7 +2231,8 @@ export default function MedicalRecordDetailsPage({
                                 font-semibold
                                 text-white
                                 hover:bg-blue-700
-                              "
+                              `
+            }
                             >
                               Open Document
                             </a>

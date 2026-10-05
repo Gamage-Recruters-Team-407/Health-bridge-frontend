@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim } from "@/types/insurance";
-import { CheckCircle2, AlertTriangle, ShieldCheck, XCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 
 interface ClaimDecisionModalProps {
   claim: InsuranceClaim;
@@ -71,8 +70,11 @@ export default function ClaimDecisionModal({
         rejectionReason: !isApprove ? rejectionText : undefined,
       });
       onDecided();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Failed to submit claim decision.";
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        "Failed to submit claim decision.";
       setErrorMessage(msg);
     } finally {
       setSubmitting(false);
@@ -107,7 +109,7 @@ export default function ClaimDecisionModal({
           <div className="flex justify-between items-center">
             <span className="text-slate-500 font-medium">Claimed Amount:</span>
             <span className="font-bold text-slate-900 text-sm">
-              ${(claim.claimAmount || 0).toFixed(2)}
+              Rs. ${(claim.claimAmount || 0).toFixed(2)}
             </span>
           </div>
           {claim.providerName && (
@@ -156,7 +158,7 @@ export default function ClaimDecisionModal({
           <div className="space-y-3 pt-1">
             <div>
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">
-                Approved Payout Amount ($) <span className="text-red-500">*</span>
+                Approved Payout Amount (Rs.) <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -169,7 +171,7 @@ export default function ClaimDecisionModal({
                 required
               />
               <p className="text-[11px] text-slate-400 mt-1">
-                Max allowable: ${(claim.claimAmount || 0).toFixed(2)}
+                Max allowable: Rs. ${(claim.claimAmount || 0).toFixed(2)}
               </p>
             </div>
           </div>

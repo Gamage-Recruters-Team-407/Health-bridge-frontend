@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Bed, BedStatus, WardType, PatientInfo, DepartmentOccupancy, BedOverviewStats } from '@/types/bed';
 import { departmentService } from '@/services/departmentService';
+import { branchService, Branch } from '@/services/branchService';
 import { Department } from '@/types/department';
 import {
   Bed as BedIcon,
@@ -46,6 +47,8 @@ export default function BedManagementPage() {
   const [backendStats, setBackendStats] = useState<BedOverviewStats | null>(null);
   const [deptOccupancies, setDeptOccupancies] = useState<DepartmentOccupancy[]>([]);
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('All');
 
   // Pagination State
   const [currentPage, setCurrentPage] = useState(1);
@@ -173,6 +176,7 @@ export default function BedManagementPage() {
   // Filtered Beds
   const filteredBeds = useMemo(() => {
     return beds.filter((bed) => {
+      const matchesBranch = selectedBranch === 'All' ? true : (bed.branchCode === selectedBranch || bed.branchId === selectedBranch);
       const matchesWard = bed.ward === selectedWard;
       const matchesStatus = statusFilter === 'All' ? true : bed.status === statusFilter;
       const matchesSearch =
@@ -182,9 +186,9 @@ export default function BedManagementPage() {
         (bed.patient?.lastName.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (bed.patient?.id.toLowerCase() || '').includes(searchTerm.toLowerCase());
 
-      return matchesWard && matchesStatus && matchesSearch;
+      return matchesBranch && matchesWard && matchesStatus && matchesSearch;
     });
-  }, [beds, selectedWard, statusFilter, searchTerm]);
+  }, [beds, selectedBranch, selectedWard, statusFilter, searchTerm]);
 
   // Pagination Logic
   const totalPages = Math.ceil(filteredBeds.length / itemsPerPage) || 1;
@@ -453,8 +457,28 @@ export default function BedManagementPage() {
             />
           </div>
 
-          {/* Right: Status Filter Pills + View Toggle */}
+          {/* Right: Branch Filter + Status Filter Pills + View Toggle */}
           <div className="flex items-center justify-between md:justify-end gap-3 flex-wrap">
+            {/* Branch Selector */}
+            <div className="relative">
+              <select
+                value={selectedBranch}
+                onChange={(e) => {
+                  setSelectedBranch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="pl-8 pr-8 py-1.5 bg-slate-100 hover:bg-slate-200/70 text-slate-700 text-xs font-semibold rounded-full border border-slate-200 cursor-pointer outline-none transition-colors truncate"
+              >
+                <option value="All">Branch: All Branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.branchCode}>
+                    Branch: {b.branchName} ({b.branchCode})
+                  </option>
+                ))}
+              </select>
+              <Building className="w-3.5 h-3.5 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 scrollbar-none">
               {(['All', 'Available', 'Reserved', 'Occupied', 'Maintenance', 'Cleaning'] as const).map(
                 (status) => (

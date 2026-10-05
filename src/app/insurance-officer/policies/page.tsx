@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,17 +9,14 @@ import {
   ShieldAlert,
   Search,
   Plus,
-  Filter,
   DollarSign,
   Building2,
   Calendar,
   User,
-  AlertCircle,
   CheckCircle2,
   AlertTriangle,
   ArrowUpRight,
   RefreshCw,
-  MoreVertical,
   PauseCircle,
   PlayCircle,
   XCircle,
@@ -60,6 +57,8 @@ export default function PolicyDirectoryPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [providerFilter, setProviderFilter] = useState<string>("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   // Quick verify modal/box
   const [quickSearchNumber, setQuickSearchNumber] = useState("");
@@ -80,8 +79,8 @@ export default function PolicyDirectoryPage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const loadPolicies = async () => {
-    setLoading(true);
+  const loadPolicies = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     try {
       const data = await insuranceService.getAllPolicies();
       setPolicies(data);
@@ -91,10 +90,32 @@ export default function PolicyDirectoryPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadPolicies();
+    let isMounted = true;
+    insuranceService
+      .getAllPolicies()
+      .then((data) => {
+        if (isMounted) {
+          setPolicies(data);
+          setErrorMessage(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage("Failed to fetch policies from the server.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   // Quick verify lookup
@@ -158,6 +179,13 @@ export default function PolicyDirectoryPage() {
     });
   }, [policies, searchQuery, statusFilter, providerFilter]);
 
+  // Paginated policies (6 per page)
+  const totalPages = Math.ceil(filteredPolicies.length / pageSize) || 1;
+  const paginatedPolicies = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredPolicies.slice(start, start + pageSize);
+  }, [filteredPolicies, currentPage, pageSize]);
+
   // Live Metrics
   const metrics = useMemo(() => {
     const total = policies.length;
@@ -201,55 +229,21 @@ export default function PolicyDirectoryPage() {
             <Button
               variant="outline"
               size="sm"
-              onClick={loadPolicies}
-              className="gap-1.5 text-slate-600"
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
+              onClick={() => loadPolicies(true)}
+              className="text-slate-600 whitespace-nowrap"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
+              Refresh
             </Button>
             <Button
               size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => router.push("/insurance-officer/policies/new")}
-              className="gap-1.5 shadow-sm"
+              className="shadow-sm whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
-              <span>Register New Policy</span>
+              Register New Policy
             </Button>
           </div>
-        </div>
-
-        {/* Tab Sub-Navigation (Matching Suite Design) */}
-        <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-          <Link
-            href="/insurance-officer/dashboard"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Dashboard
-          </Link>
-          <Link
-            href="/insurance-officer/claims"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Claims
-          </Link>
-          <Link
-            href="/insurance-officer/policies"
-            className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-          >
-            Policies
-          </Link>
-          <Link
-            href="/fraud-detection"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Fraud Detection
-          </Link>
-          <Link
-            href="/insurance-officer/reports"
-            className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-          >
-            Reports
-          </Link>
         </div>
 
         {/* Feedback Banners */}
@@ -282,13 +276,13 @@ export default function PolicyDirectoryPage() {
           />
           <StatCard
             title="Total Coverage Pool"
-            value={`$${metrics.totalCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`Rs. ${metrics.totalCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle="Underwritten liability limit"
             icon={<DollarSign className="w-5 h-5 text-indigo-600" />}
           />
           <StatCard
             title="Utilized Coverage"
-            value={`$${metrics.totalUsed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+            value={`Rs. ${metrics.totalUsed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
             subtitle={`${metrics.utilizationRate}% overall pool utilization`}
             icon={<ShieldAlert className="w-5 h-5 text-amber-600" />}
           />
@@ -341,15 +335,15 @@ export default function PolicyDirectoryPage() {
               </div>
               <div className="flex items-center gap-4 text-slate-600">
                 <span>
-                  Limit: <strong className="text-slate-900">${quickSearchResult.coverageAmount?.toFixed(2)}</strong>
+                  Limit: <strong className="text-slate-900">Rs. {quickSearchResult.coverageAmount?.toFixed(2)}</strong>
                 </span>
                 <span>
-                  Used: <strong className="text-amber-600">${quickSearchResult.coverageUsed?.toFixed(2)}</strong>
+                  Used: <strong className="text-amber-600">Rs. {quickSearchResult.coverageUsed?.toFixed(2)}</strong>
                 </span>
                 <span>
                   Remaining:{" "}
                   <strong className="text-emerald-600">
-                    ${(quickSearchResult.coverageAmount - quickSearchResult.coverageUsed).toFixed(2)}
+                    Rs. {(quickSearchResult.coverageAmount - quickSearchResult.coverageUsed).toFixed(2)}
                   </strong>
                 </span>
                 <Button
@@ -375,7 +369,10 @@ export default function PolicyDirectoryPage() {
                 type="text"
                 placeholder="Search by policy #, patient ID, provider, or plan type..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setCurrentPage(1);
+                }}
                 className="w-full pl-9 pr-4 py-2 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500 transition-colors"
               />
             </div>
@@ -386,7 +383,10 @@ export default function PolicyDirectoryPage() {
                 {["ALL", "ACTIVE", "SUSPENDED", "EXPIRED", "CANCELLED"].map((status) => (
                   <button
                     key={status}
-                    onClick={() => setStatusFilter(status)}
+                    onClick={() => {
+                      setStatusFilter(status);
+                      setCurrentPage(1);
+                    }}
                     className={`px-3 py-1.5 rounded-lg transition-all ${
                       statusFilter === status
                         ? "bg-white text-blue-600 shadow-sm font-bold"
@@ -402,7 +402,10 @@ export default function PolicyDirectoryPage() {
               {uniqueProviders.length > 0 && (
                 <select
                   value={providerFilter}
-                  onChange={(e) => setProviderFilter(e.target.value)}
+                  onChange={(e) => {
+                    setProviderFilter(e.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="px-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-white text-slate-700 focus:outline-none focus:border-blue-500"
                 >
                   <option value="ALL">All Providers</option>
@@ -458,11 +461,11 @@ export default function PolicyDirectoryPage() {
                     <TableHead>Coverage & Utilization</TableHead>
                     <TableHead>Validity Period</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="text-center">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredPolicies.map((p) => {
+                  {paginatedPolicies.map((p) => {
                     const usedPercent =
                       p.coverageAmount > 0
                         ? Math.min(100, Math.round(((p.coverageUsed || 0) / p.coverageAmount) * 100))
@@ -510,7 +513,7 @@ export default function PolicyDirectoryPage() {
                           <div className="space-y-1 text-xs">
                             <div className="flex justify-between items-center text-[11px]">
                               <span className="font-semibold text-slate-700">
-                                ${(p.coverageUsed || 0).toLocaleString()} / ${p.coverageAmount?.toLocaleString()}
+                                Rs. {(p.coverageUsed || 0).toLocaleString()} / Rs. {p.coverageAmount?.toLocaleString()}
                               </span>
                               <span
                                 className={`font-bold ${
@@ -533,11 +536,11 @@ export default function PolicyDirectoryPage() {
                                     ? "bg-amber-500"
                                     : "bg-emerald-500"
                                 }`}
-                                style={{ width: `${usedPercent}%` }}
-                              />
+                              style={{ width: `${usedPercent}%` }}
+                            />
                             </div>
                             <p className="text-[10px] text-slate-400">
-                              Remaining: ${remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                              Remaining: Rs. {remaining.toLocaleString(undefined, { minimumFractionDigits: 2 })}
                             </p>
                           </div>
                         </TableCell>
@@ -562,17 +565,17 @@ export default function PolicyDirectoryPage() {
                           <Badge variant={statusVariant[p.status]}>{p.status}</Badge>
                         </TableCell>
 
-                        {/* Actions */}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        {/* Actions (Centered, arranged vertically) */}
+                        <TableCell className="text-center">
+                          <div className="flex flex-col items-center justify-center gap-1.5 py-1">
                             <Button
                               size="sm"
                               variant="outline"
+                              rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
                               onClick={() => router.push(`/insurance-officer/policies/${p.id}`)}
-                              className="h-8 text-xs px-2.5 gap-1"
+                              className="h-7 text-xs px-2.5 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                             >
-                              <span>View</span>
-                              <ArrowUpRight className="w-3 h-3" />
+                              View
                             </Button>
 
                             {/* Status Toggle Quick Buttons */}
@@ -581,11 +584,12 @@ export default function PolicyDirectoryPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={updatingId === p.id}
+                                leftIcon={<PauseCircle className="w-3.5 h-3.5" />}
                                 onClick={() => handleStatusChange(p.id, "SUSPENDED")}
-                                className="h-8 text-xs px-2 text-amber-700 hover:bg-amber-50 border-amber-200"
+                                className="h-7 text-xs px-2 text-amber-700 hover:bg-amber-50 border-amber-200 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                                 title="Suspend Policy"
                               >
-                                <PauseCircle className="w-3.5 h-3.5" />
+                                Suspend
                               </Button>
                             )}
 
@@ -594,11 +598,12 @@ export default function PolicyDirectoryPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={updatingId === p.id}
+                                leftIcon={<PlayCircle className="w-3.5 h-3.5" />}
                                 onClick={() => handleStatusChange(p.id, "ACTIVE")}
-                                className="h-8 text-xs px-2 text-emerald-700 hover:bg-emerald-50 border-emerald-200"
+                                className="h-7 text-xs px-2 text-emerald-700 hover:bg-emerald-50 border-emerald-200 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                                 title="Reactivate Policy"
                               >
-                                <PlayCircle className="w-3.5 h-3.5" />
+                                Activate
                               </Button>
                             )}
 
@@ -607,11 +612,12 @@ export default function PolicyDirectoryPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={updatingId === p.id}
+                                leftIcon={<XCircle className="w-3.5 h-3.5" />}
                                 onClick={() => handleStatusChange(p.id, "CANCELLED")}
-                                className="h-8 text-xs px-2 text-rose-700 hover:bg-rose-50 border-rose-200"
+                                className="h-7 text-xs px-2 text-rose-700 hover:bg-rose-50 border-rose-200 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                                 title="Cancel Policy"
                               >
-                                <XCircle className="w-3.5 h-3.5" />
+                                Cancel
                               </Button>
                             )}
                           </div>
@@ -621,6 +627,62 @@ export default function PolicyDirectoryPage() {
                   })}
                 </TableBody>
               </Table>
+            )}
+
+            {/* Pagination Controls (Matching Screenshot 2) */}
+            {filteredPolicies.length > 0 && totalPages > 1 && (
+              <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                <div>
+                  Showing{" "}
+                  <span className="font-semibold text-[#0A2540]">
+                    {(currentPage - 1) * pageSize + 1}
+                  </span>{" "}
+                  to{" "}
+                  <span className="font-semibold text-[#0A2540]">
+                    {Math.min(currentPage * pageSize, filteredPolicies.length)}
+                  </span>{" "}
+                  of{" "}
+                  <span className="font-semibold text-[#0A2540]">
+                    {filteredPolicies.length}
+                  </span>{" "}
+                  policies
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                  >
+                    Previous
+                  </button>
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                    <button
+                      key={pageNum}
+                      type="button"
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                        currentPage === pageNum
+                          ? "bg-blue-600 text-white shadow-xs"
+                          : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  ))}
+
+                  <button
+                    type="button"
+                    onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>

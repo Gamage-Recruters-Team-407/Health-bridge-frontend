@@ -1,33 +1,21 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   FileText,
-  Shield,
-  ShieldCheck,
-  ShieldAlert,
   Clock,
   CheckCircle2,
   AlertTriangle,
-  XCircle,
   Plus,
   Search,
   Download,
   DollarSign,
-  Building2,
-  Calendar,
-  User,
   ArrowUpRight,
   RefreshCw,
-  HelpCircle,
-  FileCheck,
   ChevronRight,
   Lock,
-  Bell,
-  Sparkles,
-  Printer,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
 import {
@@ -44,6 +32,7 @@ import Button from "@/components/ui/Button";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim, InsurancePolicy, ClaimStatus } from "@/types/insurance";
+import { generatePatientStatementPdf } from "@/lib/insurancePdfGenerator";
 
 const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "primary"> = {
   APPROVED: "success",
@@ -55,7 +44,6 @@ const statusVariant: Record<ClaimStatus, "success" | "danger" | "warning" | "pri
 
 export default function PatientInsurancePage() {
   const router = useRouter();
-
   const [policies, setPolicies] = useState<InsurancePolicy[]>([]);
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
@@ -63,11 +51,8 @@ export default function PatientInsurancePage() {
   // Search & Filter
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedYear, setSelectedYear] = useState("This year");
-
-  // Interactive notification toggles
-  const [notifyStatusUpdates, setNotifyStatusUpdates] = useState(true);
-  const [notifyBillingReminders, setNotifyBillingReminders] = useState(false);
-  const [notifyStatements, setNotifyStatements] = useState(true);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   // Notifications
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -83,8 +68,8 @@ export default function PatientInsurancePage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const loadData = async () => {
-    setLoading(true);
+  const loadData = useCallback(async (showSpinner = false) => {
+    if (showSpinner) setLoading(true);
     try {
       const [policiesData, claimsData] = await Promise.all([
         insuranceService.getMyPolicies(),
@@ -98,10 +83,35 @@ export default function PatientInsurancePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
-    loadData();
+    let isMounted = true;
+    Promise.all([
+      insuranceService.getMyPolicies(),
+      insuranceService.getMyClaims(),
+    ])
+      .then(([policiesData, claimsData]) => {
+        if (isMounted) {
+          setPolicies(policiesData);
+          setClaims(claimsData);
+          setErrorMessage(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage("Failed to load your insurance information.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const activePolicy = useMemo(
@@ -155,56 +165,30 @@ export default function PatientInsurancePage() {
     );
   }, [claims, searchQuery]);
 
-  // Export Statement as CSV
+  // Paginated Claims (6 per page)
+  const totalPages = Math.ceil(filteredClaims.length / pageSize) || 1;
+  const paginatedClaims = useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filteredClaims.slice(start, start + pageSize);
+  }, [filteredClaims, currentPage, pageSize]);
+
+  // Export Statement as PDF
   const handleExportStatement = () => {
-    if (claims.length === 0) {
-      showError("No claim records to export.");
-      return;
+    try {
+      const pdfBlob = generatePatientStatementPdf(activePolicy, claims, metrics);
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `Insurance_Statement_${new Date().toISOString().split("T")[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      showSuccess("Insurance statement downloaded as PDF.");
+    } catch {
+      showError("Failed to generate insurance statement PDF.");
     }
-
-    const headers = [
-      "Claim ID",
-      "Provider",
-      "Service Description",
-      "Date Submitted",
-      "Claimed Amount ($)",
-      "Approved Amount ($)",
-      "Status",
-    ];
-
-    const rows = claims.map((c) => [
-      `"${c.claimNumber}"`,
-      `"${c.providerName || activePolicy?.providerName || "Insurance Provider"}"`,
-      `"${(c.treatmentDescription || "").replace(/"/g, '""')}"`,
-      `"${c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : ""}"`,
-      c.claimAmount?.toFixed(2) || "0.00",
-      c.approvedAmount !== undefined ? c.approvedAmount.toFixed(2) : "0.00",
-      `"${c.status}"`,
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `Insurance_Statement_${new Date().toISOString().split("T")[0]}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    showSuccess("Insurance statement downloaded as CSV.");
   };
-
-  if (loading) {
-    return (
-      <div className="p-16 flex justify-center items-center">
-        <Loader />
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -223,55 +207,21 @@ export default function PatientInsurancePage() {
           <Button
             variant="outline"
             size="sm"
-            onClick={loadData}
-            className="gap-1.5 text-slate-600"
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
+            onClick={() => loadData(true)}
+            className="text-slate-600 whitespace-nowrap"
           >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
+            Refresh
           </Button>
           <Button
             size="sm"
+            leftIcon={<Plus className="w-4 h-4" />}
             onClick={() => router.push("/patient/insurance/submit-claim")}
-            className="gap-1.5 shadow-sm"
+            className="shadow-sm whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            <span>Submit New Claim</span>
+            Submit New Claim
           </Button>
         </div>
-      </div>
-
-      {/* Tab Sub-Navigation (Matching Figma Design) */}
-      <div className="flex items-center gap-1.5 p-1.5 bg-slate-100/80 rounded-2xl w-fit max-w-full overflow-x-auto border border-slate-200/60 text-xs font-semibold">
-        <Link
-          href="/patient/dashboard"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          My Dashboard
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl bg-blue-600 text-white shadow-sm transition-all"
-        >
-          My Claims
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Coverage Details
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Billing
-        </Link>
-        <Link
-          href="/patient/insurance"
-          className="px-4 py-2 rounded-xl text-slate-600 hover:text-[#0A2540] hover:bg-white/80 transition-all"
-        >
-          Documents
-        </Link>
       </div>
 
       {/* Feedback Banners */}
@@ -288,38 +238,35 @@ export default function PatientInsurancePage() {
         </div>
       )}
 
-      {/* Top 4 Live Metric Cards (Matching Figma Design) */}
+      {/* Top 4 Live Metric Cards (Instant Render) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Claims Filed"
-          value={metrics.totalFiled.toString()}
-          subtitle="Submitted by you"
+          value={loading ? "—" : metrics.totalFiled.toString()}
+          subtitle={loading ? "Fetching data..." : "Submitted by you"}
           icon={<FileText className="w-5 h-5 text-blue-600" />}
         />
         <StatCard
           title="Claims Approved"
-          value={metrics.approvedCount.toString()}
-          subtitle="Paid to you"
+          value={loading ? "—" : metrics.approvedCount.toString()}
+          subtitle={loading ? "Fetching data..." : "Paid to you"}
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
         />
         <StatCard
           title="Pending Claims"
-          value={metrics.pendingCount.toString()}
-          subtitle="Being reviewed"
+          value={loading ? "—" : metrics.pendingCount.toString()}
+          subtitle={loading ? "Checking status..." : "Being reviewed"}
           icon={<Clock className="w-5 h-5 text-amber-600" />}
         />
         <StatCard
           title="Amount Reimbursed"
-          value={`$${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtitle="Total paid back"
+          value={loading ? "—" : `Rs. ${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtitle={loading ? "Calculating..." : "Total paid back"}
           icon={<DollarSign className="w-5 h-5 text-indigo-600" />}
         />
       </div>
 
-      {/* Main 2-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (Coverage Card & My Claims Table) */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Full-Width: My Coverage Card */}
           {/* My Coverage Card (Matching Figma Design) */}
           <Card className="p-6 bg-white shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -331,17 +278,22 @@ export default function PatientInsurancePage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={handleExportStatement} className="gap-1.5 text-xs">
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Export</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<Download className="w-3.5 h-3.5" />}
+                  onClick={handleExportStatement}
+                  className="text-xs whitespace-nowrap"
+                >
+                  Export PDF
                 </Button>
                 <Button
                   size="sm"
+                  leftIcon={<Plus className="w-3.5 h-3.5" />}
                   onClick={() => router.push("/patient/insurance/submit-claim")}
-                  className="gap-1.5 text-xs shadow-xs"
+                  className="text-xs shadow-xs whitespace-nowrap"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New Claim</span>
+                  New Claim
                 </Button>
               </div>
             </div>
@@ -353,10 +305,12 @@ export default function PatientInsurancePage() {
                   Plan Status
                 </span>
                 <p className="text-sm font-extrabold text-emerald-600">
-                  {activePolicy ? activePolicy.status : "No Active Plan"}
+                  {loading ? "Checking..." : activePolicy ? activePolicy.status : "No Active Plan"}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  {activePolicy?.endDate
+                  {loading
+                    ? "Loading policy..."
+                    : activePolicy?.endDate
                     ? `Active until ${new Date(activePolicy.endDate).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
@@ -371,10 +325,10 @@ export default function PatientInsurancePage() {
                   Coverage Used
                 </span>
                 <p className="text-sm font-extrabold text-slate-900">
-                  ${(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {loading ? "—" : `Rs. ${(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  of ${(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit
+                  {loading ? "Loading..." : `of Rs. ${(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit`}
                 </p>
               </div>
 
@@ -383,7 +337,7 @@ export default function PatientInsurancePage() {
                   Remaining Balance
                 </span>
                 <p className="text-sm font-extrabold text-blue-600">
-                  ${remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {loading ? "—" : `Rs. ${remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
                 <p className="text-[11px] text-slate-500">Remaining this year</p>
               </div>
@@ -432,14 +386,29 @@ export default function PatientInsurancePage() {
                     type="text"
                     placeholder="Search claims..."
                     value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onChange={(e) => {
+                      setSearchQuery(e.target.value);
+                      setCurrentPage(1);
+                    }}
                     className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-slate-200 focus:outline-none focus:border-blue-500"
                   />
                 </div>
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {filteredClaims.length === 0 ? (
+              {loading ? (
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-44 text-center">
+                        <div className="flex items-center justify-center py-8">
+                          <Loader />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : filteredClaims.length === 0 ? (
                 <Table>
                   <TableBody>
                     <TableEmpty
@@ -463,11 +432,11 @@ export default function PatientInsurancePage() {
                       <TableHead>Date</TableHead>
                       <TableHead>Amount</TableHead>
                       <TableHead>Status</TableHead>
-                      <TableHead className="text-right">Actions</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {filteredClaims.map((c) => (
+                    {paginatedClaims.map((c) => (
                       <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
                         {/* Claim # */}
                         <TableCell>
@@ -503,7 +472,7 @@ export default function PatientInsurancePage() {
 
                         {/* Amount */}
                         <TableCell className="text-xs font-bold text-slate-900">
-                          ${c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          Rs. {c.claimAmount?.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </TableCell>
 
                         {/* Status */}
@@ -513,21 +482,22 @@ export default function PatientInsurancePage() {
                           </Badge>
                         </TableCell>
 
-                        {/* Actions (View and Track buttons) */}
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
+                        {/* Actions (Centered: View and Track buttons) */}
+                        <TableCell className="text-center">
+                          <div className="flex items-center justify-center gap-1.5">
                             <Button
                               size="sm"
                               variant="outline"
+                              rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
                               onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
-                              className="h-7 text-xs px-2.5"
+                              className="h-7 text-xs px-2.5 min-w-[76px] whitespace-nowrap"
                             >
                               View
                             </Button>
                             <Button
                               size="sm"
                               onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
-                              className="h-7 text-xs px-2.5 bg-blue-600 hover:bg-blue-700 text-white"
+                              className="h-7 text-xs px-3 bg-blue-600 hover:bg-blue-700 text-white"
                             >
                               Track
                             </Button>
@@ -538,11 +508,157 @@ export default function PatientInsurancePage() {
                   </TableBody>
                 </Table>
               )}
+
+              {/* Pagination Controls (Matching Screenshot 2) */}
+              {filteredClaims.length > 0 && totalPages > 1 && (
+                <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                  <div>
+                    Showing <span className="font-semibold text-[#0A2540]">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                    <span className="font-semibold text-[#0A2540]">{Math.min(currentPage * pageSize, filteredClaims.length)}</span> of{" "}
+                    <span className="font-semibold text-[#0A2540]">{filteredClaims.length}</span> claims
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                      disabled={currentPage === 1}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                    >
+                      Previous
+                    </button>
+
+                    {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        type="button"
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                          currentPage === pageNum
+                            ? "bg-blue-600 text-white shadow-xs"
+                            : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+
+                    <button
+                      type="button"
+                      onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={currentPage === totalPages}
+                      className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              )}
             </CardContent>
+          </Card>
+
+      {/* Balanced Bottom 2-Column Grid (50% / 50%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Billing Summary & Activity History */}
+        <div className="space-y-6">
+          {/* Billing Summary Card */}
+          <Card className="p-5 bg-white shadow-xs space-y-4">
+            <div>
+              <h2 className="text-sm font-bold text-[#0A2540]">Billing Summary</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                View statements and payment history.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-blue-500"
+              >
+                <option value="This year">This year</option>
+                <option value="2025">2025</option>
+                <option value="All Time">All Time</option>
+              </select>
+
+              <Button
+                onClick={handleExportStatement}
+                className="w-full text-xs font-semibold py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              >
+                Download Statement (PDF)
+              </Button>
+            </div>
+          </Card>
+
+          {/* Activity History Card */}
+          <Card className="p-5 bg-white shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-[#0A2540]">Activity History</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  What happened with your claims.
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                <Lock className="w-3 h-3" />
+                <span>Claims Protected</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              {loading ? (
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-400 text-center text-xs">
+                  Loading activity...
+                </div>
+              ) : claims.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-400 text-center text-xs">
+                  No recent claim activity yet.
+                </div>
+              ) : (
+                claims.slice(0, 4).map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 hover:bg-slate-100/60 transition-colors"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-slate-800">
+                        {c.status === "APPROVED"
+                          ? `Claim ${c.claimNumber} was approved`
+                          : c.status === "REJECTED"
+                          ? `Claim ${c.claimNumber} was declined`
+                          : `You submitted claim ${c.claimNumber}`}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Status:{" "}
+                        <span
+                          className={`font-semibold ${
+                            c.status === "APPROVED" || c.status === "PAID"
+                              ? "text-emerald-600"
+                              : c.status === "REJECTED"
+                              ? "text-rose-600"
+                              : "text-amber-600"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {c.submittedAt
+                        ? new Date(c.submittedAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : "Recent"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
           </Card>
         </div>
 
-        {/* Right Column (Claim Help, FAQs, Billing Summary) */}
+        {/* Right Column: Claim Help & FAQs */}
         <div className="space-y-6">
           {/* Claim Help Card */}
           <Card className="p-5 bg-white shadow-xs space-y-4">
@@ -561,11 +677,11 @@ export default function PatientInsurancePage() {
                 </div>
                 <Button
                   size="sm"
+                  rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
                   onClick={() => router.push("/patient/insurance/submit-claim")}
-                  className="h-7 text-xs px-2.5"
+                  className="h-7 text-xs px-2.5 whitespace-nowrap"
                 >
-                  <span>Start claim</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  Start claim
                 </Button>
               </div>
 
@@ -632,177 +748,7 @@ export default function PatientInsurancePage() {
               </details>
             </div>
           </Card>
-
-          {/* Billing Summary Card */}
-          <Card className="p-5 bg-white shadow-xs space-y-4">
-            <div>
-              <h2 className="text-sm font-bold text-[#0A2540]">Billing Summary</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                View statements and payment history.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-blue-500"
-              >
-                <option value="This year">This year</option>
-                <option value="2025">2025</option>
-                <option value="All Time">All Time</option>
-              </select>
-
-              <Button
-                onClick={handleExportStatement}
-                className="w-full text-xs font-semibold py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
-              >
-                Download Statement
-              </Button>
-            </div>
-          </Card>
         </div>
-      </div>
-
-      {/* Bottom Section: Notifications & Activity History (Matching Figma Design) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Notification Preferences Card */}
-        <Card className="p-5 bg-white shadow-xs space-y-4">
-          <div>
-            <h2 className="text-sm font-bold text-[#0A2540] flex items-center gap-1.5">
-              <Bell className="w-4 h-4 text-blue-600" />
-              <span>Notifications</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Get notified when your claim status changes.
-            </p>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70">
-              <div>
-                <p className="font-bold text-slate-800">Claim status updates</p>
-                <p className="text-[11px] text-slate-400">Submitted, approved, paid, or denied</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotifyStatusUpdates(!notifyStatusUpdates)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${
-                  notifyStatusUpdates ? "bg-blue-600" : "bg-slate-300"
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
-                    notifyStatusUpdates ? "right-0.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70">
-              <div>
-                <p className="font-bold text-slate-800">Billing reminders</p>
-                <p className="text-[11px] text-slate-400">Payment due and statement ready</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotifyBillingReminders(!notifyBillingReminders)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${
-                  notifyBillingReminders ? "bg-blue-600" : "bg-slate-300"
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
-                    notifyBillingReminders ? "right-0.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70">
-              <div>
-                <p className="font-bold text-slate-800">Statements</p>
-                <p className="text-[11px] text-slate-400">Get statements and payment confirmations</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotifyStatements(!notifyStatements)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${
-                  notifyStatements ? "bg-blue-600" : "bg-slate-300"
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
-                    notifyStatements ? "right-0.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Activity History Card (Matching Figma Design) */}
-        <Card className="p-5 bg-white shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-[#0A2540]">Activity History</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                What happened with your claims.
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-              <Lock className="w-3 h-3" />
-              <span>Claims Protected</span>
-            </div>
-          </div>
-
-          <div className="space-y-2.5 text-xs">
-            {claims.length === 0 ? (
-              <div className="p-4 rounded-xl bg-slate-50 text-slate-400 text-center text-xs">
-                No recent claim activity yet.
-              </div>
-            ) : (
-              claims.slice(0, 4).map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 hover:bg-slate-100/60 transition-colors"
-                >
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-slate-800">
-                      {c.status === "APPROVED"
-                        ? `Claim ${c.claimNumber} was approved`
-                        : c.status === "REJECTED"
-                        ? `Claim ${c.claimNumber} was declined`
-                        : `You submitted claim ${c.claimNumber}`}
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      Status:{" "}
-                      <span
-                        className={`font-semibold ${
-                          c.status === "APPROVED" || c.status === "PAID"
-                            ? "text-emerald-600"
-                            : c.status === "REJECTED"
-                            ? "text-rose-600"
-                            : "text-amber-600"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </p>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {c.submittedAt
-                      ? new Date(c.submittedAt).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                        })
-                      : "Recent"}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
       </div>
     </div>
   );
