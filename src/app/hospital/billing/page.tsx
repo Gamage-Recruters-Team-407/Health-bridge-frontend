@@ -24,7 +24,7 @@ export default function BillingPage() {
 
   if (invoicesLoading && invoices.length === 0) {
     return (
-      <DashboardLayout pageTitle="Billing Management">
+      <DashboardLayout pageTitle="">
         <div className="flex flex-col justify-center items-center h-64">
           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto"></div>
           <p className="mt-4 text-slate-500 font-medium">Loading invoices...</p>
@@ -42,7 +42,7 @@ export default function BillingPage() {
 
   if (invoicesError && invoices.length === 0) {
     return (
-      <DashboardLayout pageTitle="Billing Management">
+      <DashboardLayout pageTitle="">
         <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
           <p className="font-medium text-red-700">❌ Error loading invoices</p>
           <p className="text-sm text-red-600 mt-1">{invoicesError}</p>
@@ -59,7 +59,7 @@ export default function BillingPage() {
   }
 
   return (
-    <DashboardLayout pageTitle="Billing Management">
+    <DashboardLayout pageTitle="">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
