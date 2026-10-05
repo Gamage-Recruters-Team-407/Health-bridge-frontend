@@ -173,7 +173,12 @@ export interface PublicFeedback {
 }
 
 export function getPublicFeedback() {
-  return request<PublicFeedback[]>("/api/tickets/feedback/public");
+  return request<PublicFeedback[]>("/api/tickets/feedback/public").catch((error) => {
+    if (error instanceof Error && error.message.startsWith("No static resource api/tickets/feedback/public")) {
+      return [];
+    }
+    throw error;
+  });
 }
 
 // ---------- Admin endpoints ----------
