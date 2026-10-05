@@ -388,7 +388,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
               {/* Profile Link */}
               <a
-                href="/profile"
+                href={normalizeRole(userRole) === "DOCTOR" ? "/doctor/profile" : "/profile"}
                 className="flex items-center gap-2 px-3 py-2 text-xs font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 rounded-xl transition-colors"
               >
                 <User className="w-4 h-4 text-slate-400" />
