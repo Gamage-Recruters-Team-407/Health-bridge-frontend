@@ -164,7 +164,6 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "My profile", href: "/doctor/profile", icon: User },
           { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
           { title: "Schedule", href: "/doctor/schedule", icon: Calendar },
