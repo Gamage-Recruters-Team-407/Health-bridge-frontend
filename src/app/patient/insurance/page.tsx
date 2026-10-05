@@ -16,7 +16,6 @@ import {
   RefreshCw,
   ChevronRight,
   Lock,
-  Bell,
 } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent, StatCard } from "@/components/ui/Card";
 import {
@@ -54,11 +53,6 @@ export default function PatientInsurancePage() {
   const [selectedYear, setSelectedYear] = useState("This year");
   const [currentPage, setCurrentPage] = useState(1);
   const pageSize = 6;
-
-  // Interactive notification toggles
-  const [notifyStatusUpdates, setNotifyStatusUpdates] = useState(true);
-  const [notifyBillingReminders, setNotifyBillingReminders] = useState(false);
-  const [notifyStatements, setNotifyStatements] = useState(true);
 
   // Notifications
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -196,14 +190,6 @@ export default function PatientInsurancePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-16 flex justify-center items-center">
-        <Loader />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       {/* Header & Sub-Navigation */}
@@ -221,19 +207,19 @@ export default function PatientInsurancePage() {
           <Button
             variant="outline"
             size="sm"
+            leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
             onClick={() => loadData(true)}
-            className="gap-1.5 text-slate-600"
+            className="text-slate-600 whitespace-nowrap"
           >
-            <RefreshCw className="w-4 h-4" />
-            <span>Refresh</span>
+            Refresh
           </Button>
           <Button
             size="sm"
+            leftIcon={<Plus className="w-4 h-4" />}
             onClick={() => router.push("/patient/insurance/submit-claim")}
-            className="gap-1.5 shadow-sm"
+            className="shadow-sm whitespace-nowrap"
           >
-            <Plus className="w-4 h-4" />
-            <span>Submit New Claim</span>
+            Submit New Claim
           </Button>
         </div>
       </div>
@@ -252,38 +238,35 @@ export default function PatientInsurancePage() {
         </div>
       )}
 
-      {/* Top 4 Live Metric Cards (Matching Figma Design) */}
+      {/* Top 4 Live Metric Cards (Instant Render) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard
           title="Total Claims Filed"
-          value={metrics.totalFiled.toString()}
-          subtitle="Submitted by you"
+          value={loading ? "—" : metrics.totalFiled.toString()}
+          subtitle={loading ? "Fetching data..." : "Submitted by you"}
           icon={<FileText className="w-5 h-5 text-blue-600" />}
         />
         <StatCard
           title="Claims Approved"
-          value={metrics.approvedCount.toString()}
-          subtitle="Paid to you"
+          value={loading ? "—" : metrics.approvedCount.toString()}
+          subtitle={loading ? "Fetching data..." : "Paid to you"}
           icon={<CheckCircle2 className="w-5 h-5 text-emerald-600" />}
         />
         <StatCard
           title="Pending Claims"
-          value={metrics.pendingCount.toString()}
-          subtitle="Being reviewed"
+          value={loading ? "—" : metrics.pendingCount.toString()}
+          subtitle={loading ? "Checking status..." : "Being reviewed"}
           icon={<Clock className="w-5 h-5 text-amber-600" />}
         />
         <StatCard
           title="Amount Reimbursed"
-          value={`Rs. ${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
-          subtitle="Total paid back"
+          value={loading ? "—" : `Rs. ${metrics.totalReimbursed.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
+          subtitle={loading ? "Calculating..." : "Total paid back"}
           icon={<DollarSign className="w-5 h-5 text-indigo-600" />}
         />
       </div>
 
-      {/* Main 2-Column Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Left Column (Coverage Card & My Claims Table) */}
-        <div className="lg:col-span-2 space-y-6">
+      {/* Full-Width: My Coverage Card */}
           {/* My Coverage Card (Matching Figma Design) */}
           <Card className="p-6 bg-white shadow-xs">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -295,17 +278,22 @@ export default function PatientInsurancePage() {
               </div>
 
               <div className="flex items-center gap-2">
-                <Button size="sm" variant="outline" onClick={handleExportStatement} className="gap-1.5 text-xs">
-                  <Download className="w-3.5 h-3.5" />
-                  <span>Export PDF</span>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  leftIcon={<Download className="w-3.5 h-3.5" />}
+                  onClick={handleExportStatement}
+                  className="text-xs whitespace-nowrap"
+                >
+                  Export PDF
                 </Button>
                 <Button
                   size="sm"
+                  leftIcon={<Plus className="w-3.5 h-3.5" />}
                   onClick={() => router.push("/patient/insurance/submit-claim")}
-                  className="gap-1.5 text-xs shadow-xs"
+                  className="text-xs shadow-xs whitespace-nowrap"
                 >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>New Claim</span>
+                  New Claim
                 </Button>
               </div>
             </div>
@@ -317,10 +305,12 @@ export default function PatientInsurancePage() {
                   Plan Status
                 </span>
                 <p className="text-sm font-extrabold text-emerald-600">
-                  {activePolicy ? activePolicy.status : "No Active Plan"}
+                  {loading ? "Checking..." : activePolicy ? activePolicy.status : "No Active Plan"}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  {activePolicy?.endDate
+                  {loading
+                    ? "Loading policy..."
+                    : activePolicy?.endDate
                     ? `Active until ${new Date(activePolicy.endDate).toLocaleDateString("en-GB", {
                         day: "2-digit",
                         month: "short",
@@ -335,10 +325,10 @@ export default function PatientInsurancePage() {
                   Coverage Used
                 </span>
                 <p className="text-sm font-extrabold text-slate-900">
-                  Rs. {(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {loading ? "—" : `Rs. ${(activePolicy?.coverageUsed || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
                 <p className="text-[11px] text-slate-500">
-                  of Rs. {(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit
+                  {loading ? "Loading..." : `of Rs. ${(activePolicy?.coverageAmount || 0).toLocaleString()} annual limit`}
                 </p>
               </div>
 
@@ -347,7 +337,7 @@ export default function PatientInsurancePage() {
                   Remaining Balance
                 </span>
                 <p className="text-sm font-extrabold text-blue-600">
-                  Rs. {remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {loading ? "—" : `Rs. ${remainingCoverage.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`}
                 </p>
                 <p className="text-[11px] text-slate-500">Remaining this year</p>
               </div>
@@ -406,7 +396,19 @@ export default function PatientInsurancePage() {
               </div>
             </CardHeader>
             <CardContent className="p-0">
-              {filteredClaims.length === 0 ? (
+              {loading ? (
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell colSpan={7} className="h-44 text-center">
+                        <div className="flex items-center justify-center py-8">
+                          <Loader />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : filteredClaims.length === 0 ? (
                 <Table>
                   <TableBody>
                     <TableEmpty
@@ -486,11 +488,11 @@ export default function PatientInsurancePage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
                               onClick={() => router.push(`/patient/insurance/claims/${c.id}`)}
-                              className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] inline-flex items-center justify-center"
+                              className="h-7 text-xs px-2.5 min-w-[76px] whitespace-nowrap"
                             >
-                              <span>View</span>
-                              <ArrowUpRight className="w-3.5 h-3.5" />
+                              View
                             </Button>
                             <Button
                               size="sm"
@@ -554,9 +556,109 @@ export default function PatientInsurancePage() {
               )}
             </CardContent>
           </Card>
+
+      {/* Balanced Bottom 2-Column Grid (50% / 50%) */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Left Column: Billing Summary & Activity History */}
+        <div className="space-y-6">
+          {/* Billing Summary Card */}
+          <Card className="p-5 bg-white shadow-xs space-y-4">
+            <div>
+              <h2 className="text-sm font-bold text-[#0A2540]">Billing Summary</h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                View statements and payment history.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(e.target.value)}
+                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-blue-500"
+              >
+                <option value="This year">This year</option>
+                <option value="2025">2025</option>
+                <option value="All Time">All Time</option>
+              </select>
+
+              <Button
+                onClick={handleExportStatement}
+                className="w-full text-xs font-semibold py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
+              >
+                Download Statement (PDF)
+              </Button>
+            </div>
+          </Card>
+
+          {/* Activity History Card */}
+          <Card className="p-5 bg-white shadow-xs space-y-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-[#0A2540]">Activity History</h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  What happened with your claims.
+                </p>
+              </div>
+              <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
+                <Lock className="w-3 h-3" />
+                <span>Claims Protected</span>
+              </div>
+            </div>
+
+            <div className="space-y-2.5 text-xs">
+              {loading ? (
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-400 text-center text-xs">
+                  Loading activity...
+                </div>
+              ) : claims.length === 0 ? (
+                <div className="p-4 rounded-xl bg-slate-50 text-slate-400 text-center text-xs">
+                  No recent claim activity yet.
+                </div>
+              ) : (
+                claims.slice(0, 4).map((c) => (
+                  <div
+                    key={c.id}
+                    className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 hover:bg-slate-100/60 transition-colors"
+                  >
+                    <div className="space-y-0.5">
+                      <p className="font-bold text-slate-800">
+                        {c.status === "APPROVED"
+                          ? `Claim ${c.claimNumber} was approved`
+                          : c.status === "REJECTED"
+                          ? `Claim ${c.claimNumber} was declined`
+                          : `You submitted claim ${c.claimNumber}`}
+                      </p>
+                      <p className="text-[11px] text-slate-500">
+                        Status:{" "}
+                        <span
+                          className={`font-semibold ${
+                            c.status === "APPROVED" || c.status === "PAID"
+                              ? "text-emerald-600"
+                              : c.status === "REJECTED"
+                              ? "text-rose-600"
+                              : "text-amber-600"
+                          }`}
+                        >
+                          {c.status}
+                        </span>
+                      </p>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-medium">
+                      {c.submittedAt
+                        ? new Date(c.submittedAt).toLocaleDateString("en-GB", {
+                            day: "2-digit",
+                            month: "short",
+                          })
+                        : "Recent"}
+                    </span>
+                  </div>
+                ))
+              )}
+            </div>
+          </Card>
         </div>
 
-        {/* Right Column (Claim Help, FAQs, Billing Summary) */}
+        {/* Right Column: Claim Help & FAQs */}
         <div className="space-y-6">
           {/* Claim Help Card */}
           <Card className="p-5 bg-white shadow-xs space-y-4">
@@ -575,11 +677,11 @@ export default function PatientInsurancePage() {
                 </div>
                 <Button
                   size="sm"
+                  rightIcon={<ChevronRight className="w-3.5 h-3.5" />}
                   onClick={() => router.push("/patient/insurance/submit-claim")}
-                  className="h-7 text-xs px-2.5"
+                  className="h-7 text-xs px-2.5 whitespace-nowrap"
                 >
-                  <span>Start claim</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
+                  Start claim
                 </Button>
               </div>
 
@@ -646,177 +748,7 @@ export default function PatientInsurancePage() {
               </details>
             </div>
           </Card>
-
-          {/* Billing Summary Card */}
-          <Card className="p-5 bg-white shadow-xs space-y-4">
-            <div>
-              <h2 className="text-sm font-bold text-[#0A2540]">Billing Summary</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                View statements and payment history.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(e.target.value)}
-                className="w-full px-3 py-2 text-xs font-semibold rounded-xl border border-slate-200 bg-white text-slate-800 focus:outline-none focus:border-blue-500"
-              >
-                <option value="This year">This year</option>
-                <option value="2025">2025</option>
-                <option value="All Time">All Time</option>
-              </select>
-
-              <Button
-                onClick={handleExportStatement}
-                className="w-full text-xs font-semibold py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-xs"
-              >
-                Download Statement (PDF)
-              </Button>
-            </div>
-          </Card>
         </div>
-      </div>
-
-      {/* Bottom Section: Notifications & Activity History (Matching Figma Design) */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Notification Preferences Card */}
-        <Card className="p-5 bg-white shadow-xs space-y-4">
-          <div>
-            <h2 className="text-sm font-bold text-[#0A2540] flex items-center gap-1.5">
-              <Bell className="w-4 h-4 text-blue-600" />
-              <span>Notifications</span>
-            </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Get notified when your claim status changes.
-            </p>
-          </div>
-
-          <div className="space-y-3 text-xs">
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70">
-              <div>
-                <p className="font-bold text-slate-800">Claim status updates</p>
-                <p className="text-[11px] text-slate-400">Submitted, approved, paid, or denied</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotifyStatusUpdates(!notifyStatusUpdates)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${
-                  notifyStatusUpdates ? "bg-blue-600" : "bg-slate-300"
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
-                    notifyStatusUpdates ? "right-0.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70">
-              <div>
-                <p className="font-bold text-slate-800">Billing reminders</p>
-                <p className="text-[11px] text-slate-400">Payment due and statement ready</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotifyBillingReminders(!notifyBillingReminders)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${
-                  notifyBillingReminders ? "bg-blue-600" : "bg-slate-300"
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
-                    notifyBillingReminders ? "right-0.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-
-            <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70">
-              <div>
-                <p className="font-bold text-slate-800">Statements</p>
-                <p className="text-[11px] text-slate-400">Get statements and payment confirmations</p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setNotifyStatements(!notifyStatements)}
-                className={`w-8 h-4 rounded-full relative transition-colors ${
-                  notifyStatements ? "bg-blue-600" : "bg-slate-300"
-                }`}
-              >
-                <div
-                  className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${
-                    notifyStatements ? "right-0.5" : "left-0.5"
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-        </Card>
-
-        {/* Activity History Card (Matching Figma Design) */}
-        <Card className="p-5 bg-white shadow-xs space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-bold text-[#0A2540]">Activity History</h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                What happened with your claims.
-              </p>
-            </div>
-            <div className="flex items-center gap-1 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-200">
-              <Lock className="w-3 h-3" />
-              <span>Claims Protected</span>
-            </div>
-          </div>
-
-          <div className="space-y-2.5 text-xs">
-            {claims.length === 0 ? (
-              <div className="p-4 rounded-xl bg-slate-50 text-slate-400 text-center text-xs">
-                No recent claim activity yet.
-              </div>
-            ) : (
-              claims.slice(0, 4).map((c) => (
-                <div
-                  key={c.id}
-                  className="flex items-center justify-between p-3 rounded-xl bg-slate-50/70 border border-slate-200/70 hover:bg-slate-100/60 transition-colors"
-                >
-                  <div className="space-y-0.5">
-                    <p className="font-bold text-slate-800">
-                      {c.status === "APPROVED"
-                        ? `Claim ${c.claimNumber} was approved`
-                        : c.status === "REJECTED"
-                        ? `Claim ${c.claimNumber} was declined`
-                        : `You submitted claim ${c.claimNumber}`}
-                    </p>
-                    <p className="text-[11px] text-slate-500">
-                      Status:{" "}
-                      <span
-                        className={`font-semibold ${
-                          c.status === "APPROVED" || c.status === "PAID"
-                            ? "text-emerald-600"
-                            : c.status === "REJECTED"
-                            ? "text-rose-600"
-                            : "text-amber-600"
-                        }`}
-                      >
-                        {c.status}
-                      </span>
-                    </p>
-                  </div>
-                  <span className="text-[11px] text-slate-400 font-medium">
-                    {c.submittedAt
-                      ? new Date(c.submittedAt).toLocaleDateString("en-GB", {
-                          day: "2-digit",
-                          month: "short",
-                        })
-                      : "Recent"}
-                  </span>
-                </div>
-              ))
-            )}
-          </div>
-        </Card>
       </div>
     </div>
   );
