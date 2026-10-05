@@ -5,7 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { AlertTriangle, ArrowRight } from "lucide-react";
 import DashboardLayout from "@/components/layout/DashboardLayout";
 import FraudDetectionTabs from "@/components/fraud-detection/FraudDetectionTabs";
+import Pagination from "@/components/ui/Pagination";
 import { fraudDetectionService, type FraudAlert, type FraudRecord, type FraudReviewRequest } from "@/services/fraudDetectionService";
+
+const PAGE_SIZE = 5;
 
 const text = (record: FraudRecord, ...keys: string[]) => {
   const key = keys.find((item) => record[item] !== undefined && record[item] !== null);
@@ -23,6 +26,7 @@ export default function FraudAlertsPage() {
   const [alerts, setAlerts] = useState<FraudAlert[]>([]);
   const [stats, setStats] = useState<FraudRecord>();
   const [filter, setFilter] = useState("ALL");
+  const [currentPage, setCurrentPage] = useState(1);
   const [reviewing, setReviewing] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -52,7 +56,7 @@ export default function FraudAlertsPage() {
 
   useEffect(() => {
     const initialLoad = window.setTimeout(load, 0);
-    const interval = window.setInterval(load, 10000);
+    const interval = window.setInterval(load, 60000);
     window.addEventListener("focus", load);
     return () => {
       window.clearTimeout(initialLoad);
@@ -68,6 +72,9 @@ export default function FraudAlertsPage() {
         : alerts.filter((alert) => text(alert, "severity", "riskLevel", "risk").toUpperCase() === filter),
     [alerts, filter],
   );
+  const totalPages = Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedAlerts = visible.slice((safeCurrentPage - 1) * PAGE_SIZE, safeCurrentPage * PAGE_SIZE);
 
   const review = async (alert: FraudAlert, status: FraudReviewRequest["status"]) => {
     setReviewing(idOf(alert));
@@ -125,7 +132,10 @@ export default function FraudAlertsPage() {
                 <select
                   aria-label="Filter alerts"
                   value={filter}
-                  onChange={(event) => setFilter(event.target.value)}
+                  onChange={(event) => {
+                    setFilter(event.target.value);
+                    setCurrentPage(1);
+                  }}
                   className="rounded-lg border px-3 py-2 text-xs"
                 >
                   <option value="ALL">All risks</option>
@@ -138,7 +148,7 @@ export default function FraudAlertsPage() {
                 <div className="py-12 text-center text-sm text-[#9299a0]">No fraud alerts match this filter.</div>
               ) : (
                 <div className="divide-y divide-[#edf0f2]">
-                  {visible.map((alert) => {
+                  {paginatedAlerts.map((alert) => {
                     const reviewable = isReviewable(alert);
                     return (
                       <article
@@ -207,6 +217,15 @@ export default function FraudAlertsPage() {
                     );
                   })}
                 </div>
+              )}
+              {visible.length > 0 && (
+                <Pagination
+                  currentPage={safeCurrentPage}
+                  totalPages={totalPages}
+                  totalRecords={visible.length}
+                  pageSize={PAGE_SIZE}
+                  onPageChange={setCurrentPage}
+                />
               )}
             </section>
           )}

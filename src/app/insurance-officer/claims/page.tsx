@@ -212,11 +212,11 @@ export default function ClaimsListPage() {
             <Button
               variant="outline"
               size="sm"
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
               onClick={() => loadClaims(true)}
-              className="gap-1.5 text-slate-600"
+              className="text-slate-600 whitespace-nowrap"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
+              Refresh
             </Button>
           </div>
         </div>
@@ -289,7 +289,6 @@ export default function ClaimsListPage() {
                   { id: "PENDING", label: "Pending" },
                   { id: "APPROVED", label: "Approved" },
                   { id: "REJECTED", label: "Rejected" },
-                  { id: "PAID", label: "Paid" },
                 ].map((s) => (
                   <button
                     key={s.id}
@@ -456,11 +455,11 @@ export default function ClaimsListPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
                               onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
-                              className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center"
+                              className="h-7 text-xs px-2.5 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                             >
-                              <span>View</span>
-                              <ArrowUpRight className="w-3.5 h-3.5" />
+                              View
                             </Button>
 
                             {isPending && (

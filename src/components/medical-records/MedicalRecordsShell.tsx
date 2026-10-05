@@ -1,12 +1,26 @@
 "use client";
 
+import Link from "next/link";
+
+import {
+  usePathname,
+} from "next/navigation";
+
 import {
   useEffect,
   useState,
 } from "react";
 
-import DashboardLayout from "@/app/dashboard/layout";
-import DoctorShell from "@/features/doctor/components/DoctorShell";
+import {
+  FileDown,
+  FolderOpen,
+} from "lucide-react";
+
+import DashboardLayout
+  from "@/app/dashboard/layout";
+
+import DoctorShell
+  from "@/features/doctor/components/DoctorShell";
 
 import {
   getStoredUser,
@@ -15,8 +29,12 @@ import {
 
 
 interface MedicalRecordsShellProps {
-  children: React.ReactNode;
-  pageTitle?: string;
+
+  children:
+    React.ReactNode;
+
+  pageTitle?:
+    string;
 }
 
 
@@ -25,8 +43,12 @@ export default function MedicalRecordsShell({
   pageTitle = "Medical Records",
 }: MedicalRecordsShellProps) {
 
+  const pathname =
+    usePathname();
+
+
   /*
-   * undefined = auth user has not been read yet
+   * undefined = user not checked yet
    * null      = no stored user
    */
   const [
@@ -44,21 +66,23 @@ export default function MedicalRecordsShell({
 
   useEffect(
     () => {
+
       setUser(
         getStoredUser()
       );
+
     },
     []
   );
 
 
   /*
-   * Prevent the generic dashboard from flashing
-   * before we know whether this is a doctor.
+   * Prevent layout flash before role loads.
    */
   if (
     user === undefined
   ) {
+
     return (
       <div
         className="
@@ -69,11 +93,11 @@ export default function MedicalRecordsShell({
           bg-slate-50
         "
       >
+
         <div
-          className="
-            text-center
-          "
+          className="text-center"
         >
+
           <div
             className="
               mx-auto
@@ -87,6 +111,7 @@ export default function MedicalRecordsShell({
             "
           />
 
+
           <p
             className="
               mt-3
@@ -96,10 +121,128 @@ export default function MedicalRecordsShell({
           >
             Loading Medical Records...
           </p>
+
         </div>
+
       </div>
     );
   }
+
+
+  /*
+   * PDF feature is available only for:
+   *
+   * DOCTOR
+   * PATIENT
+   */
+  const canUsePdfReports =
+    user?.role === "DOCTOR"
+    || user?.role === "PATIENT";
+
+
+  /*
+   * Detect PDF page.
+   */
+  const isPdfReportPage =
+    pathname
+    === "/medical-records/reports";
+
+
+  /*
+   * Shared Medical Records content.
+   */
+  const content = (
+    <>
+
+      {
+        canUsePdfReports
+        && (
+          <div
+            className="
+              mb-4
+              flex
+              justify-end
+            "
+          >
+
+            <Link
+              href={
+                isPdfReportPage
+                  ? "/medical-records"
+                  : "/medical-records/reports"
+              }
+              className={
+                user?.role === "DOCTOR"
+                  ? `
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-teal-200
+                    bg-teal-50
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-semibold
+                    text-teal-700
+                    shadow-sm
+                    transition
+                    hover:bg-teal-100
+                  `
+                  : `
+                    inline-flex
+                    items-center
+                    gap-2
+                    rounded-xl
+                    border
+                    border-blue-200
+                    bg-blue-50
+                    px-4
+                    py-2.5
+                    text-sm
+                    font-semibold
+                    text-blue-700
+                    shadow-sm
+                    transition
+                    hover:bg-blue-100
+                  `
+              }
+            >
+
+              {
+                isPdfReportPage
+                  ? (
+                    <>
+                      <FolderOpen
+                        className="h-4 w-4"
+                      />
+
+                      Electronic Health Record
+                    </>
+                  )
+                  : (
+                    <>
+                      <FileDown
+                        className="h-4 w-4"
+                      />
+
+                      PDF Report
+                    </>
+                  )
+              }
+
+            </Link>
+
+          </div>
+        )
+      }
+
+
+      {children}
+
+    </>
+  );
 
 
   /*
@@ -107,19 +250,17 @@ export default function MedicalRecordsShell({
    * DOCTOR
    * =========================================================
    *
-   * Keep the SAME doctor workspace/sidebar/header used by:
-   *
-   * /doctor/dashboard
-   * /doctor/profile
-   * /doctor/schedule
-   * etc.
+   * Keep existing Doctor workspace.
    */
   if (
     user?.role === "DOCTOR"
   ) {
+
     return (
       <DoctorShell>
-        {children}
+
+        {content}
+
       </DoctorShell>
     );
   }
@@ -127,16 +268,20 @@ export default function MedicalRecordsShell({
 
   /*
    * =========================================================
-   * PATIENT / ADMIN / SUPER ADMIN
+   * PATIENT
    * =========================================================
    *
-   * Continue using the existing role-aware shared dashboard.
+   * Keep existing shared Dashboard layout.
    */
   return (
     <DashboardLayout
-      pageTitle={pageTitle}
+      pageTitle={
+        pageTitle
+      }
     >
-      {children}
+
+      {content}
+
     </DashboardLayout>
   );
 }
