@@ -252,9 +252,13 @@ export default function InsuranceReportsPage() {
 
           {/* Export Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={exportToPDF} className="gap-1.5 shadow-sm">
-              <Download className="w-4 h-4" />
-              <span>Export PDF</span>
+            <Button
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={exportToPDF}
+              className="shadow-sm whitespace-nowrap"
+            >
+              Export PDF
             </Button>
           </div>
         </div>
@@ -610,10 +614,10 @@ export default function InsuranceReportsPage() {
                                       <Button
                                         size="sm"
                                         variant="outline"
-                                        className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] inline-flex items-center justify-center"
+                                        rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                                        className="h-7 text-xs px-2.5 min-w-[76px] whitespace-nowrap"
                                       >
-                                        <span>View</span>
-                                        <ArrowUpRight className="w-3.5 h-3.5" />
+                                        View
                                       </Button>
                                     </Link>
                                   </div>

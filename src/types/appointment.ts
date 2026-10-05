@@ -26,6 +26,11 @@ export interface DoctorSession {
 }
 
 export interface SessionSearchFilters { doctorId?: string; hospitalId?: string; specialization?: string; date?: string; }
+export interface PublicDoctorSession {
+  sessionId: string; doctorId: string; doctorName: string; specialization: string;
+  hospitalName?: string; sessionDate: string; dayOfWeek: string; startTime: string;
+  endTime?: string; remainingAppointments: number; status: SessionStatus; appointmentType?: AppointmentMode;
+}
 export interface DoctorSessionInput { hospitalId: string; hospitalName?: string; specializationId?: string; specializationName: string; sessionDate: string; startTime: string; endTime?: string; maxAppointments: number; notes?: string; appointmentType?: AppointmentMode; }
 export interface BookingInput { sessionId: string; patientName: string; patientPhone: string; nicOrPassport: string; email?: string; address?: string; }
 
