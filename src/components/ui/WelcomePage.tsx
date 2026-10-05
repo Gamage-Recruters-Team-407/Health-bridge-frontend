@@ -13,7 +13,7 @@ import {
   AlertTriangle,
   MessageSquareText,
 } from "lucide-react";
-
+import Feedback from "@/components/support/feedback";
 export interface WelcomePageProps {
   onBookAppointment?: () => void;
   onContinueGuest?: () => void;
@@ -24,16 +24,16 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
   onContinueGuest,
 }) => {
   return (
-    <div className="min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-[#0052CC] selection:text-white flex flex-col">
+    <div className="relative min-h-screen bg-white text-slate-900 font-sans antialiased selection:bg-[#0052CC] selection:text-white flex flex-col">
       {/* Top Header / Navigation */}
-      <header className="w-full max-w-7xl mx-auto px-6 py-6 flex items-center justify-between">
+      <header className="absolute top-0 left-0 z-20 w-full px-4 py-3 sm:px-6 sm:py-4 flex items-center justify-between bg-white/75 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-[#0052CC] flex items-center justify-center text-white shadow-md shadow-blue-500/20">
-            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24">
+          <div className="w-8 h-8 rounded-lg bg-[#0052CC] flex items-center justify-center text-white shadow-md shadow-blue-500/20">
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
               <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm1 14h-2v-3H8v-2h3V7h2v3h3v2h-3v3z" />
             </svg>
           </div>
-          <span className="font-extrabold text-xl tracking-tight text-[#0F172A]">
+          <span className="font-extrabold text-lg tracking-tight text-[#0F172A]">
             Health <span className="text-[#0052CC]">Bridge</span>
           </span>
         </div>
@@ -47,7 +47,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
           </Link>
           <Link
             href="/register"
-            className="px-5 py-2.5 rounded-xl bg-[#0052CC] hover:bg-[#0047B3] text-white text-sm font-semibold shadow-md shadow-blue-500/20 transition-all"
+            className="px-4 py-2 rounded-lg bg-[#0052CC] hover:bg-[#0047B3] text-white text-xs sm:text-sm font-semibold shadow-md shadow-blue-500/20 transition-all"
           >
             Register
           </Link>
@@ -55,7 +55,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
       </header>
 
       {/* Hero Section with Hospital Image & Overlay */}
-      <section className="relative w-full min-h-[500px] md:min-h-[580px] overflow-hidden bg-white border-b border-slate-100 flex items-center">
+      <section className="relative w-full min-h-screen overflow-hidden bg-white border-b border-slate-100 flex items-center">
         {/* Background Image Container */}
         <div className="absolute inset-0 z-0">
           <img
@@ -73,11 +73,6 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
             <path strokeWidth="3.5" d="M100 30 C 60 0, 10 40, 100 160 C 190 40, 140 0, 100 30 Z" />
             <path strokeWidth="3.5" d="M120 45 C 80 15, 30 55, 120 175 C 210 55, 160 15, 120 45 Z" />
           </svg>
-        </div>
-
-        {/* TRUST. INNOVATION. CARE. Watermark Text (matching Image 1) */}
-        <div className="absolute right-8 bottom-6 z-10 text-3xl sm:text-4xl md:text-5xl font-black text-white/90 tracking-wider pointer-events-none select-none hidden md:block uppercase text-right drop-shadow-md">
-          TRUST. INNOVATION. CARE.
         </div>
 
         <div className="max-w-7xl mx-auto px-6 relative z-10 w-full py-12">
@@ -236,7 +231,7 @@ export const WelcomePage: React.FC<WelcomePageProps> = ({
           </div>
         </div>
       </section>
-
+      <Feedback />
       {/* Footer */}
       <footer className="mt-auto border-t border-slate-100 py-8 bg-slate-50/50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-slate-500">

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoredUser, AuthUser } from "@/lib/auth";
-import { Activity, HeartPulse, Scale, Droplet, Plus, X } from "lucide-react";
+import { Activity, HeartPulse, Scale, Droplet, Plus, X, TrendingUp, TrendingDown } from "lucide-react";
 import { PatientTable } from "@/components/patient/PatientTable";
 import { PatientForm } from "@/components/patient/PatientForm";
 import { healthMetricService } from "@/services/healthMetricService";
@@ -21,6 +21,7 @@ export default function HealthMetricsPage() {
   const [activeChart, setActiveChart] = useState("Heart Rate");
   const [timeRange, setTimeRange] = useState("1M"); // New Time Range Filter (Default to 1 Month)
   const [error, setError] = useState<string | null>(null);
+  const [tableFilter, setTableFilter] = useState("All");
 
   const fetchMetrics = async (patientId: string) => {
     try {
@@ -283,16 +284,93 @@ export default function HealthMetricsPage() {
             
             {/* NEW: History Log Table */}
             <div className="mt-8">
-              <h2 className="text-xl font-bold text-slate-800 mb-4">History Log</h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-bold text-slate-800">History Log</h2>
+                
+                {/* NEW: Dropdown Filter */}
+                <select 
+                  value={tableFilter} 
+                  onChange={(e) => setTableFilter(e.target.value)}
+                  className="bg-white border border-slate-200 text-sm font-semibold text-slate-600 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm"
+                >
+                  <option value="All">All Metrics</option>
+                  <option value="Heart Rate">Heart Rate</option>
+                  <option value="Blood Pressure">Blood Pressure</option>
+                  <option value="Weight">Weight</option>
+                  <option value="Blood Sugar">Blood Sugar</option>
+                </select>
+              </div>
+
               <PatientTable 
                 columns={[
-                  { key: 'recordedAt', label: 'Date', render: (row) => new Date(row.recordedAt).toLocaleString() },
-                  { key: 'metricType', label: 'Metric Type' },
-                  { key: 'value', label: 'Value', render: (row) => <span className="font-bold">{row.value}</span> },
-                  { key: 'unit', label: 'Unit' }
+                  { 
+                    key: 'recordedAt', 
+                    label: 'Date & Time', 
+                    render: (row) => {
+                      const d = new Date(row.recordedAt);
+                      return (
+                        <div className="flex flex-col">
+                          <span className="font-semibold text-slate-800">{d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                          <span className="text-xs text-slate-500">{d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}</span>
+                        </div>
+                      );
+                    }
+                  },
+                  { 
+                    key: 'metricType', 
+                    label: 'Metric Type',
+                    render: (row) => <span className="font-medium text-slate-700">{row.metricType}</span>
+                  },
+                  { 
+                    key: 'value', 
+                    label: 'Result', 
+                    render: (row) => {
+                      const num = parseFloat(row.value.split('/')[0]); 
+                      
+                      let statusColor = "text-slate-800"; 
+                      let Icon = null;
+                      let statusText = "";
+                      let tooltipMsg = "";
+
+                      if (row.metricType === "Heart Rate") {
+                        if (num > 100) { statusColor = "text-red-600"; Icon = TrendingUp; statusText = "High"; tooltipMsg = "Normal resting heart rate is 60-100 bpm."; }
+                        else if (num < 60) { statusColor = "text-blue-600"; Icon = TrendingDown; statusText = "Low"; tooltipMsg = "Normal resting heart rate is 60-100 bpm."; }
+                      }
+                      else if (row.metricType === "Blood Pressure") {
+                        if (num >= 130) { statusColor = "text-red-600"; Icon = TrendingUp; statusText = "High"; tooltipMsg = "Normal blood pressure is under 120/80 mmHg."; }
+                        else if (num >= 120) { statusColor = "text-orange-500"; Icon = TrendingUp; statusText = "Elevated"; tooltipMsg = "Normal blood pressure is under 120/80 mmHg."; }
+                      }
+                      else if (row.metricType === "Blood Sugar") {
+                        if (num >= 126) { statusColor = "text-red-600"; Icon = TrendingUp; statusText = "High"; tooltipMsg = "Normal fasting blood sugar is 70-99 mg/dL."; }
+                        else if (num >= 100) { statusColor = "text-orange-500"; Icon = TrendingUp; statusText = "Elevated"; tooltipMsg = "Normal fasting blood sugar is 70-99 mg/dL."; }
+                        else if (num < 70) { statusColor = "text-blue-600"; Icon = TrendingDown; statusText = "Low"; tooltipMsg = "Normal fasting blood sugar is 70-99 mg/dL."; }
+                      }
+                      
+                      return (
+                        <div className="flex items-center gap-2">
+                           <span className={`font-bold text-base transition-colors ${statusColor}`}>
+                             {row.value} <span className={`text-sm font-normal ${statusColor === 'text-slate-800' ? 'text-slate-500' : 'opacity-80'}`}>{row.unit}</span>
+                           </span>
+                           
+                           {Icon && (
+                             <div className="group relative cursor-help flex items-center">
+                               <Icon className={`w-4 h-4 ${statusColor} opacity-90`} />
+                               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block w-48 p-2 bg-slate-800 text-white text-xs text-center rounded-lg shadow-lg z-10">
+                                 {tooltipMsg}
+                                 <svg className="absolute text-slate-800 h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+                               </div>
+                             </div>
+                           )}
+                        </div>
+                      );
+                    } 
+                  }
                 ]}
-                data={metrics.sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())}
-                emptyMessage="No vitals logged yet."
+                data={metrics
+                  .filter(m => tableFilter === "All" || m.metricType === tableFilter)
+                  .sort((a, b) => new Date(b.recordedAt).getTime() - new Date(a.recordedAt).getTime())
+                }
+                emptyMessage={`No ${tableFilter === "All" ? "vitals" : tableFilter.toLowerCase()} logged yet.`}
               />
             </div>
           </div>

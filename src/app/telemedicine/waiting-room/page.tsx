@@ -18,6 +18,7 @@ export default function WaitingRoomPage() {
   const [session, setSession] = useState<TelemedicineSession | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [enterError, setEnterError] = useState<string | null>(null);
 
   const role: "PATIENT" | "DOCTOR" = user?.role === "DOCTOR" ? "DOCTOR" : "PATIENT";
   const isInitiator = role === "PATIENT";
@@ -73,8 +74,13 @@ export default function WaitingRoomPage() {
 
   const handleEnterCall = async () => {
     if (!sessionId || !user) return;
-    await telemedicineApi.joinSession(sessionId, { userId: user.id, role });
-    router.push(`/telemedicine/video-room/${sessionId}`);
+    setEnterError(null);
+    try {
+      await telemedicineApi.joinSession(sessionId, { userId: user.id, role });
+      router.push(`/telemedicine/video-room/${sessionId}`);
+    } catch {
+      setEnterError("Could not join the call. The consultation may have ended - please go back and try again.");
+    }
   };
 
   if (loading) {
@@ -86,28 +92,29 @@ export default function WaitingRoomPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-10">
-      <div className="mb-6 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          {session.consultationType === "VIDEO" ? "Video" : "Audio"} Consultation
-        </h1>
-        <p className="text-sm text-slate-500 mt-1">
-          Scheduled for {new Date(session.scheduledStartTime).toLocaleString()}
-        </p>
-      </div>
+      <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-10">
+        <div className="mb-6 text-center">
+          <h1 className="text-2xl font-semibold text-slate-900">
+            {session.consultationType === "VIDEO" ? "Video" : "Audio"} Consultation
+          </h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Scheduled for {new Date(session.scheduledStartTime).toLocaleString()}
+          </p>
+        </div>
 
-      <WaitingRoomCard
-        localStream={localStream}
-        isMicMuted={isMicMuted}
-        isCameraOff={isCameraOff}
-        isAudioOnly={session.consultationType === "AUDIO"}
-        peerJoined={peerJoined}
-        counterpartLabel={role === "PATIENT" ? "your doctor" : "the patient"}
-        onToggleMic={toggleMic}
-        onToggleCamera={toggleCamera}
-        onEnterCall={handleEnterCall}
-      />
-    </div>
+        <WaitingRoomCard
+            localStream={localStream}
+            isMicMuted={isMicMuted}
+            isCameraOff={isCameraOff}
+            isAudioOnly={session.consultationType === "AUDIO"}
+            peerJoined={peerJoined}
+            counterpartLabel={role === "PATIENT" ? "your doctor" : "the patient"}
+            onToggleMic={toggleMic}
+            onToggleCamera={toggleCamera}
+            onEnterCall={handleEnterCall}
+        />
+        {enterError && <p className="mt-4 text-sm text-red-600 text-center max-w-md">{enterError}</p>}
+      </div>
   );
 }
 
@@ -122,8 +129,8 @@ function buildWsUrl(path: string): string {
 
 function CenteredMessage({ text, isError = false }: { text: string; isError?: boolean }) {
   return (
-    <div className="min-h-screen flex items-center justify-center px-4">
-      <p className={`text-sm ${isError ? "text-red-600" : "text-slate-500"}`}>{text}</p>
-    </div>
+      <div className="min-h-screen flex items-center justify-center px-4">
+        <p className={`text-sm ${isError ? "text-red-600" : "text-slate-500"}`}>{text}</p>
+      </div>
   );
 }

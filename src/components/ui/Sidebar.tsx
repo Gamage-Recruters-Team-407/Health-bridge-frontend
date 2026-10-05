@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -30,6 +29,12 @@ import {
   Bed,
   Wrench,
   UserCog,
+  ClipboardList,
+  Plus,
+  AlertTriangle,
+  CalendarClock,
+  Truck,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -87,6 +92,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
           ...(isAdmin
             ? [
+                { title: "Branch Management", href: "/hospital-admin/branch-management", icon: Landmark },
                 { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
                 { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
                 { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
@@ -121,7 +127,6 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "My profile", href: "/doctor/profile", icon: User },
           { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
           { title: "Schedule", href: "/doctor/schedule", icon: Calendar },
@@ -153,7 +158,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Payments", href: "/payments", icon: CreditCard },
           { title: "Reminders", href: "/patient/reminders", icon: Bell },
           { title: "Emergency SOS", href: "/patient/sos", icon: ShieldAlert, badge: "SOS", badgeVariant: "danger" },
-          { title: "Support", href: "/support/patient", icon: LifeBuoy },
+          { title: "Support", href: "/support/patient/sdefault", icon: LifeBuoy },
         ],
       },
     ];
@@ -166,10 +171,15 @@ const getNavGroups = (role: string): NavGroup[] => {
       {
         groupTitle: "Pharmacy",
         items: [
-          { title: "Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
-          { title: "Prescriptions", href: "/pharmacy/prescriptions", icon: FileText },
-          { title: "Inventory", href: "/pharmacy/inventory", icon: Pill },
-          { title: "Sales", href: "/pharmacy/orders", icon: TrendingUp },
+          { title: "Pharmacy Dashboard", href: "/pharmacy/dashboard", icon: LayoutDashboard },
+          { title: "Prescription", href: "/pharmacy/prescriptions", icon: FileText },
+          { title: "Order Management", href: "/pharmacy/orders", icon: ClipboardList },
+          { title: "Medicine Inventory", href: "/pharmacy/inventory", icon: Pill },
+          { title: "Add/ Edit Medicine", href: "/pharmacy/medicines/new", icon: Plus },
+          { title: "Low Stock Alerts", href: "/pharmacy/inventory/low-stock", icon: AlertTriangle },
+          { title: "Expiry Management", href: "/pharmacy/inventory/expiry", icon: CalendarClock },
+          { title: "Deliveries", href: "/pharmacy/deliveries", icon: Truck },
+          { title: "Reports", href: "/pharmacy/reports", icon: FileSpreadsheet },
         ],
       },
     ];

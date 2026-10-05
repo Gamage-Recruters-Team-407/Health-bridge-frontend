@@ -22,10 +22,11 @@ export interface DoctorSession {
   currentQueueNumber: number;
   status: SessionStatus;
   notes?: string;
+  appointmentType?: AppointmentMode;
 }
 
 export interface SessionSearchFilters { doctorId?: string; hospitalId?: string; specialization?: string; date?: string; }
-export interface DoctorSessionInput { hospitalId: string; hospitalName?: string; specializationId?: string; specializationName: string; sessionDate: string; startTime: string; endTime?: string; maxAppointments: number; notes?: string; }
+export interface DoctorSessionInput { hospitalId: string; hospitalName?: string; specializationId?: string; specializationName: string; sessionDate: string; startTime: string; endTime?: string; maxAppointments: number; notes?: string; appointmentType?: AppointmentMode; }
 export interface BookingInput { sessionId: string; patientName: string; patientPhone: string; nicOrPassport: string; email?: string; address?: string; }
 
 export interface Appointment {

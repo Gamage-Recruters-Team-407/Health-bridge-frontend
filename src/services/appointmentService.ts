@@ -1,4 +1,4 @@
-import api, { getApiErrorMessage } from "@/lib/axios";
+import api, { getApiErrorMessage, isMissingDoctorSessionsEndpoint } from "@/lib/axios";
 import type { Appointment, AppointmentFilters, BookingInput, DoctorSession, DoctorSessionInput, SessionSearchFilters, SessionStatus } from "@/types/appointment";
 
 const friendly = async <T>(work: Promise<T>, fallback: string): Promise<T> => {
@@ -11,7 +11,12 @@ export const appointmentService = {
     return friendly(api.get<DoctorSession[]>("/doctor-sessions/search", { params }), "Unable to load available sessions.");
   },
   getSession(id: string) { return friendly(api.get<DoctorSession>(`/doctor-sessions/${encodeURIComponent(id)}`), "Unable to load this session."); },
-  getMySessions() { return friendly(api.get<DoctorSession[]>("/doctor-sessions/mine"), "Unable to load your sessions."); },
+  getMySessions() {
+    return api.get<DoctorSession[]>("/doctor-sessions/mine").catch((error) => {
+      if (isMissingDoctorSessionsEndpoint(error)) return [];
+      throw new Error(getApiErrorMessage(error, "Unable to load your sessions."));
+    });
+  },
   createSession(input: DoctorSessionInput) { return friendly(api.post<DoctorSession>("/doctor-sessions", input), "Unable to create the session."); },
   updateSession(id: string, input: DoctorSessionInput) { return friendly(api.put<DoctorSession>(`/doctor-sessions/${encodeURIComponent(id)}`, input), "Unable to update the session."); },
   updateSessionStatus(id: string, status: SessionStatus) { return friendly(api.patch<DoctorSession>(`/doctor-sessions/${encodeURIComponent(id)}/status`, undefined, { params: { status } }), "Unable to change the session status."); },

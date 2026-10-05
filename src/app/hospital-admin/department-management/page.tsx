@@ -4,6 +4,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Department, DepartmentStats } from '../../../types/department';
 import { departmentService } from '../../../services/departmentService';
+import { branchService, Branch } from '../../../services/branchService';
 import {
   Building2,
   CheckCircle2,
@@ -29,19 +30,23 @@ import {
 
 export default function ManageDepartmentPage() {
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [selectedBranch, setSelectedBranch] = useState<string>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<'All' | 'Active' | 'Inactive'>('All');
   const [sortBy, setSortBy] = useState<'id' | 'name' | 'doctors' | 'staff'>('id');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
-  // Fetch departments from Backend API
+  // Fetch departments & branches from Backend API
   useEffect(() => {
     const fetchFromApi = async () => {
       try {
-        const data = await departmentService.getAll();
-        if (data) {
-          setDepartments(data);
-        }
+        const [data, bList] = await Promise.all([
+          departmentService.getAll(),
+          branchService.getAllBranches().catch(() => [])
+        ]);
+        if (data) setDepartments(data);
+        if (bList) setBranches(bList);
       } catch (err) {
         console.warn('Backend API disconnected or loading:', err);
       }
@@ -102,8 +107,9 @@ export default function ManageDepartmentPage() {
           dept.location.toLowerCase().includes(searchTerm.toLowerCase());
         
         const matchesStatus = statusFilter === 'All' ? true : dept.status === statusFilter;
+        const matchesBranch = selectedBranch === 'All' ? true : (dept.branchCode === selectedBranch || dept.branchId === selectedBranch);
 
-        return matchesSearch && matchesStatus;
+        return matchesSearch && matchesStatus && matchesBranch;
       })
       .sort((a, b) => {
         let valA: any = a[sortBy === 'doctors' ? 'doctorsCount' : sortBy === 'staff' ? 'staffCount' : sortBy];
@@ -129,10 +135,8 @@ export default function ManageDepartmentPage() {
 
   // Handle Form Open for Add
   const handleOpenAddModal = () => {
-    const nextIdNum = departments.length + 1;
-    const autoId = `DEP-${String(nextIdNum).padStart(3, '0')}`;
     setFormData({
-      id: autoId,
+      id: '',
       name: '',
       head: '',
       doctorsCount: 0,
@@ -298,6 +302,26 @@ export default function ManageDepartmentPage() {
         {/* Action Controls & Filters Bar */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto">
+            {/* Branch Filter */}
+            <div className="relative flex-1 sm:flex-initial min-w-0">
+              <select
+                value={selectedBranch}
+                onChange={(e) => {
+                  setSelectedBranch(e.target.value);
+                  setCurrentPage(1);
+                }}
+                className="w-full appearance-none pl-7 sm:pl-9 pr-6 sm:pr-8 py-2 bg-slate-100 hover:bg-slate-200/70 text-slate-700 text-[11px] sm:text-xs font-semibold rounded-lg border border-slate-200 cursor-pointer outline-none transition-colors truncate"
+              >
+                <option value="All">Branch: All Branches</option>
+                {branches.map((b) => (
+                  <option key={b.id} value={b.branchCode}>
+                    Branch: {b.branchName} ({b.branchCode})
+                  </option>
+                ))}
+              </select>
+              <Building className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 sm:left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            </div>
+
             {/* Status Filter */}
             <div className="relative flex-1 sm:flex-initial min-w-0">
               <select
@@ -506,28 +530,16 @@ export default function ManageDepartmentPage() {
             </div>
 
             <form onSubmit={handleSaveDepartment} className="p-6 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Department ID</label>
-                  <input
-                    type="text"
-                    value={formData.id}
-                    onChange={(e) => setFormData({ ...formData, id: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-slate-600 font-semibold mb-1">Department Name *</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Cardiology"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
-                    required
-                  />
-                </div>
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Department Name *</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Cardiology"
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  required
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
