@@ -4,7 +4,6 @@ import { useEffect, useState } from "react";
 import api from "@/lib/axios";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { useLanguage } from "@/context/LanguageContext";
-import { Locale } from "@/constants/translations";
 
 // ---- Types ----
 type NotificationPrefs = {
@@ -17,25 +16,6 @@ type PrivacyPrefs = {
   profileVisibility: "public" | "doctors_only" | "private";
   shareDataForResearch: boolean;
 };
-
-type LocalizationPrefs = {
-  language: string;
-  timezone: string;
-};
-
-const LANGUAGES = [
-  { code: "en", label: "English" },
-  { code: "si", label: "\u0dc3\u0dd2\u0d82\u0dc4\u0dbd (Sinhala)" },
-  { code: "ta", label: "\u0ba4\u0bae\u0bbf\u0bb4\u0bcd (Tamil)" },
-];
-
-const TIMEZONES = [
-  "Asia/Colombo",
-  "Asia/Kolkata",
-  "Asia/Dubai",
-  "Europe/London",
-  "UTC",
-];
 
 // Small reusable toggle switch
 function ToggleSwitch({
@@ -68,7 +48,7 @@ function ToggleSwitch({
 }
 
 export default function AccountSettingsPage() {
-  const { locale, setLocale, t } = useLanguage();
+  const { t } = useLanguage();
 
   // Account status
   const [accountStatus, setAccountStatus] = useState("Active");
@@ -94,13 +74,6 @@ export default function AccountSettingsPage() {
   });
   const [savingPrivacy, setSavingPrivacy] = useState(false);
 
-  // Localization
-  const [localization, setLocalization] = useState<LocalizationPrefs>({
-    language: "en",
-    timezone: "Asia/Colombo",
-  });
-  const [savingLocalization, setSavingLocalization] = useState(false);
-
   // Shared state
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -123,15 +96,6 @@ export default function AccountSettingsPage() {
           profileVisibility: data.privacyPrefs?.profileVisibility ?? "doctors_only",
           shareDataForResearch: data.privacyPrefs?.shareDataForResearch ?? false,
         });
-        const savedLanguage = data.localizationPrefs?.language ?? "en";
-        setLocalization({
-          language: savedLanguage,
-          timezone: data.localizationPrefs?.timezone ?? "Asia/Colombo",
-        });
-        // Sync the app-wide UI language with what's saved on the backend
-        if (savedLanguage && savedLanguage !== locale) {
-          setLocale(savedLanguage as Locale);
-        }
       })
       .catch(() => setError(t("settings.error.load")))
       .finally(() => setLoading(false));
@@ -246,34 +210,6 @@ export default function AccountSettingsPage() {
     }
   };
 
-  // ---- Localization handlers ----
-  const handleLocalizationChange = (
-    e: React.ChangeEvent<HTMLSelectElement>
-  ) => {
-    const { name, value } = e.target;
-    setLocalization((prev) => ({ ...prev, [name]: value }));
-
-    // Live-update the app-wide language immediately when the dropdown changes,
-    // so the UI reflects the choice before the user even clicks "Save".
-    if (name === "language") {
-      setLocale(value as Locale);
-    }
-  };
-
-  const handleSaveLocalization = async () => {
-    setSavingLocalization(true);
-    setError("");
-    try {
-      await api.put("/users/profile/localization", localization);
-      flashSuccess(t("settings.success.localization"));
-    } catch (err) {
-      console.error(err);
-      setError(t("settings.error.localization"));
-    } finally {
-      setSavingLocalization(false);
-    }
-  };
-
   return (
     <DashboardLayout pageTitle={t("settings.pageTitle")}>
       {loading ? (
@@ -358,7 +294,7 @@ export default function AccountSettingsPage() {
                 <p className="text-sm text-gray-500">
                   {t("settings.security.passwordDesc")}
                 </p>
-                           </div>
+              </div>
               <button
                 onClick={() => (window.location.href = "/forgot-password")}
                 className="bg-blue-50 hover:bg-blue-100 text-blue-600 font-medium px-4 py-2 rounded-lg transition"
@@ -489,61 +425,6 @@ export default function AccountSettingsPage() {
               </button>
             </div>
           </section>
-
-          {/* ---- Localization ---- */}
-          <section className="bg-white rounded-2xl shadow-md p-8">
-            <h2 className="text-lg font-semibold text-gray-800 mb-6">
-              {t("settings.language.title")}
-            </h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-2">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("settings.language.label")}
-                </label>
-                <select
-                  name="language"
-                  value={localization.language}
-                  onChange={handleLocalizationChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {LANGUAGES.map((lang) => (
-                    <option key={lang.code} value={lang.code}>
-                      {lang.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  {t("settings.timezone.label")}
-                </label>
-                <select
-                  name="timezone"
-                  value={localization.timezone}
-                  onChange={handleLocalizationChange}
-                  className="w-full border border-gray-300 rounded-lg px-4 py-2.5 text-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-                >
-                  {TIMEZONES.map((tz) => (
-                    <option key={tz} value={tz}>
-                      {tz}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={handleSaveLocalization}
-                disabled={savingLocalization}
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-lg transition disabled:opacity-50"
-              >
-                {savingLocalization ? t("settings.language.saving") : t("settings.language.save")}
-              </button>
-            </div>
-                        </section>
 
           <button
             onClick={() => (window.location.href = "/profile")}
