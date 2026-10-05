@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Sidebar } from "@/components/ui/Sidebar";
 import { Navbar } from "@/components/ui/Navbar";
 import { Footer } from "./Footer";
 import { ToastProvider } from "@/components/ui/Toast";
+import { AUTH_CHANGE_EVENT, getStoredUser, AuthUser } from "@/lib/auth";
 
 export interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -22,6 +23,22 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
 
+  // Logged-in user (read after mount so server and client HTML match)
+  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const loadUser = () => setAuthUser(getStoredUser());
+    loadUser();
+
+    // Keep in sync when the user logs in / logs out
+    window.addEventListener(AUTH_CHANGE_EVENT, loadUser);
+    return () => window.removeEventListener(AUTH_CHANGE_EVENT, loadUser);
+  }, []);
+
+  // Props (if a page passes them) win, otherwise use the logged-in user
+  const effectiveRole = userRole ?? authUser?.role;
+  const effectiveName = userName ?? authUser?.fullName ?? authUser?.email;
+
   return (
     <ToastProvider>
       <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 font-sans antialiased selection:bg-blue-500 dark:text-slate-100 selection:text-white">
@@ -31,8 +48,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           onToggleCollapse={() => setCollapsed(!collapsed)}
           mobileOpen={mobileOpen}
           onCloseMobile={() => setMobileOpen(false)}
-          userRole={userRole}
-          userName={userName}
+          userRole={effectiveRole}
+          userName={effectiveName}
         />
 
         {/* Main Content Area */}
@@ -40,8 +57,8 @@ export const DashboardLayout: React.FC<DashboardLayoutProps> = ({
           <Navbar
             title={pageTitle}
             onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)}
-            userName={userName}
-            userRole={userRole}
+            userName={effectiveName}
+            userRole={effectiveRole}
           />
 
           <main className="flex-1 px-4 md:px-6 py-4 w-full space-y-6">
