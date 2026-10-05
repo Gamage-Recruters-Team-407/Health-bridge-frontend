@@ -6,14 +6,12 @@ import Link from "next/link";
 import {
   Shield,
   ShieldCheck,
-  ShieldAlert,
   ArrowLeft,
   Calendar,
   Building2,
   DollarSign,
   User,
   FileText,
-  Clock,
   Printer,
   PauseCircle,
   PlayCircle,
@@ -62,6 +60,8 @@ export default function PolicyDetailsPage() {
   const [claims, setClaims] = useState<InsuranceClaim[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 6;
 
   // Self-contained notifications
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -77,25 +77,34 @@ export default function PolicyDetailsPage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const loadPolicyAndClaims = async () => {
-    if (!id) return;
-    setLoading(true);
-    try {
-      const [policyData, claimsData] = await Promise.all([
-        insuranceService.getPolicyById(id),
-        insuranceService.getClaimsByPolicyId(id).catch(() => []),
-      ]);
-      setPolicy(policyData);
-      setClaims(claimsData);
-    } catch {
-      showError("Failed to load policy details from server.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    loadPolicyAndClaims();
+    let isMounted = true;
+    if (!id) return;
+    Promise.all([
+      insuranceService.getPolicyById(id),
+      insuranceService.getClaimsByPolicyId(id).catch(() => []),
+    ])
+      .then(([policyData, claimsData]) => {
+        if (isMounted) {
+          setPolicy(policyData);
+          setClaims(claimsData);
+          setErrorMessage(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage("Failed to load policy details from server.");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [id]);
 
   const handleStatusChange = async (newStatus: PolicyStatus) => {
@@ -395,60 +404,112 @@ export default function PolicyDetailsPage() {
                 </TableBody>
               </Table>
             ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Claim #</TableHead>
-                    <TableHead>Treatment Description</TableHead>
-                    <TableHead>Claimed Amount</TableHead>
-                    <TableHead>Approved Amount</TableHead>
-                    <TableHead>Submitted Date</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Action</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {claims.map((c) => (
-                    <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
-                      <TableCell>
-                        <Link
-                          href={`/insurance-officer/claims/${c.id}`}
-                          className="font-mono font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group"
-                        >
-                          <FileText className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
-                          <span>{c.claimNumber}</span>
-                        </Link>
-                      </TableCell>
-                      <TableCell className="max-w-xs truncate text-xs text-slate-700">
-                        {c.treatmentDescription}
-                      </TableCell>
-                      <TableCell className="font-semibold text-xs text-slate-900">
-                        Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
-                      </TableCell>
-                      <TableCell className="font-bold text-xs text-emerald-600">
-                        {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
-                      </TableCell>
-                      <TableCell className="text-xs text-slate-500">
-                        {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : "—"}
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={claimStatusVariant[c.status]}>{c.status}</Badge>
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
-                          className="h-7 text-xs px-2 gap-1"
-                        >
-                          <span>Review</span>
-                          <ArrowUpRight className="w-3 h-3" />
-                        </Button>
-                      </TableCell>
+              <>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Claim #</TableHead>
+                      <TableHead>Treatment Description</TableHead>
+                      <TableHead>Claimed Amount</TableHead>
+                      <TableHead>Approved Amount</TableHead>
+                      <TableHead>Submitted Date</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead className="text-center">Actions</TableHead>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                  </TableHeader>
+                  <TableBody>
+                    {claims
+                      .slice((currentPage - 1) * pageSize, currentPage * pageSize)
+                      .map((c) => (
+                        <TableRow key={c.id} className="hover:bg-slate-50/70 transition-colors">
+                          <TableCell>
+                            <Link
+                              href={`/insurance-officer/claims/${c.id}`}
+                              className="font-mono font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1 group"
+                            >
+                              <FileText className="w-3.5 h-3.5 text-blue-500 group-hover:scale-110 transition-transform" />
+                              <span>{c.claimNumber}</span>
+                            </Link>
+                          </TableCell>
+                          <TableCell className="max-w-xs truncate text-xs text-slate-700">
+                            {c.treatmentDescription}
+                          </TableCell>
+                          <TableCell className="font-semibold text-xs text-slate-900">
+                            Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
+                          </TableCell>
+                          <TableCell className="font-bold text-xs text-emerald-600">
+                            {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
+                          </TableCell>
+                          <TableCell className="text-xs text-slate-500">
+                            {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : "—"}
+                          </TableCell>
+                          <TableCell>
+                            <Badge variant={claimStatusVariant[c.status]}>{c.status}</Badge>
+                          </TableCell>
+                          <TableCell className="text-center">
+                            <div className="flex items-center justify-center">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
+                                className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] inline-flex items-center justify-center"
+                              >
+                                <span>View</span>
+                                <ArrowUpRight className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                  </TableBody>
+                </Table>
+
+                {/* Pagination Controls (Matching Screenshot 2) */}
+                {claims.length > pageSize && (
+                  <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                    <div>
+                      Showing <span className="font-semibold text-[#0A2540]">{(currentPage - 1) * pageSize + 1}</span> to{" "}
+                      <span className="font-semibold text-[#0A2540]">{Math.min(currentPage * pageSize, claims.length)}</span> of{" "}
+                      <span className="font-semibold text-[#0A2540]">{claims.length}</span> claims
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+                        disabled={currentPage === 1}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                      >
+                        Previous
+                      </button>
+
+                      {Array.from({ length: Math.ceil(claims.length / pageSize) || 1 }, (_, i) => i + 1).map((pageNum) => (
+                        <button
+                          key={pageNum}
+                          type="button"
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                            currentPage === pageNum
+                              ? "bg-blue-600 text-white shadow-xs"
+                              : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      ))}
+
+                      <button
+                        type="button"
+                        onClick={() => setCurrentPage((p) => Math.min(Math.ceil(claims.length / pageSize) || 1, p + 1))}
+                        disabled={currentPage === Math.ceil(claims.length / pageSize)}
+                        className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                      >
+                        Next
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>

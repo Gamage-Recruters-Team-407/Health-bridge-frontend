@@ -8,6 +8,7 @@ import {
 } from "@/services/supportDocumentService";
 
 import { createTicket } from "@/services/supportService";
+
 import Navbar from "@/components/ui/Navbar";
 import Sidebar from "@/components/ui/Sidebar";
 import CreateTicketModal from "@/components/support/CreateTicketModal";
@@ -84,6 +85,8 @@ export default function PatientSupportPage() {
   const [documents, setDocuments] = useState<SupportDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   /* =======================================================
      LOAD SUPPORT DOCUMENTS
@@ -147,18 +150,21 @@ export default function PatientSupportPage() {
      ======================================================= */
 
 return (
-  <div className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+  <div className="flex min-h-screen bg-gradient-to-b from-slate-50 to-slate-100">
+    <Sidebar
+      collapsed={collapsed}
+      onToggleCollapse={() => setCollapsed(!collapsed)}
+      mobileOpen={mobileOpen}
+      onCloseMobile={() => setMobileOpen(false)}
+      userRole="PATIENT"
+    />
 
-    {/* Sidebar */}
-    <aside className="fixed left-0 top-0 z-30 h-screen w-64">
-      <Sidebar />
-    </aside>
-
-    {/* Right side: Navbar + Main Content */}
-    <div className="ml-64 min-h-screen">
-
-      {/* Navbar */}
-       <Navbar/>
+    <div className="flex min-h-screen min-w-0 flex-1 flex-col">
+      <Navbar
+        title="Support"
+        onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)}
+        userRole="PATIENT"
+      />
 
       {/* Main Content */}
       <main className="p-6">
@@ -174,13 +180,8 @@ return (
               <div className="overflow-hidden rounded-2xl border border-slate-200/60 bg-white shadow-md shadow-slate-200/50 ring-1 ring-slate-900/5">
 
                 {/* Header banner */}
-                <div className="relative overflow-hidden bg-gradient-to-br from-[#0F6CBD] via-[#1B84D6] to-[#2E9BF0] px-6 py-3 sm:px-8">
-
-                  <div className="absolute -right-10 -top-10 h-40 w-40 rounded-full bg-white/10 blur-sm" />
-
-                  <div className="absolute -bottom-12 right-20 h-28 w-28 rounded-full bg-white/10" />
-
-                  <div className="absolute left-1/3 top-0 h-full w-px bg-white/5" />
+<div className="relative overflow-hidden bg-[#0052CC] px-6 py-3 sm:px-8">
+                
 
                   <h1 className="relative text-2xl font-bold tracking-tight text-white sm:text-3xl">
                     Support Documents
@@ -347,7 +348,7 @@ return (
                 {/* My Support Tickets shortcut */}
                 <Link
                   href="/support/patient"
-                  className="group flex items-center justify-between gap-3 rounded-2xl border border-[#0F6CBD]/20 bg-gradient-to-r from-[#0F6CBD] to-[#2E9BF0] px-5 py-4 text-white shadow-md shadow-[#0F6CBD]/20 transition-all duration-200 hover:shadow-lg hover:shadow-[#0F6CBD]/30 hover:brightness-105"
+                  className="group flex items-center justify-between gap-3 rounded-2xl border border-[#0F6CBD]/20 bg-[#0052CC] px-5 py-4 text-white shadow-md shadow-[#0F6CBD]/20 transition-all duration-200 hover:shadow-lg hover:shadow-[#0F6CBD]/30 hover:brightness-105"
                 >
 
                   <span className="flex items-center gap-3">
@@ -403,8 +404,7 @@ return (
 
 
                 {/* Create Ticket Card */}
-                <div className="rounded-2xl border border-slate-200/60 bg-white p-1 shadow-md shadow-slate-200/50 ring-1 ring-slate-900/5">
-
+<div>
                   <CreateTicketModal
                     onCreate={createSupportTicket}
                   />

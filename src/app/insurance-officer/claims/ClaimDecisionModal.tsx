@@ -3,10 +3,9 @@
 import { useState } from "react";
 import Modal from "@/components/ui/Modal";
 import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 import { insuranceService } from "@/services/insuranceService";
 import { InsuranceClaim } from "@/types/insurance";
-import { CheckCircle2, AlertTriangle, ShieldCheck, XCircle } from "lucide-react";
+import { CheckCircle2, AlertTriangle, XCircle } from "lucide-react";
 
 interface ClaimDecisionModalProps {
   claim: InsuranceClaim;
@@ -71,8 +70,11 @@ export default function ClaimDecisionModal({
         rejectionReason: !isApprove ? rejectionText : undefined,
       });
       onDecided();
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Failed to submit claim decision.";
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        "Failed to submit claim decision.";
       setErrorMessage(msg);
     } finally {
       setSubmitting(false);

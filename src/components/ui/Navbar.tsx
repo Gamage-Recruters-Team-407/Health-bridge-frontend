@@ -4,7 +4,6 @@ import React, { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Menu,
-  Search,
   Bell,
   AlertTriangle,
   User,
@@ -88,8 +87,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-
-  const [searchQuery, setSearchQuery] = useState("");
 
   // ============================================================
   // LOAD NOTIFICATIONS
@@ -201,23 +198,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     window.location.href = "/login";
   };
 
-  const handleSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
-    if (event.key !== "Enter") return;
-
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return;
-
-    const destination = query.includes("record")
-      ? "/medical-records"
-      : query.includes("patient")
-        ? "/patients"
-        : query.includes("doctor")
-          ? "/doctors"
-          : "/dashboard";
-
-    router.push(destination);
-  };
-
   const handleEmergency = () => {
     router.push(userRole.toUpperCase() === "DOCTOR" ? "/emergency" : "/patient/sos");
   };
@@ -265,24 +245,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>•</span>
             <span>Hospital Node #01</span>
           </div>
-        </div>
-      </div>
-
-      {/* SEARCH */}
-      <div className="flex-1 max-w-md hidden md:block">
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(event) => setSearchQuery(event.target.value)}
-            onKeyDown={handleSearchKeyDown}
-            placeholder="Search patients, doctors, medical records..."
-            className="w-full pl-10 pr-12 py-2 text-xs rounded-xl bg-[#F8FAFC] border border-transparent focus:border-blue-500 focus:bg-white text-[#0A2540] placeholder-slate-400 transition-all outline-none"
-          />
-          <kbd className="absolute right-3 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-white rounded border border-slate-200 pointer-events-none">
-            ⌘K
-          </kbd>
         </div>
       </div>
 

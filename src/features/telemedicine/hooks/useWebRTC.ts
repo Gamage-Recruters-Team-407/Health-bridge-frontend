@@ -40,6 +40,8 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
   const wsRef = useRef<WebSocket | null>(null);
   const cameraTrackRef = useRef<MediaStreamTrack | null>(null);
   const pendingCandidatesRef = useRef<RTCIceCandidateInit[]>([]);
+  const localStreamRef = useRef<MediaStream | null>(null);
+  const startedRef = useRef(false);
 
   const sendSignal = useCallback((type: SignalingMessage["type"], payload?: unknown) => {
     const ws = wsRef.current;
@@ -54,6 +56,9 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
   }, [roomCode, userId]);
 
   const createPeerConnection = useCallback((stream: MediaStream) => {
+    // Always start from a clean connection: a stale one (from an earlier peer) cannot be re-used.
+    pcRef.current?.close();
+    pendingCandidatesRef.current = [];
     const pc = new RTCPeerConnection({ iceServers: ICE_SERVERS });
 
     stream.getTracks().forEach((track) => pc.addTrack(track, stream));
@@ -105,9 +110,11 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
     switch (message.type) {
       case "peer-joined":
         setPeerJoined(true);
-        if (isInitiator && pc) {
-          const offer = await pc.createOffer();
-          await pc.setLocalDescription(offer);
+        if (isInitiator && localStreamRef.current) {
+          // A (re)joining peer needs a brand-new connection, otherwise the offer targets a dead transport.
+          const fresh = createPeerConnection(localStreamRef.current);
+          const offer = await fresh.createOffer();
+          await fresh.setLocalDescription(offer);
           sendSignal("offer", offer);
         }
         break;
@@ -116,15 +123,18 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
         setPeerJoined(false);
         setRemoteStream(null);
         setCallState("disconnected");
+        // Get ready for the peer coming back (e.g. moving from waiting room to the call room).
+        if (localStreamRef.current) createPeerConnection(localStreamRef.current);
         break;
 
       case "offer": {
-        if (!pc || !message.payload) return;
+        if (!message.payload || !localStreamRef.current) return;
         const offer = JSON.parse(message.payload) as RTCSessionDescriptionInit;
-        await pc.setRemoteDescription(new RTCSessionDescription(offer));
+        const answerer = pc && pc.signalingState === "stable" && !pc.remoteDescription ? pc : createPeerConnection(localStreamRef.current);
+        await answerer.setRemoteDescription(new RTCSessionDescription(offer));
         await flushPendingCandidates();
-        const answer = await pc.createAnswer();
-        await pc.setLocalDescription(answer);
+        const answer = await answerer.createAnswer();
+        await answerer.setLocalDescription(answer);
         sendSignal("answer", answer);
         break;
       }
@@ -158,15 +168,26 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
       default:
         break;
     }
-  }, [flushPendingCandidates, isInitiator, sendSignal]);
+  }, [createPeerConnection, flushPendingCandidates, isInitiator, sendSignal]);
 
   const start = useCallback(async () => {
+    // React StrictMode runs effects twice in dev; without this we would open two sockets/cameras.
+    if (startedRef.current) return;
+    startedRef.current = true;
     setCallState("connecting");
 
     const constraints: MediaStreamConstraints =
-      consultationType === "VIDEO" ? { video: true, audio: true } : { video: false, audio: true };
+        consultationType === "VIDEO" ? { video: true, audio: true } : { video: false, audio: true };
 
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    let stream: MediaStream;
+    try {
+      stream = await navigator.mediaDevices.getUserMedia(constraints);
+    } catch (err) {
+      startedRef.current = false;
+      setCallState("failed");
+      throw err;
+    }
+    localStreamRef.current = stream;
     setLocalStream(stream);
     cameraTrackRef.current = stream.getVideoTracks()[0] ?? null;
 
@@ -195,11 +216,13 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
     pcRef.current = null;
     wsRef.current?.close();
     wsRef.current = null;
-    localStream?.getTracks().forEach((track) => track.stop());
+    localStreamRef.current?.getTracks().forEach((track) => track.stop());
+    localStreamRef.current = null;
+    startedRef.current = false;
     setLocalStream(null);
     setRemoteStream(null);
     setCallState("idle");
-  }, [localStream, sendSignal]);
+  }, [sendSignal]);
 
   const toggleMic = useCallback(() => {
     if (!localStream) return;
@@ -254,7 +277,9 @@ export function useWebRTC({ roomCode, userId, signalingUrl, consultationType, is
     return () => {
       pcRef.current?.close();
       wsRef.current?.close();
-      localStream?.getTracks().forEach((track) => track.stop());
+      localStreamRef.current?.getTracks().forEach((track) => track.stop());
+      localStreamRef.current = null;
+      startedRef.current = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);

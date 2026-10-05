@@ -77,7 +77,7 @@ export default function ConsultationDetailPage() {
 
         {session.recordingEnabled && (
           <p className="text-xs text-slate-500 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 mb-6">
-            This consultation may be recorded for clinical record-keeping. You'll be asked to
+            This consultation may be recorded for clinical record-keeping. You&#39;ll be asked to
             confirm consent before recording starts.
           </p>
         )}

@@ -197,7 +197,7 @@ setSelectedId((current) =>
   {/* New Ticket Button */}
   <Link
     href="/support/patient/sdefault"
-    className="mb-1 inline-flex items-center rounded-lg bg-[#0F6CBD] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0F6CBD] focus:ring-offset-2"
+    className="mb-1 inline-flex items-center rounded-lg bg-[#0052CC] px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-[#0052CC] focus:outline-none focus:ring-2 focus:ring-[#0F6CBD] focus:ring-offset-2"
   >
     + New Ticket
   </Link>
@@ -309,7 +309,7 @@ setSelectedId((current) =>
 
             <div className="flex-1 overflow-y-auto">
               {ticket.replies.map((r) => (
-                <div key={r.id} className="border-b border-[#EDEBE9] px-6 py-4">
+                <div key={r.id} className=" px-6 py-2">
                   <ChatBubble
                     reply={r}
                     isOwn={r.senderRole === "USER"}

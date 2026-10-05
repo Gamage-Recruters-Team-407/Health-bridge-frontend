@@ -6,10 +6,6 @@ import Link from "next/link";
 import {
   Shield,
   ArrowLeft,
-  Building2,
-  Calendar,
-  DollarSign,
-  User,
   CheckCircle2,
   AlertTriangle,
   FileCheck,
@@ -120,8 +116,11 @@ export default function NewPolicyPage() {
       setTimeout(() => {
         router.push(`/insurance-officer/policies/${created.id}`);
       }, 1200);
-    } catch (err: any) {
-      const msg = err?.response?.data?.message || err?.message || "Failed to create policy.";
+    } catch (err: unknown) {
+      const msg =
+        (err as { response?: { data?: { message?: string } }; message?: string })?.response?.data?.message ||
+        (err as { message?: string })?.message ||
+        "Failed to create policy.";
       showError(msg);
     } finally {
       setSubmitting(false);
