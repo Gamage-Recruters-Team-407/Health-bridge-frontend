@@ -102,7 +102,7 @@ export const StatCard: React.FC<StatCardProps> = ({
   icon,
   trend,
   subtitle,
-  iconBgColor = "bg-blue-50 text-blue-600 dark:bg-blue-950/60 dark:text-blue-400",
+  iconBgColor = "bg-blue-50 text-blue-600",
   className,
   ...props
 }) => {
@@ -110,10 +110,10 @@ export const StatCard: React.FC<StatCardProps> = ({
     <Card className={cn("relative overflow-hidden", className)} {...props}>
       <div className="flex items-start justify-between">
         <div className="space-y-1">
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+          <p className="text-xs font-semibold uppercase tracking-wider text-slate-500">
             {title}
           </p>
-          <div className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+          <div className="text-2xl font-bold text-slate-900 tracking-tight">
             {value}
           </div>
         </div>
@@ -131,10 +131,10 @@ export const StatCard: React.FC<StatCardProps> = ({
               className={cn(
                 "inline-flex items-center font-semibold px-1.5 py-0.5 rounded-md",
                 trend.isNeutral
-                  ? "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  ? "bg-slate-100 text-slate-600"
                   : trend.isPositive
-                  ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400"
-                  : "bg-red-50 text-red-700 dark:bg-red-950/60 dark:text-red-400"
+                  ? "bg-emerald-50 text-emerald-700"
+                  : "bg-red-50 text-red-700"
               )}
             >
               {trend.isNeutral ? (
@@ -147,7 +147,7 @@ export const StatCard: React.FC<StatCardProps> = ({
               {trend.value}
             </span>
           )}
-          <span className="text-slate-500 dark:text-slate-400">
+          <span className="text-slate-500">
             {trend?.label || subtitle}
           </span>
         </div>
