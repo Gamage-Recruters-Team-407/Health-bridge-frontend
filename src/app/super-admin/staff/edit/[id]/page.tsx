@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { User, Mail, Phone, Lock, Save, ArrowLeft, CheckCircle2, ShieldCheck, Building, Briefcase } from "lucide-react";
+import { User, Mail, Phone, Lock, Save, ArrowLeft, CheckCircle2, ShieldCheck, MapPin, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { superAdminService } from "@/services/superadmin.service";
@@ -20,7 +20,7 @@ export default function EditStaffPage() {
     email: "",
     phone: "",
     role: "Doctor",
-    department: "General Medicine",
+    branch: "",
     staffId: "",
     accountStatus: "ACTIVE"
   });
@@ -35,7 +35,7 @@ export default function EditStaffPage() {
           email: data.email || "",
           phone: data.phone || "",
           role: data.role || "Doctor",
-          department: data.department || "General Medicine",
+          branch: data.branch || "",
           staffId: data.staffId || "",
           accountStatus: data.accountStatus || "ACTIVE"
         });
@@ -82,22 +82,20 @@ export default function EditStaffPage() {
   }
 
   return (
-    <div className="flex flex-col w-full min-h-screen bg-slate-50">
+    <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
       
       {/* Top Navigation Bar */}
-      <div className="w-full bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
-        <div className="flex items-center gap-4">
-          <Link href="/super-admin/staff" className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
-            <ArrowLeft size={20} />
-          </Link>
-          <div>
-            <h1 className="text-xl font-bold text-slate-900">Edit Staff Profile</h1>
-            <p className="text-xs text-slate-500 font-medium">Update details for {formData.firstName} {formData.lastName}</p>
-          </div>
+      <div className="flex items-center gap-4 mb-2">
+        <Link href="/super-admin/staff" className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+          <ArrowLeft size={20} />
+        </Link>
+        <div>
+          <h1 className="text-xl font-bold text-slate-900">Edit Staff Profile</h1>
+          <p className="text-xs text-slate-500 font-medium">Update details for {formData.firstName} {formData.lastName}</p>
         </div>
       </div>
 
-      <div className="flex-1 w-full max-w-4xl mx-auto p-6 lg:p-8">
+      <div className="w-full">
         
         <form onSubmit={handleSubmit} className="space-y-8">
           
@@ -218,23 +216,23 @@ export default function EditStaffPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Department</label>
+                <label className="text-sm font-bold text-slate-700">Branch</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building size={16} className="text-slate-400" />
+                    <MapPin size={16} className="text-slate-400" />
                   </div>
                   <select 
-                    name="department"
-                    value={formData.department}
+                    name="branch"
+                    value={formData.branch}
                     onChange={handleChange}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20 outline-none transition-all text-sm appearance-none bg-white"
                   >
-                    <option value="General Medicine">General Medicine</option>
-                    <option value="Cardiology">Cardiology</option>
-                    <option value="Pediatrics">Pediatrics</option>
-                    <option value="Orthopedics">Orthopedics</option>
-                    <option value="Laboratory">Laboratory</option>
-                    <option value="Administration">Administration</option>
+                    <option value="" disabled>Select Branch</option>
+                    <option value="Colombo">Colombo</option>
+                    <option value="Gampaha">Gampaha</option>
+                    <option value="Kalutara">Kalutara</option>
+                    <option value="Kegalle">Kegalle</option>
+                    <option value="Ratnapura">Ratnapura</option>
                   </select>
                 </div>
               </div>

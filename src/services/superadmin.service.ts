@@ -129,6 +129,10 @@ export const superAdminService = {
     return api.delete(`/users/${id}`);
   },
 
+  async getUserById(id: string): Promise<UserProfileResponse> {
+    return api.get<UserProfileResponse>(`/users/profile/${id}`);
+  },
+
   async updateUserDetails(id: string, data: any): Promise<UserProfileResponse> {
     return api.put<UserProfileResponse>(`/users/${id}`, data);
   },

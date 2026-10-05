@@ -11,12 +11,12 @@ import { getToken, getStoredUser, AuthUser } from "@/lib/auth";
 export default function SuperAdminLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
-  
+
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  
+
   const isMounted = useRef(true);
   const hasChecked = useRef(false);
 
