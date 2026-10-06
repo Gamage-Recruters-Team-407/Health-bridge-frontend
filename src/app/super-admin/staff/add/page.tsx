@@ -16,9 +16,9 @@ export default function AddStaffPage() {
     email: "",
     phone: "",
     role: "Doctor",
-    branch: "",
+    department: "",
     staffId: `HB-${Math.floor(Math.random() * 9000) + 1000}`,
-    accountStatus: "ACTIVE"
+    accountStatus: "PENDING_APPROVAL"
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -176,23 +176,24 @@ export default function AddStaffPage() {
               </div>
 
               <div className="space-y-2">
-                <label className="text-sm font-bold text-slate-700">Branch</label>
+                <label className="text-sm font-bold text-slate-700">Department</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                     <MapPin size={16} className="text-slate-400" />
                   </div>
                   <select 
-                    name="branch"
-                    value={formData.branch}
+                    name="department"
+                    value={formData.department}
                     onChange={handleChange}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20 outline-none transition-all text-sm appearance-none bg-white"
                   >
-                    <option value="" disabled>Select Branch</option>
-                    <option value="Colombo">Colombo</option>
-                    <option value="Gampaha">Gampaha</option>
-                    <option value="Kalutara">Kalutara</option>
-                    <option value="Kegalle">Kegalle</option>
-                    <option value="Ratnapura">Ratnapura</option>
+                    <option value="" disabled>Select Department</option>
+                    <option value="General Medical">General Medical</option>
+                    <option value="Surgical">Surgical</option>
+                    <option value="Emergency">Emergency</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Pharmacy">Pharmacy</option>
+                    <option value="Pediatrics">Pediatrics</option>
                   </select>
                 </div>
               </div>
