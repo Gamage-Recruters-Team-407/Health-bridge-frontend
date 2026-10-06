@@ -648,8 +648,8 @@ export default function MedicalRecordDetailsPage({
                 gap-2
                 text-sm
                 font-semibold
-                text-teal-600
-                hover:text-teal-700
+                text-blue-600
+                hover:text-blue-700
               `
                 : `
                 inline-flex
@@ -722,13 +722,13 @@ export default function MedicalRecordDetailsPage({
                     items-center
                     gap-2
                     rounded-xl
-                    bg-teal-600
+                    bg-blue-600
                     px-4
                     py-2.5
                     text-sm
                     font-semibold
                     text-white
-                    hover:bg-teal-700
+                    hover:bg-blue-700
                   `
                 : `
                     inline-flex
@@ -772,14 +772,14 @@ export default function MedicalRecordDetailsPage({
                     gap-2
                     rounded-xl
                     border
-                    border-teal-200
-                    bg-teal-50
+                    border-blue-200
+                    bg-blue-50
                     px-4
                     py-2.5
                     text-sm
                     font-semibold
-                    text-teal-700
-                    hover:bg-teal-100
+                    text-blue-700
+                    hover:bg-blue-100
                   `
                 : `
                     inline-flex
@@ -923,8 +923,8 @@ export default function MedicalRecordDetailsPage({
                   text-sm
                   font-semibold
                   text-slate-700
-                  hover:border-teal-300
-                  hover:text-teal-600
+                  hover:border-blue-300
+                  hover:text-blue-600
                 `
                 : `
                   inline-flex
@@ -965,8 +965,8 @@ export default function MedicalRecordDetailsPage({
                   text-sm
                   font-semibold
                   text-slate-700
-                  hover:border-teal-300
-                  hover:text-teal-600
+                  hover:border-blue-300
+                  hover:text-blue-600
                 `
                 : `
                   inline-flex
@@ -1087,7 +1087,7 @@ export default function MedicalRecordDetailsPage({
                 h-8
                 w-8
                 animate-spin
-                text-teal-600
+                text-blue-600
               `
                 : `
                 h-8
@@ -1148,12 +1148,12 @@ export default function MedicalRecordDetailsPage({
               isDoctor
                 ? `
                           rounded-full
-                          bg-teal-50
+                          bg-blue-50
                           px-3
                           py-1
                           text-xs
                           font-semibold
-                          text-teal-700
+                          text-blue-700
                         `
                 : `
                           rounded-full
@@ -1259,7 +1259,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                             h-4
                             w-4
-                            text-teal-600
+                            text-blue-600
                           `
                 : `
                             h-4
@@ -1308,7 +1308,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                             h-4
                             w-4
-                            text-teal-600
+                            text-blue-600
                           `
                 : `
                             h-4
@@ -1371,7 +1371,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                         h-5
                         w-5
-                        text-teal-600
+                        text-blue-600
                       `
                 : `
                         h-5
@@ -1432,7 +1432,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                         h-5
                         w-5
-                        text-teal-600
+                        text-blue-600
                       `
                 : `
                         h-5
@@ -1505,7 +1505,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                         h-5
                         w-5
-                        text-teal-600
+                        text-blue-600
                       `
                 : `
                         h-5
@@ -1530,12 +1530,12 @@ export default function MedicalRecordDetailsPage({
               isDoctor
                 ? `
                         rounded-full
-                        bg-teal-50
+                        bg-blue-50
                         px-2.5
                         py-1
                         text-xs
                         font-bold
-                        text-teal-700
+                        text-blue-700
                       `
                 : `
                         rounded-full
@@ -1564,14 +1564,14 @@ export default function MedicalRecordDetailsPage({
                 ? `
                         rounded-xl
                         border
-                        border-teal-200
-                        bg-teal-50
+                        border-blue-200
+                        bg-blue-50
                         px-3
                         py-2
                         text-xs
                         font-semibold
-                        text-teal-700
-                        hover:bg-teal-100
+                        text-blue-700
+                        hover:bg-blue-100
                       `
                 : `
                         rounded-xl
@@ -1932,7 +1932,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                       h-5
                       w-5
-                      text-teal-600
+                      text-blue-600
                     `
                 : `
                       h-5
@@ -2045,8 +2045,8 @@ export default function MedicalRecordDetailsPage({
                 ? `
                       text-sm
                       font-semibold
-                      text-teal-600
-                      hover:text-teal-700
+                      text-blue-600
+                      hover:text-blue-700
                     `
                 : `
                       text-sm
@@ -2121,7 +2121,7 @@ export default function MedicalRecordDetailsPage({
                 ? `
                                   h-5
                                   w-5
-                                  text-teal-600
+                                  text-blue-600
                                 `
                 : `
                                   h-5
@@ -2170,7 +2170,7 @@ export default function MedicalRecordDetailsPage({
                                 mt-1
                                 text-xs
                                 font-semibold
-                                text-teal-600
+                                text-blue-600
                               `
                 : `
                                 mt-1
@@ -2212,13 +2212,13 @@ export default function MedicalRecordDetailsPage({
                                 mt-3
                                 inline-flex
                                 rounded-lg
-                                bg-teal-600
+                                bg-blue-600
                                 px-3
                                 py-2
                                 text-xs
                                 font-semibold
                                 text-white
-                                hover:bg-teal-700
+                                hover:bg-blue-700
                               `
                 : `
                                 mt-3

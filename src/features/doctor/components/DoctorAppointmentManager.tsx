@@ -27,7 +27,7 @@ const formatTime = (value: string) => {
 
 const getDecisionTone = (decision: DoctorDecision) => {
   if (decision === "ACCEPTED") {
-    return "bg-emerald-100 text-emerald-700 border border-emerald-200";
+    return "bg-blue-100 text-blue-700 border border-blue-200";
   }
 
   if (decision === "REJECTED") {
@@ -141,8 +141,8 @@ export default function DoctorAppointmentManager() {
           <p className="text-sm font-medium text-amber-700">Pending</p>
           <p className="mt-3 text-3xl font-bold text-slate-900">{stats.pending}</p>
         </article>
-        <article className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 shadow-sm">
-          <p className="text-sm font-medium text-emerald-700">Accepted</p>
+        <article className="rounded-3xl border border-blue-200 bg-blue-50 p-5 shadow-sm">
+          <p className="text-sm font-medium text-blue-700">Accepted</p>
           <p className="mt-3 text-3xl font-bold text-slate-900">{stats.accepted}</p>
         </article>
         <article className="rounded-3xl border border-rose-200 bg-rose-50 p-5 shadow-sm">
@@ -237,7 +237,7 @@ export default function DoctorAppointmentManager() {
                 <button
                   type="button"
                   onClick={() => void updateDecision(selectedAppointment.id, "ACCEPTED")}
-                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700"
+                  className="inline-flex items-center justify-center gap-2 rounded-2xl bg-blue-600 px-4 py-3 text-sm font-semibold text-white hover:bg-blue-700"
                 >
                   <CheckCircle2 className="h-4 w-4" />
                   Accept appointment

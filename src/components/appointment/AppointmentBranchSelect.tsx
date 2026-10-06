@@ -49,7 +49,7 @@ export default function AppointmentBranchSelect({
   return (
     <label className="space-y-2">
       <span className="flex items-center gap-2 text-sm font-medium text-slate-700">
-        <Building2 className="h-4 w-4 text-teal-600" />
+        <Building2 className="h-4 w-4 text-blue-600" />
         Hospital branch {required && <span className="text-red-500">*</span>}
       </span>
       <div className="relative">
@@ -61,7 +61,7 @@ export default function AppointmentBranchSelect({
             const branch = branches.find((item) => (item.hospitalId || item.id) === event.target.value);
             onChange(event.target.value, branch?.branchName ?? "");
           }}
-          className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 text-sm outline-none transition focus:border-teal-500 disabled:cursor-not-allowed disabled:bg-slate-50"
+          className="w-full appearance-none rounded-xl border border-slate-200 bg-white px-4 py-3 pr-10 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:bg-slate-50"
         >
           <option value="">{loading ? "Loading branches..." : placeholder}</option>
           {branches.map((branch) => {
@@ -69,7 +69,7 @@ export default function AppointmentBranchSelect({
             return <option key={branch.id} value={id}>{branch.branchName}</option>;
           })}
         </select>
-        {loading && <Loader2 className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 animate-spin text-teal-600" />}
+        {loading && <Loader2 className="pointer-events-none absolute right-3 top-3.5 h-4 w-4 animate-spin text-blue-600" />}
       </div>
       {error && <span className="block text-xs text-rose-600">{error}</span>}
       {selected && <span className="block text-xs text-slate-500">{selected.city || selected.address || selected.hospitalId}</span>}

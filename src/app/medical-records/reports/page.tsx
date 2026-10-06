@@ -473,7 +473,7 @@ export default function MedicalRecordReportsPage() {
             <p
               className={
                 isDoctor
-                  ? "text-sm font-semibold text-teal-600"
+                  ? "text-sm font-semibold text-blue-600"
                   : "text-sm font-semibold text-blue-600"
               }
             >
@@ -560,7 +560,7 @@ export default function MedicalRecordReportsPage() {
           <div
             className={
               isDoctor
-                ? "border-b border-teal-100 bg-teal-50/70 p-5"
+                ? "border-b border-blue-100 bg-blue-50/70 p-5"
                 : "border-b border-blue-100 bg-blue-50/70 p-5"
             }
           >
@@ -576,7 +576,7 @@ export default function MedicalRecordReportsPage() {
               <div
                 className={
                   isDoctor
-                    ? "flex h-11 w-11 items-center justify-center rounded-xl bg-teal-600 text-white"
+                    ? "flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white"
                     : "flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white"
                 }
               >
@@ -791,9 +791,9 @@ export default function MedicalRecordReportsPage() {
                             text-slate-800
                             outline-none
                             transition
-                            focus:border-teal-500
+                            focus:border-blue-500
                             focus:ring-2
-                            focus:ring-teal-100
+                            focus:ring-blue-100
                           "
                         >
 
@@ -1047,7 +1047,7 @@ export default function MedicalRecordReportsPage() {
                       <ShieldCheck
                         className={
                           isDoctor
-                            ? "mt-0.5 h-5 w-5 shrink-0 text-teal-600"
+                            ? "mt-0.5 h-5 w-5 shrink-0 text-blue-600"
                             : "mt-0.5 h-5 w-5 shrink-0 text-blue-600"
                         }
                       />
@@ -1157,7 +1157,7 @@ export default function MedicalRecordReportsPage() {
                           justify-center
                           gap-2
                           rounded-xl
-                          bg-teal-600
+                          bg-blue-600
                           px-5
                           py-3
                           text-sm
@@ -1165,7 +1165,7 @@ export default function MedicalRecordReportsPage() {
                           text-white
                           shadow-sm
                           transition
-                          hover:bg-teal-700
+                          hover:bg-blue-700
                           disabled:cursor-not-allowed
                           disabled:opacity-60
                         `
