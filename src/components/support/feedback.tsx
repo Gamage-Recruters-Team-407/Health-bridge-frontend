@@ -99,18 +99,13 @@ export default function PatientFeedbackViewPage() {
     <main className="min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 px-6 py-8 text-slate-900">
       <div className="mx-auto max-w-6xl">
         <header className="mb-10 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wider text-[#0F6CBD]">
-            Support
-          </p>
+       
 
           <h1 className="mt-2 text-3xl font-bold tracking-tight sm:text-4xl">
             What our patients say
           </h1>
 
-          <p className="mx-auto mt-2 max-w-xl text-sm text-slate-600">
-            Ratings and comments submitted by our patients after receiving
-            support.
-          </p>
+         
         </header>
 
         {loading && (
@@ -164,9 +159,7 @@ export default function PatientFeedbackViewPage() {
                           key={`${feedback.userName}-${index}`}
                           className="relative flex flex-col rounded-2xl border border-slate-200/70 bg-white p-6 shadow-sm shadow-slate-200/50 ring-1 ring-slate-900/5 transition hover:-translate-y-0.5 hover:shadow-md"
                         >
-                          <div className="pointer-events-none absolute -left-1 -top-3 select-none text-[70px] font-serif leading-none text-[#0F6CBD]/[0.07]">
-                            “
-                          </div>
+                          
 
                           <Stars rating={feedback.rating} />
 

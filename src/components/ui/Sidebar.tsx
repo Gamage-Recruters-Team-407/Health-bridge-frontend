@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -35,6 +34,7 @@ import {
   AlertTriangle,
   CalendarClock,
   Truck,
+  Landmark,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { clearAuthData, getRoleRedirectPath } from "@/lib/auth";
@@ -92,6 +92,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
           ...(isAdmin
             ? [
+                { title: "Branch Management", href: "/hospital-admin/branch-management", icon: Landmark },
                 { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
                 { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
                 { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
@@ -126,7 +127,6 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "My profile", href: "/doctor/profile", icon: User },
           { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
           { title: "Schedule", href: "/doctor/schedule", icon: Calendar },

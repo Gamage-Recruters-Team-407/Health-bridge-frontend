@@ -4,7 +4,6 @@ import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Menu,
-  Search,
   Bell,
   AlertTriangle,
   User,
@@ -39,8 +38,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
-
   useEffect(() => {
     getNotifications()
       .then((items) => setUnreadNotifications(items.filter((item) => !item.read).length))
@@ -71,23 +68,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>•</span>
             <span>Hospital Node #01</span>
           </div>
-        </div>
-      </div>
-
-      {/* Middle: Global Search Input */}
-      <div className="flex-1 max-w-md hidden md:block">
-        <div className="relative flex items-center">
-          <Search className="w-4 h-4 absolute left-3.5 text-slate-400 pointer-events-none" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search patients, doctors, medical records, ICD-10 codes..."
-            className="w-full pl-10 pr-12 py-2 text-xs rounded-xl bg-slate-100/80 dark:bg-slate-800/80 border border-transparent focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 transition-all outline-none"
-          />
-          <kbd className="absolute right-3 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400 bg-slate-200 dark:bg-slate-700 rounded border border-slate-300 dark:border-slate-600 pointer-events-none">
-            ⌘K
-          </kbd>
         </div>
       </div>
 

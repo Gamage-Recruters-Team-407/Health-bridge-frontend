@@ -6,6 +6,7 @@ import { CalendarDays, Clock3, Hospital, Users } from "lucide-react";
 import AppointmentModuleShell from "@/components/appointment/AppointmentModuleShell";
 import api from "@/lib/axios";
 import { appointmentService } from "@/services/appointmentService";
+import { useAuth } from "@/hooks/useAuth";
 import type { BookingInput, DoctorSession } from "@/types/appointment";
 
 type Profile = { fullName?: string; phoneNumber?: string; phone?: string; email?: string; address?: string };
@@ -14,19 +15,24 @@ const empty: BookingInput = { sessionId: "", patientName: "", patientPhone: "", 
 export default function SessionBookingPage() {
   const { sessionId } = useParams<{ sessionId: string }>();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [session, setSession] = useState<DoctorSession | null>(null);
   const [form, setForm] = useState<BookingInput>({ ...empty, sessionId });
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   useEffect(() => {
+    if (!isAuthenticated) {
+      router.replace(`/login?redirect=${encodeURIComponent(`/appointments/book/${sessionId}`)}`);
+      return;
+    }
     let active = true;
     Promise.all([appointmentService.getSession(sessionId), api.get<Profile>("/users/profile").catch(()=>({} as Profile))])
       .then(([details, profile]) => { if (!active) return; setSession(details); setForm({ sessionId, patientName: profile.fullName ?? "", patientPhone: profile.phoneNumber ?? profile.phone ?? "", nicOrPassport: "", email: profile.email ?? "", address: profile.address ?? "" }); })
       .catch(e => active && setError(e instanceof Error ? e.message : "Unable to load booking details."))
       .finally(()=>active && setLoading(false));
     return () => { active = false; };
-  }, [sessionId]);
+  }, [sessionId, isAuthenticated, router]);
   const set = (key: keyof BookingInput, value: string) => setForm(current => ({ ...current, [key]: value }));
   const submit = async (event: FormEvent) => {
     event.preventDefault(); setError("");

@@ -57,7 +57,7 @@ export default function ChatBubble({
     <div className={`flex ${isOwn ? "justify-end" : "justify-start"}`}>
       <div className={`flex max-w-[75%] flex-col gap-1 ${isOwn ? "items-end" : "items-start"}`}>
         <div className="flex items-center gap-2 px-1 text-xs text-slate-400">
-          <span>{reply.senderName} · {formatTime(reply.createdAt)}</span>
+          <span>  {formatTime(reply.createdAt)}</span>
           {canManage && !editing && (
             <span className="flex items-center gap-1">
               <button type="button" onClick={() => setEditing(true)} disabled={busy} title="Edit message" aria-label="Edit message" className="rounded p-1 hover:bg-slate-100 hover:text-slate-700">

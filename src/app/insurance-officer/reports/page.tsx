@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import {
   FileText,
@@ -8,14 +8,8 @@ import {
   Clock,
   AlertTriangle,
   Download,
-  Printer,
-  Calendar,
-  DollarSign,
   Building2,
-  TrendingUp,
-  Filter,
-  ShieldCheck,
-  Percent,
+  ArrowUpRight,
 } from "lucide-react";
 import {
   AreaChart,
@@ -45,7 +39,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import Loader from "@/components/ui/Loader";
 import { insuranceService } from "@/services/insuranceService";
-import { InsuranceClaim, ClaimStatus, InsuranceReportSummary } from "@/types/insurance";
+import { ClaimStatus, InsuranceReportSummary } from "@/types/insurance";
 
 import { generateInsuranceOfficerReportPdf } from "@/lib/insurancePdfGenerator";
 
@@ -70,6 +64,10 @@ export default function InsuranceReportsPage() {
   const [endDate, setEndDate] = useState<string>("");
   const [activeTab, setActiveTab] = useState<ReportTab>("CLAIMS");
   const [searchTerm, setSearchTerm] = useState("");
+  const [claimsPage, setClaimsPage] = useState(1);
+  const [rejectedPage, setRejectedPage] = useState(1);
+  const [providersPage, setProvidersPage] = useState(1);
+  const pageSize = 6;
 
   const showSuccess = (msg: string) => {
     setSuccessMessage(msg);
@@ -81,7 +79,7 @@ export default function InsuranceReportsPage() {
     setTimeout(() => setErrorMessage(null), 4000);
   };
 
-  const fetchReport = (start?: string, end?: string) => {
+  const fetchReport = useCallback((start?: string, end?: string) => {
     setLoading(true);
     insuranceService
       .getReportSummary(start, end)
@@ -93,17 +91,42 @@ export default function InsuranceReportsPage() {
         showError("Failed to load insurance reports data from server");
       })
       .finally(() => setLoading(false));
-  };
+  }, []);
 
   useEffect(() => {
-    fetchReport();
+    let isMounted = true;
+    insuranceService
+      .getReportSummary()
+      .then((data) => {
+        if (isMounted) {
+          setReport(data);
+          setErrorMessage(null);
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setErrorMessage("Failed to load insurance reports data from server");
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, []);
 
   const handlePresetChange = (newPreset: DatePreset) => {
     setPreset(newPreset);
+    setClaimsPage(1);
+    setRejectedPage(1);
+    setProvidersPage(1);
     const now = new Date();
     let startStr = "";
-    let endStr = now.toISOString().split("T")[0];
+    const endStr = now.toISOString().split("T")[0];
 
     if (newPreset === "7D") {
       const past7 = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
@@ -134,6 +157,9 @@ export default function InsuranceReportsPage() {
       showError("End date cannot be before start date");
       return;
     }
+    setClaimsPage(1);
+    setRejectedPage(1);
+    setProvidersPage(1);
     fetchReport(startDate || undefined, endDate || undefined);
   };
 
@@ -179,7 +205,7 @@ export default function InsuranceReportsPage() {
         c.patientId.toLowerCase().includes(term) ||
         (c.treatmentDescription && c.treatmentDescription.toLowerCase().includes(term))
     );
-  }, [report?.claims, searchTerm]);
+  }, [report, searchTerm]);
 
   // Donut chart status split data
   const statusChartData = useMemo(() => {
@@ -203,7 +229,7 @@ export default function InsuranceReportsPage() {
       requestedAmount: Number((t.totalRequested / 1000).toFixed(2)),
       approvedAmount: Number((t.totalApproved / 1000).toFixed(2)),
     }));
-  }, [report?.monthlyTrends]);
+  }, [report]);
 
   return (
     <DashboardLayout pageTitle="Insurance Reports" userRole="INSURANCE_OFFICER">
@@ -226,9 +252,13 @@ export default function InsuranceReportsPage() {
 
           {/* Export Toolbar */}
           <div className="flex flex-wrap items-center gap-2">
-            <Button size="sm" onClick={exportToPDF} className="gap-1.5 shadow-sm">
-              <Download className="w-4 h-4" />
-              <span>Export PDF</span>
+            <Button
+              size="sm"
+              leftIcon={<Download className="w-4 h-4" />}
+              onClick={exportToPDF}
+              className="shadow-sm whitespace-nowrap"
+            >
+              Export PDF
             </Button>
           </div>
         </div>
@@ -456,7 +486,7 @@ export default function InsuranceReportsPage() {
                               ))}
                             </Pie>
                             <Tooltip
-                              formatter={(value: any) => [`${value} claims`, "Count"]}
+                              formatter={(value) => [`${value} claims`, "Count"]}
                               contentStyle={{
                                 backgroundColor: "#FFFFFF",
                                 borderRadius: "12px",
@@ -527,7 +557,10 @@ export default function InsuranceReportsPage() {
                     <Input
                       placeholder="Search claims or patient..."
                       value={searchTerm}
-                      onChange={(e) => setSearchTerm(e.target.value)}
+                      onChange={(e) => {
+                        setSearchTerm(e.target.value);
+                        setClaimsPage(1);
+                      }}
                     />
                   </div>
                 )}
@@ -536,54 +569,111 @@ export default function InsuranceReportsPage() {
               <CardContent className="pt-4">
                 {/* Tab 1: Claims Performance Report */}
                 {activeTab === "CLAIMS" && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Claim Number</TableHead>
-                        <TableHead>Patient ID</TableHead>
-                        <TableHead>Treatment</TableHead>
-                        <TableHead>Claim Amount</TableHead>
-                        <TableHead>Approved Amount</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Submitted</TableHead>
-                        <TableHead className="text-right">Action</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredClaims.length === 0 ? (
-                        <TableEmpty colSpan={8} message="No claims matching the selected filters" />
-                      ) : (
-                        filteredClaims.map((c) => (
-                          <TableRow key={c.id}>
-                            <TableCell className="font-semibold text-blue-600">{c.claimNumber}</TableCell>
-                            <TableCell className="font-medium text-slate-700">{c.patientId}</TableCell>
-                            <TableCell className="max-w-xs truncate text-slate-600">
-                              {c.treatmentDescription || "General Treatment"}
-                            </TableCell>
-                            <TableCell className="font-bold text-[#0A2540]">
-                              Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
-                            </TableCell>
-                            <TableCell className="font-semibold text-emerald-600">
-                              {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
-                            </TableCell>
-                            <TableCell className="text-xs text-slate-500">
-                              {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : "—"}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              <Link href={`/insurance-officer/claims/${c.id}`}>
-                                <Button size="sm" variant="outline">
-                                  View
-                                </Button>
-                              </Link>
-                            </TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Claim Number</TableHead>
+                          <TableHead>Patient ID</TableHead>
+                          <TableHead>Treatment</TableHead>
+                          <TableHead>Claim Amount</TableHead>
+                          <TableHead>Approved Amount</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Submitted</TableHead>
+                          <TableHead className="text-center">Actions</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {filteredClaims.length === 0 ? (
+                          <TableEmpty colSpan={8} message="No claims matching the selected filters" />
+                        ) : (
+                          filteredClaims
+                            .slice((claimsPage - 1) * pageSize, claimsPage * pageSize)
+                            .map((c) => (
+                              <TableRow key={c.id}>
+                                <TableCell className="font-semibold text-blue-600">{c.claimNumber}</TableCell>
+                                <TableCell className="font-medium text-slate-700">{c.patientId}</TableCell>
+                                <TableCell className="max-w-xs truncate text-slate-600">
+                                  {c.treatmentDescription || "General Treatment"}
+                                </TableCell>
+                                <TableCell className="font-bold text-[#0A2540]">
+                                  Rs. {c.claimAmount != null ? Number(c.claimAmount).toFixed(2) : "0.00"}
+                                </TableCell>
+                                <TableCell className="font-semibold text-emerald-600">
+                                  {c.approvedAmount != null ? `Rs. ${Number(c.approvedAmount).toFixed(2)}` : "—"}
+                                </TableCell>
+                                <TableCell>
+                                  <Badge variant={statusVariant[c.status]}>{c.status}</Badge>
+                                </TableCell>
+                                <TableCell className="text-xs text-slate-500">
+                                  {c.submittedAt ? new Date(c.submittedAt).toLocaleDateString() : "—"}
+                                </TableCell>
+                                <TableCell className="text-center">
+                                  <div className="flex items-center justify-center">
+                                    <Link href={`/insurance-officer/claims/${c.id}`}>
+                                      <Button
+                                        size="sm"
+                                        variant="outline"
+                                        rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
+                                        className="h-7 text-xs px-2.5 min-w-[76px] whitespace-nowrap"
+                                      >
+                                        View
+                                      </Button>
+                                    </Link>
+                                  </div>
+                                </TableCell>
+                              </TableRow>
+                            ))
+                        )}
+                      </TableBody>
+                    </Table>
+
+                    {/* 6-Record Pagination Controls for Tab 1 (Screenshot 2) */}
+                    {filteredClaims.length > 0 && Math.ceil(filteredClaims.length / pageSize) > 1 && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                        <div>
+                          Showing <span className="font-semibold text-[#0A2540]">{(claimsPage - 1) * pageSize + 1}</span> to{" "}
+                          <span className="font-semibold text-[#0A2540]">{Math.min(claimsPage * pageSize, filteredClaims.length)}</span> of{" "}
+                          <span className="font-semibold text-[#0A2540]">{filteredClaims.length}</span> claims
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setClaimsPage((p) => Math.max(1, p - 1))}
+                            disabled={claimsPage === 1}
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                          >
+                            Previous
+                          </button>
+
+                          {Array.from({ length: Math.ceil(filteredClaims.length / pageSize) }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setClaimsPage(pageNum)}
+                              className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                                claimsPage === pageNum
+                                  ? "bg-blue-600 text-white shadow-xs"
+                                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => setClaimsPage((p) => Math.min(Math.ceil(filteredClaims.length / pageSize), p + 1))}
+                            disabled={claimsPage === Math.ceil(filteredClaims.length / pageSize)}
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Tab 2: Decision Breakdown & Rejections */}
@@ -633,6 +723,7 @@ export default function InsuranceReportsPage() {
                           ) : (
                             report.claims
                               .filter((c) => c.status === "REJECTED")
+                              .slice((rejectedPage - 1) * pageSize, rejectedPage * pageSize)
                               .map((c) => (
                                 <TableRow key={c.id}>
                                   <TableCell className="font-semibold text-red-600">{c.claimNumber}</TableCell>
@@ -649,56 +740,152 @@ export default function InsuranceReportsPage() {
                           )}
                         </TableBody>
                       </Table>
+
+                      {/* 6-Record Pagination for Tab 2 */}
+                      {report.claims.filter((c) => c.status === "REJECTED").length > pageSize && (
+                        <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                          <div>
+                            Showing <span className="font-semibold text-[#0A2540]">{(rejectedPage - 1) * pageSize + 1}</span> to{" "}
+                            <span className="font-semibold text-[#0A2540]">{Math.min(rejectedPage * pageSize, report.claims.filter((c) => c.status === "REJECTED").length)}</span> of{" "}
+                            <span className="font-semibold text-[#0A2540]">{report.claims.filter((c) => c.status === "REJECTED").length}</span> records
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setRejectedPage((p) => Math.max(1, p - 1))}
+                              disabled={rejectedPage === 1}
+                              className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                            >
+                              Previous
+                            </button>
+
+                            {Array.from({ length: Math.ceil(report.claims.filter((c) => c.status === "REJECTED").length / pageSize) }, (_, i) => i + 1).map((pageNum) => (
+                              <button
+                                key={pageNum}
+                                type="button"
+                                onClick={() => setRejectedPage(pageNum)}
+                                className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                                  rejectedPage === pageNum
+                                    ? "bg-blue-600 text-white shadow-xs"
+                                    : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                                }`}
+                              >
+                                {pageNum}
+                              </button>
+                            ))}
+
+                            <button
+                              type="button"
+                              onClick={() => setRejectedPage((p) => Math.min(Math.ceil(report.claims.filter((c) => c.status === "REJECTED").length / pageSize), p + 1))}
+                              disabled={rejectedPage === Math.ceil(report.claims.filter((c) => c.status === "REJECTED").length / pageSize)}
+                              className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                            >
+                              Next
+                            </button>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   </div>
                 )}
 
                 {/* Tab 3: Provider & Policy Summary */}
                 {activeTab === "PROVIDERS" && (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Insurance Provider</TableHead>
-                        <TableHead>Active Policies</TableHead>
-                        <TableHead>Total Coverage Issued</TableHead>
-                        <TableHead>Total Claims Filed</TableHead>
-                        <TableHead>Total Amount Claimed</TableHead>
-                        <TableHead>Total Approved Payout</TableHead>
-                        <TableHead className="text-right">Utilization</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {!report.providerSummaries || report.providerSummaries.length === 0 ? (
-                        <TableEmpty colSpan={7} message="No provider data available" />
-                      ) : (
-                        report.providerSummaries.map((p) => {
-                          const util =
-                            p.totalCoverage > 0 ? ((p.totalApproved / p.totalCoverage) * 100).toFixed(1) : "0.0";
-                          return (
-                            <TableRow key={p.providerName}>
-                              <TableCell className="font-bold text-[#0A2540]">{p.providerName}</TableCell>
-                              <TableCell className="font-semibold text-slate-700">{p.policyCount}</TableCell>
-                              <TableCell className="font-medium text-slate-700">
-                                Rs. {p.totalCoverage?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                              </TableCell>
-                              <TableCell className="font-semibold text-blue-600">{p.claimCount}</TableCell>
-                              <TableCell className="font-medium text-slate-700">
-                                Rs. {p.totalClaimed?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                              </TableCell>
-                              <TableCell className="font-bold text-emerald-600">
-                                Rs. {p.totalApproved?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
-                              </TableCell>
-                              <TableCell className="text-right">
-                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">
-                                  {util}%
-                                </span>
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })
-                      )}
-                    </TableBody>
-                  </Table>
+                  <>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Insurance Provider</TableHead>
+                          <TableHead>Active Policies</TableHead>
+                          <TableHead>Total Coverage Issued</TableHead>
+                          <TableHead>Total Claims Filed</TableHead>
+                          <TableHead>Total Amount Claimed</TableHead>
+                          <TableHead>Total Approved Payout</TableHead>
+                          <TableHead className="text-right">Utilization</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {!report.providerSummaries || report.providerSummaries.length === 0 ? (
+                          <TableEmpty colSpan={7} message="No provider data available" />
+                        ) : (
+                          report.providerSummaries
+                            .slice((providersPage - 1) * pageSize, providersPage * pageSize)
+                            .map((p) => {
+                              const util =
+                                p.totalCoverage > 0 ? ((p.totalApproved / p.totalCoverage) * 100).toFixed(1) : "0.0";
+                              return (
+                                <TableRow key={p.providerName}>
+                                  <TableCell className="font-bold text-[#0A2540]">{p.providerName}</TableCell>
+                                  <TableCell className="font-semibold text-slate-700">{p.policyCount}</TableCell>
+                                  <TableCell className="font-medium text-slate-700">
+                                    Rs. {p.totalCoverage?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                  </TableCell>
+                                  <TableCell className="font-semibold text-blue-600">{p.claimCount}</TableCell>
+                                  <TableCell className="font-medium text-slate-700">
+                                    Rs. {p.totalClaimed?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                  </TableCell>
+                                  <TableCell className="font-bold text-emerald-600">
+                                    Rs. {p.totalApproved?.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                  </TableCell>
+                                  <TableCell className="text-right">
+                                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-800">
+                                      {util}%
+                                    </span>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })
+                        )}
+                      </TableBody>
+                    </Table>
+
+                    {/* 6-Record Pagination for Tab 3 */}
+                    {report.providerSummaries && report.providerSummaries.length > pageSize && (
+                      <div className="flex flex-col sm:flex-row items-center justify-between px-6 py-3.5 border-t border-slate-100 bg-white rounded-b-2xl gap-3 text-xs text-slate-500">
+                        <div>
+                          Showing <span className="font-semibold text-[#0A2540]">{(providersPage - 1) * pageSize + 1}</span> to{" "}
+                          <span className="font-semibold text-[#0A2540]">{Math.min(providersPage * pageSize, report.providerSummaries.length)}</span> of{" "}
+                          <span className="font-semibold text-[#0A2540]">{report.providerSummaries.length}</span> providers
+                        </div>
+
+                        <div className="flex items-center gap-1.5">
+                          <button
+                            type="button"
+                            onClick={() => setProvidersPage((p) => Math.max(1, p - 1))}
+                            disabled={providersPage === 1}
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                          >
+                            Previous
+                          </button>
+
+                          {Array.from({ length: Math.ceil(report.providerSummaries.length / pageSize) }, (_, i) => i + 1).map((pageNum) => (
+                            <button
+                              key={pageNum}
+                              type="button"
+                              onClick={() => setProvidersPage(pageNum)}
+                              className={`w-8 h-8 rounded-xl text-xs font-bold transition-all flex items-center justify-center ${
+                                providersPage === pageNum
+                                  ? "bg-blue-600 text-white shadow-xs"
+                                  : "border border-slate-200 bg-white text-slate-700 hover:bg-slate-50"
+                              }`}
+                            >
+                              {pageNum}
+                            </button>
+                          ))}
+
+                          <button
+                            type="button"
+                            onClick={() => setProvidersPage((p) => Math.min(Math.ceil(report.providerSummaries.length / pageSize), p + 1))}
+                            disabled={providersPage === Math.ceil(report.providerSummaries.length / pageSize)}
+                            className="px-3 py-1.5 rounded-xl border border-slate-200 text-slate-600 bg-white hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed text-xs font-medium transition-all"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>
