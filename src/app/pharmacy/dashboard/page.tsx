@@ -18,7 +18,7 @@ import {
     Clock,
     CheckCircle2,
 } from "lucide-react";
-import { Sidebar } from "@/components/ui/Sidebar"; // ඔබේ Sidebar එක පිහිටි path එක (e.g., @/components/ui/Sidebar)
+import { Sidebar } from "@/components/ui/Sidebar";
 import { usePharmacyId } from "@/hooks/usePharmacyId";
 import {
     getAllMedicines,
@@ -42,6 +42,7 @@ type ExtendedDelivery = {
     totalAmount?: number;
     amount?: number;
     items?: Array<{
+        medicineId?: string;
         medicineName?: string;
         quantity?: number;
         unitPrice?: number;
@@ -163,31 +164,52 @@ export default function PharmacyDashboardPage() {
             return;
         }
 
+        if (medicines.length === 0) {
+            alert("No medicines found in catalog. Please add a medicine first.");
+            return;
+        }
+
         try {
             setCreatingOrder(true);
+            const targetMed = medicines[0];
+            const itemUnitPrice = Number(targetMed.unitPrice || 250);
+
+            // Construct payload compatible with backend Delivery DTO expectations
             const newOrderPayload = {
                 pharmacyId,
                 patientId: `PAT-${Math.floor(1000 + Math.random() * 9000)}`,
-                fulfillmentType: "Doorstep Delivery",
+                recipientName: "David Perera",
+                customerName: "David Perera",
+                deliveryAddress: "No 45 Central Road, Colombo",
+                address: "No 45 Central Road, Colombo",
+                contactNumber: "0771234567",
+                phone: "0771234567",
+                fulfillmentType: "DELIVERY",
                 status: "PROCESSING",
-                deliveryAddress: "No 45 Central Road Colombo",
-                address: "No 45 Central Road Colombo",
                 courierService: "HealthBridge Express",
                 assignedRiderName: "David Perera",
+                totalAmount: itemUnitPrice * 2,
                 items: [
                     {
-                        medicineName: medicines[0]?.name || "Paracetamol 500mg",
+                        medicineId: targetMed.id,
+                        medicineName: targetMed.name || "Paracetamol 500mg",
                         quantity: 2,
-                        unitPrice: medicines[0]?.unitPrice || 250,
+                        unitPrice: itemUnitPrice,
+                        totalPrice: itemUnitPrice * 2,
                     },
                 ],
             };
 
             await createDelivery(newOrderPayload as unknown as Partial<Delivery> & { items: unknown[] });
             await handleRefresh();
-            alert("Test Delivery Order successfully generated in the backend!");
-        } catch (err) {
-            alert(err instanceof Error ? err.message : "Failed to create order");
+            alert("Delivery Order successfully created!");
+        } catch (err: unknown) {
+            console.error("Failed to create order:", err);
+            const axiosErr = err as { response?: { data?: { message?: string; errors?: Record<string, string> } } };
+            const backendMsg =
+                axiosErr.response?.data?.message ||
+                (axiosErr.response?.data?.errors ? JSON.stringify(axiosErr.response.data.errors) : null);
+            alert(backendMsg || (err instanceof Error ? err.message : "Failed to create order (400 Bad Request)"));
         } finally {
             setCreatingOrder(false);
         }
@@ -282,15 +304,41 @@ export default function PharmacyDashboardPage() {
                             </p>
                         </div>
 
-                        <div className="flex items-center gap-2">
+                        {/* Top Action Buttons (Grouped beside Refresh) */}
+                        <div className="flex flex-wrap items-center gap-2">
                             <button
                                 type="button"
                                 onClick={() => void handleRefresh()}
                                 disabled={!pharmacyId || loading}
-                                className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition"
+                                className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition cursor-pointer"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
                             </button>
+
+                            <button
+                                type="button"
+                                onClick={() => void handleCreateTestOrder()}
+                                disabled={creatingOrder || !pharmacyId}
+                                className="flex items-center gap-1.5 px-3.5 py-2 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 rounded-xl text-xs font-semibold shadow-sm transition disabled:opacity-50 cursor-pointer"
+                            >
+                                {creatingOrder ? (
+                                    <>
+                                        <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Creating Order...
+                                    </>
+                                ) : (
+                                    <>
+                                        <ClipboardList className="w-3.5 h-3.5" /> Create Order
+                                    </>
+                                )}
+                            </button>
+
+                            <Link
+                                href="/pharmacy/inventory"
+                                className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-semibold shadow-sm transition"
+                            >
+                                <Boxes className="w-3.5 h-3.5 text-slate-500" /> View Inventory
+                            </Link>
+
                             <Link
                                 href="/pharmacy/medicines/new"
                                 className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 shadow-sm transition"
@@ -384,8 +432,8 @@ export default function PharmacyDashboardPage() {
                                     <h2 className="text-sm font-bold text-slate-900">Pending Orders & Deliveries</h2>
                                 </div>
                                 <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 font-semibold border border-blue-200/60">
-                  {dashboardMetrics.pendingCount} Pending
-                </span>
+                                    {dashboardMetrics.pendingCount} Pending
+                                </span>
                             </div>
 
                             <div className="divide-y divide-slate-100">
@@ -395,28 +443,28 @@ export default function PharmacyDashboardPage() {
                                     <div className="py-8 text-center space-y-2">
                                         <CheckCircle2 className="w-6 h-6 text-emerald-500 mx-auto" />
                                         <p className="text-xs text-slate-500 font-medium">All current orders are fulfilled!</p>
-                                        <p className="text-[11px] text-slate-400">Click &quot;Create Order&quot; below to generate a new live delivery.</p>
+                                        <p className="text-[11px] text-slate-400">Click &quot;Create Order&quot; in the header above to generate a new live delivery.</p>
                                     </div>
                                 ) : (
                                     dashboardMetrics.pendingOrdersList.slice(0, 4).map((del, idx) => (
                                         <div key={del.id || idx} className="py-3 flex justify-between items-center text-xs">
                                             <div>
-                        <span className="font-mono text-[11px] font-semibold text-slate-900 block">
-                          #{del.orderCode || del.deliveryCode || del.id?.slice(0, 8)}
-                        </span>
+                                                <span className="font-mono text-[11px] font-semibold text-slate-900 block">
+                                                    #{del.orderCode || del.deliveryCode || del.id?.slice(0, 8)}
+                                                </span>
                                                 <span className="text-[11px] text-slate-500 block mt-0.5">
-                          {del.deliveryAddress || del.address || del.recipientName || "Standard Delivery"}
-                        </span>
+                                                    {del.deliveryAddress || del.address || del.recipientName || "Standard Delivery"}
+                                                </span>
                                             </div>
                                             <div className="text-right">
-                        <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/50">
-                          {del.status || "PROCESSING"}
-                        </span>
+                                                <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-semibold bg-amber-50 text-amber-700 border border-amber-200/50">
+                                                    {del.status || "PROCESSING"}
+                                                </span>
                                                 <span className="text-slate-400 block text-[10px] mt-1">
-                          {del.createdAt
-                              ? new Date(del.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-                              : "Today"}
-                        </span>
+                                                    {del.createdAt
+                                                        ? new Date(del.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+                                                        : "Today"}
+                                                </span>
                                             </div>
                                         </div>
                                     ))
@@ -445,60 +493,28 @@ export default function PharmacyDashboardPage() {
                                     catalogDisplayList.slice(0, 4).map((item, idx) => (
                                         <div key={item.id || idx} className="py-3 flex justify-between items-center text-xs">
                                             <div>
-                        <span className="font-semibold text-slate-800 block">
-                          {item.name || item.medicineName || "Medicine Item"}
-                        </span>
+                                                <span className="font-semibold text-slate-800 block">
+                                                    {item.name || item.medicineName || "Medicine Item"}
+                                                </span>
                                                 <span className="text-[11px] text-slate-400 block mt-0.5">{item.category || "General"}</span>
                                             </div>
                                             <div className="text-right">
-                        <span className="font-bold text-slate-800 block">
-                          {item.quantity ?? item.stock ?? 0} in stock
-                        </span>
+                                                <span className="font-bold text-slate-800 block">
+                                                    {item.quantity ?? item.stock ?? 0} in stock
+                                                </span>
                                                 <span
                                                     className={`block text-[10px] font-semibold mt-0.5 ${
                                                         (item.quantity ?? item.stock ?? 0) > 0 ? "text-emerald-600" : "text-rose-500"
                                                     }`}
                                                 >
-                          {(item.quantity ?? item.stock ?? 0) > 0 ? "Available" : "Out of Stock"}
-                        </span>
+                                                    {(item.quantity ?? item.stock ?? 0) > 0 ? "Available" : "Out of Stock"}
+                                                </span>
                                             </div>
                                         </div>
                                     ))
                                 )}
                             </div>
                         </div>
-                    </div>
-
-                    {/* Bottom Buttons */}
-                    <div className="flex flex-wrap items-center gap-3 pt-2">
-                        <Link
-                            href="/pharmacy/medicines/new"
-                            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 shadow-sm transition"
-                        >
-                            <Plus className="w-3.5 h-3.5" /> Add Medicine
-                        </Link>
-                        <button
-                            type="button"
-                            onClick={() => void handleCreateTestOrder()}
-                            disabled={creatingOrder || !pharmacyId}
-                            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 shadow-sm transition disabled:opacity-50"
-                        >
-                            {creatingOrder ? (
-                                <>
-                                    <RefreshCw className="w-3.5 h-3.5 animate-spin" /> Creating Order...
-                                </>
-                            ) : (
-                                <>
-                                    <ClipboardList className="w-3.5 h-3.5" /> Create Order
-                                </>
-                            )}
-                        </button>
-                        <Link
-                            href="/pharmacy/inventory"
-                            className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 text-white text-xs font-semibold rounded-xl hover:bg-blue-700 shadow-sm transition"
-                        >
-                            <Boxes className="w-3.5 h-3.5" /> View Inventory
-                        </Link>
                     </div>
                 </main>
             </div>

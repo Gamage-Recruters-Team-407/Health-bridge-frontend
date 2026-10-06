@@ -4,7 +4,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { Search, RefreshCw, Plus, Package, AlertTriangle, Clock } from "lucide-react";
-import { Sidebar } from "@/components/ui/Sidebar"; // ඔබේ Sidebar component එක පිහිටි path එක
+import { Sidebar } from "@/components/ui/Sidebar";
 import { usePharmacyId } from "@/hooks/usePharmacyId";
 import { getInventoryByPharmacy, getAllMedicines } from "@/services/pharmacyService";
 import type { InventoryItem, Medicine } from "@/types/pharmacy";

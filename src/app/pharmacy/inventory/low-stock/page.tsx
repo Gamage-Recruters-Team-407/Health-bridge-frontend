@@ -21,6 +21,14 @@ interface LowStockMedicineItem {
     status: "OUT_OF_STOCK" | "CRITICAL" | "LOW_STOCK" | "HEALTHY";
 }
 
+// Category අනුව Reorder Thresholds (අවම සීමාවන්)
+const CATEGORY_THRESHOLDS: Record<string, number> = {
+    Antibiotic: 50,     // 50ට අඩු නම් අවධානය අවශ්‍යයි
+    Analgesic: 60,      // 60ට අඩු නම් අවධානය අවශ්‍යයි
+    Antihistamine: 25,  // 25ට අඩු නම් අවධානය අවශ්‍යයි
+    General: 30,
+};
+
 export default function LowStockAlertsPage() {
     const [collapsed, setCollapsed] = useState(false);
     const [mobileOpen, setMobileOpen] = useState(false);
@@ -30,7 +38,7 @@ export default function LowStockAlertsPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [search, setSearch] = useState("");
-    const [statusFilter, setStatusFilter] = useState("ALL");
+    const [statusFilter, setStatusFilter] = useState("ALL_STATUSES");
     const [categoryFilter, setCategoryFilter] = useState("ALL");
 
     const loadAlerts = useCallback(async () => {
@@ -61,39 +69,64 @@ export default function LowStockAlertsPage() {
                 if (m.id) medMap.set(m.id, m);
             });
 
-            const inventoryPool = rawAlerts.length > 0 ? rawAlerts : rawInv;
+            const inventoryPool = rawInv.length > 0 ? rawInv : (rawAlerts.length > 0 ? rawAlerts : []);
 
-            const formatted: LowStockMedicineItem[] = inventoryPool.map((item, idx) => {
-                const med = item.medicineId ? medMap.get(item.medicineId) : undefined;
-                const name = med?.name || (item as unknown as { medicineName?: string }).medicineName || `Medicine ${idx + 1}`;
-                const code = (med as unknown as { medicineCode?: string })?.medicineCode || item.medicineId?.slice(0, 6) || `MED-${idx + 101}`;
-                const cat = med?.category || "General";
-                const stock = item.quantity ?? 0;
-                const reorder = 20;
+            const formatted: LowStockMedicineItem[] =
+                inventoryPool.length > 0
+                    ? inventoryPool.map((item, idx) => {
+                        const med = item.medicineId ? medMap.get(item.medicineId) : undefined;
+                        const name =
+                            med?.name ||
+                            (item as unknown as { medicineName?: string }).medicineName ||
+                            `Medicine ${idx + 1}`;
+                        const code =
+                            (med as unknown as { medicineCode?: string })?.medicineCode ||
+                            item.medicineId?.slice(0, 6) ||
+                            `MED-${idx + 101}`;
+                        const cat = med?.category || "General";
+                        const stock = item.quantity ?? 0;
 
-                let status: LowStockMedicineItem["status"] = "HEALTHY";
-                if (stock === 0) {
-                    status = "OUT_OF_STOCK";
-                } else if (stock <= 5) {
-                    status = "CRITICAL";
-                } else if (stock <= 15) {
-                    status = "LOW_STOCK";
-                }
+                        // Category-wise Reorder Threshold
+                        const reorder = CATEGORY_THRESHOLDS[cat] ?? 30;
 
-                const recommended = Math.max(reorder * 2 - stock, 25);
+                        let status: LowStockMedicineItem["status"] = "HEALTHY";
+                        if (stock === 0) {
+                            status = "OUT_OF_STOCK";
+                        } else if (stock <= Math.round(reorder * 0.25)) {
+                            status = "CRITICAL";
+                        } else if (stock <= reorder) {
+                            status = "LOW_STOCK";
+                        }
 
-                return {
-                    id: item.id || `alert-${idx}`,
-                    medicineId: item.medicineId,
-                    medicineName: name,
-                    code,
-                    category: cat,
-                    currentStock: stock,
-                    reorderLevel: reorder,
-                    recommendedOrder: recommended,
-                    status,
-                };
-            });
+                        const recommended = Math.max(reorder * 2 - stock, 25);
+
+                        return {
+                            id: item.id || `alert-${idx}`,
+                            medicineId: item.medicineId,
+                            medicineName: name,
+                            code,
+                            category: cat,
+                            currentStock: stock,
+                            reorderLevel: reorder,
+                            recommendedOrder: recommended,
+                            status,
+                        };
+                    })
+                    : rawMeds.map((med, idx) => {
+                        const cat = med.category || "General";
+                        const reorder = CATEGORY_THRESHOLDS[cat] ?? 30;
+                        return {
+                            id: med.id || `med-${idx}`,
+                            medicineId: med.id,
+                            medicineName: med.name,
+                            code: (med as unknown as { medicineCode?: string })?.medicineCode || `MED-${idx + 101}`,
+                            category: cat,
+                            currentStock: 0,
+                            reorderLevel: reorder,
+                            recommendedOrder: reorder * 2,
+                            status: "OUT_OF_STOCK" as const,
+                        };
+                    });
 
             setItems(formatted);
         } catch (err) {
@@ -111,9 +144,7 @@ export default function LowStockAlertsPage() {
             if (!pharmacyLoading && pharmacyId) {
                 await loadAlerts();
             } else if (!pharmacyLoading && !pharmacyId) {
-                if (isMounted) {
-                    setLoading(false);
-                }
+                if (isMounted) setLoading(false);
             }
         }
 
@@ -150,7 +181,7 @@ export default function LowStockAlertsPage() {
 
             const matchesStatus =
                 statusFilter === "ALL"
-                    ? i.status !== "HEALTHY" || items.length === 1
+                    ? i.status !== "HEALTHY"
                     : statusFilter === "ALL_STATUSES"
                         ? true
                         : i.status === statusFilter;
@@ -186,7 +217,7 @@ export default function LowStockAlertsPage() {
                                 type="button"
                                 onClick={() => void loadAlerts()}
                                 disabled={loading}
-                                className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition"
+                                className="flex items-center gap-1.5 px-3 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition cursor-pointer"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh Stock
                             </button>
@@ -205,6 +236,7 @@ export default function LowStockAlertsPage() {
                         </div>
                     )}
 
+                    {/* Metric Cards Row */}
                     <div className="grid grid-cols-2 sm:grid-cols-5 gap-3.5">
                         <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
                             <div className="flex items-center justify-between">
@@ -212,7 +244,7 @@ export default function LowStockAlertsPage() {
                                 <AlertTriangle className="w-4 h-4 text-amber-500" />
                             </div>
                             <div className="text-2xl font-bold text-amber-600 mt-2">{loading ? "…" : counts.lowStock}</div>
-                            <p className="text-[10px] text-slate-400 mt-0.5">Below minimum stock level</p>
+                            <p className="text-[10px] text-slate-400 mt-0.5">Below category threshold</p>
                         </div>
 
                         <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
@@ -224,13 +256,14 @@ export default function LowStockAlertsPage() {
                             <p className="text-[10px] text-slate-400 mt-0.5">Immediate restocking required</p>
                         </div>
 
-                        <div className="rounded-2xl bg-slate-900 text-white p-4 shadow-sm border border-slate-800">
+                        {/* Out of Stock Card: White background with red border */}
+                        <div className="rounded-2xl bg-white p-4 shadow-sm border-2 border-red-300">
                             <div className="flex items-center justify-between">
-                                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">Out of Stock</span>
-                                <ShieldAlert className="w-4 h-4 text-rose-400" />
+                                <span className="text-[11px] font-semibold uppercase tracking-wider text-red-600">Out of Stock</span>
+                                <ShieldAlert className="w-4 h-4 text-red-500" />
                             </div>
-                            <div className="text-2xl font-bold text-white mt-2">{loading ? "…" : counts.outOfStock}</div>
-                            <p className="text-[10px] text-slate-400 mt-0.5">No units available</p>
+                            <div className="text-2xl font-bold text-red-600 mt-2">{loading ? "…" : counts.outOfStock}</div>
+                            <p className="text-[10px] text-red-400 mt-0.5">No units available</p>
                         </div>
 
                         <div className="rounded-2xl bg-white p-4 shadow-sm border border-slate-200/80">
@@ -252,6 +285,7 @@ export default function LowStockAlertsPage() {
                         </div>
                     </div>
 
+                    {/* Table and Right Sidebar Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                         <div className="lg:col-span-3 space-y-4">
                             <div className="flex flex-col sm:flex-row items-center gap-3">
@@ -282,8 +316,8 @@ export default function LowStockAlertsPage() {
                                     onChange={(e) => setStatusFilter(e.target.value)}
                                     className="w-full sm:w-40 py-2.5 px-3 bg-white border border-slate-200 rounded-xl text-xs text-slate-700 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition"
                                 >
-                                    <option value="ALL">Needs Attention</option>
                                     <option value="ALL_STATUSES">All Statuses</option>
+                                    <option value="ALL">Needs Attention</option>
                                     <option value="CRITICAL">Critical Stock</option>
                                     <option value="LOW_STOCK">Low Stock</option>
                                     <option value="OUT_OF_STOCK">Out of Stock</option>
@@ -343,28 +377,28 @@ export default function LowStockAlertsPage() {
                                                     <td className="px-5 py-4 font-bold text-slate-800">
                                                         {item.currentStock}{" "}
                                                         <span className="text-[10px] font-normal text-slate-400">
-                                (Min: {item.reorderLevel})
-                              </span>
+                                                            (Min: {item.reorderLevel})
+                                                        </span>
                                                     </td>
                                                     <td className="px-5 py-4 text-center">
-                              <span
-                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-                                      item.status === "OUT_OF_STOCK"
-                                          ? "bg-rose-100 text-rose-800 border border-rose-200"
-                                          : item.status === "CRITICAL"
-                                              ? "bg-rose-50 text-rose-700 border border-rose-200/50"
-                                              : item.status === "LOW_STOCK"
-                                                  ? "bg-amber-50 text-amber-700 border border-amber-200/50"
-                                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                                  }`}
-                              >
-                                {item.status.replace(/_/g, " ")}
-                              </span>
+                                                        <span
+                                                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                                                                item.status === "OUT_OF_STOCK"
+                                                                    ? "bg-rose-100 text-rose-800 border border-rose-200"
+                                                                    : item.status === "CRITICAL"
+                                                                        ? "bg-rose-50 text-rose-700 border border-rose-200/50"
+                                                                        : item.status === "LOW_STOCK"
+                                                                            ? "bg-amber-50 text-amber-700 border border-amber-200/50"
+                                                                            : "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                                                            }`}
+                                                        >
+                                                            {item.status.replace(/_/g, " ")}
+                                                        </span>
                                                     </td>
                                                     <td className="px-5 py-4 text-right">
-                              <span className="inline-flex items-center gap-1 font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
-                                +{item.recommendedOrder} units
-                              </span>
+                                                        <span className="inline-flex items-center gap-1 font-semibold text-blue-600 bg-blue-50 px-2.5 py-1 rounded-lg">
+                                                            +{item.recommendedOrder} units
+                                                        </span>
                                                     </td>
                                                 </tr>
                                             ))
@@ -375,7 +409,32 @@ export default function LowStockAlertsPage() {
                             </div>
                         </div>
 
+                        {/* Category Threshold Indicators in Sidebar */}
                         <div className="space-y-4">
+                            <div className="rounded-2xl bg-white p-5 shadow-sm border border-slate-200/80 space-y-3">
+                                <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+                                    Category Thresholds (Min)
+                                </h3>
+                                <div className="space-y-2 text-xs">
+                                    <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                                        <span className="text-slate-600">Analgesic</span>
+                                        <span className="font-semibold text-slate-900">&lt; 60 units</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                                        <span className="text-slate-600">Antibiotic</span>
+                                        <span className="font-semibold text-slate-900">&lt; 50 units</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-1 border-b border-slate-100">
+                                        <span className="text-slate-600">Antihistamine</span>
+                                        <span className="font-semibold text-slate-900">&lt; 25 units</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-1">
+                                        <span className="text-slate-600">Other General</span>
+                                        <span className="font-semibold text-slate-900">&lt; 30 units</span>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div className="rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-700 text-white p-5 shadow-sm space-y-3">
                                 <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-blue-100">
                                     <Sparkles className="w-4 h-4" /> AI Stock Forecast
@@ -394,7 +453,7 @@ export default function LowStockAlertsPage() {
                                     <ShieldAlert className="w-4 h-4 text-rose-500" /> Critical Safety Thresholds
                                 </div>
                                 <p className="text-xs text-slate-500 leading-relaxed">
-                                    Items with 5 or fewer units are flagged for priority restocking to prevent emergency shortages in patient care.
+                                    Items with 25% or fewer of minimum required units are flagged for priority restocking.
                                 </p>
                             </div>
                         </div>
