@@ -7,6 +7,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
     || process.env.NEXT_PUBLIC_API_URL
     || 'http://localhost:8088/api';
 
+export function isMissingDoctorSessionsEndpoint(error: unknown): boolean {
+    return axios.isAxiosError(error)
+        && error.config?.method?.toLowerCase() === 'get'
+        && error.config?.url === '/doctor-sessions/mine'
+        && (error.response?.status === 404
+            || (error.response?.status === 500
+                && typeof error.response.data?.message === 'string'
+                && error.response.data.message.startsWith('No static resource api/doctor-sessions/mine')));
+}
+
 interface ApiErrorPayload {
     message?: string;
     errors?: Record<string, string> | Array<{ message?: string }>;
@@ -101,6 +111,9 @@ class ApiClient {
             },
             (error) => {
                 const status = error.response?.status;
+                if (isMissingDoctorSessionsEndpoint(error)) {
+                    return Promise.reject(error);
+                }
                 const url = error.config?.url;
                 const method = error.config?.method?.toUpperCase();
 
@@ -108,9 +121,6 @@ class ApiClient {
                 // 500 - Internal Server Error
                 // ============================================================
                 if (status === 500) {
-                    console.error(`💥 500 Server Error: ${method} ${url}`);
-                    console.error('   Response:', error.response?.data);
-
                     // ✅ Silent handling for optional endpoints
                     const silentEndpoints = [
                         '/hospitals',
@@ -122,8 +132,9 @@ class ApiClient {
                         url?.includes(ep)
                     );
 
-                    if (isSilent) {
-                        console.warn(`   ⚠️ Silent 500 for optional endpoint: ${url}`);
+                    if (!isSilent) {
+                        console.error(`💥 500 Server Error: ${method} ${url}`);
+                        console.error('   Response:', error.response?.data);
                     }
                 }
 

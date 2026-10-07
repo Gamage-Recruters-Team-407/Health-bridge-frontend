@@ -179,16 +179,16 @@ export default function MedicalRecordsShell({
                     gap-2
                     rounded-xl
                     border
-                    border-teal-200
-                    bg-teal-50
+                    border-blue-200
+                    bg-blue-50
                     px-4
                     py-2.5
                     text-sm
                     font-semibold
-                    text-teal-700
+                    text-blue-700
                     shadow-sm
                     transition
-                    hover:bg-teal-100
+                    hover:bg-blue-100
                   `
                   : `
                     inline-flex

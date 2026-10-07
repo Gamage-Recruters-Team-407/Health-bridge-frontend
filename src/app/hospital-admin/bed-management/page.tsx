@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import { Bed, BedStatus, WardType, PatientInfo, DepartmentOccupancy, BedOverviewStats } from '@/types/bed';
+import { bedService } from '@/services/bedService';
 import { departmentService } from '@/services/departmentService';
 import { branchService, Branch } from '@/services/branchService';
 import { Department } from '@/types/department';
@@ -32,11 +33,9 @@ import {
   HelpCircle
 } from 'lucide-react';
 
-const API_BASE_URL = 'http://localhost:8088/api/beds';
-
 export default function BedManagementPage() {
   const [beds, setBeds] = useState<Bed[]>([]);
-  const [selectedWard, setSelectedWard] = useState<WardType>('ICU');
+  const [selectedWard, setSelectedWard] = useState<WardType>('All Wards');
   const [statusFilter, setStatusFilter] = useState<BedStatus | 'All'>('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -93,64 +92,68 @@ export default function BedManagementPage() {
   });
 
   // Fetch Beds, Stats & Occupancy from Backend
-  const fetchBedData = React.useCallback(async () => {
+  const fetchBedData = useCallback(async () => {
     setIsLoading(true);
     setError(null);
     try {
-      const [bedsRes, statsRes, occRes] = await Promise.all([
-        fetch(API_BASE_URL),
-        fetch(`${API_BASE_URL}/stats`),
-        fetch(`${API_BASE_URL}/occupancy`)
+      const [bedsData, statsData, occData, branchData, deptData] = await Promise.all([
+        bedService.getAll().catch(() => []),
+        bedService.getStats().catch(() => null),
+        bedService.getOccupancy().catch(() => []),
+        branchService.getAllBranches().catch(() => []),
+        departmentService.getAll().catch(() => [])
       ]);
 
-      if (bedsRes.ok) {
-        const bedsData = await bedsRes.json();
-        if (Array.isArray(bedsData)) {
-          setBeds(bedsData);
-        }
+      if (bedsData && Array.isArray(bedsData)) {
+        setBeds(bedsData);
       }
-
-      if (statsRes.ok) {
-        const statsData = await statsRes.json();
+      if (statsData) {
         setBackendStats(statsData);
       }
-
-      if (occRes.ok) {
-        const occData = await occRes.json();
-        if (Array.isArray(occData)) {
-          setDeptOccupancies(occData);
-        }
+      if (occData && Array.isArray(occData)) {
+        setDeptOccupancies(occData);
+      }
+      if (branchData && Array.isArray(branchData)) {
+        setBranches(branchData);
+      }
+      if (deptData && Array.isArray(deptData)) {
+        setDepartments(deptData);
       }
     } catch (err) {
-      console.warn('Backend server connection warning. Fallback to client state.', err);
+      console.warn('Backend server connection warning:', err);
     } finally {
       setIsLoading(false);
     }
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     fetchBedData();
   }, [fetchBedData]);
 
-  // Fetch Department List from Backend API
-  React.useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const data = await departmentService.getAll();
-        if (data && Array.isArray(data) && data.length > 0) {
-          setDepartments(data);
-        }
-      } catch (err) {
-        console.warn('Backend department list fetch failed for bed management, using fallback:', err);
-      }
-    };
-    fetchDepartments();
-  }, []);
-
   // Dynamic Ward/Department Tabs from Backend
   const availableWards = useMemo(() => {
-    return departments.map((d) => d.name).filter(Boolean);
+    const list = departments.map((d) => d.name).filter(Boolean);
+    return ['All Wards', ...list];
   }, [departments]);
+
+  // Helper function for flexible ward matching between Department Names and Bed Ward codes
+  const isWardMatch = (bedWard?: string, targetWard?: string) => {
+    if (!targetWard || targetWard === 'All Wards' || targetWard === 'All') return true;
+    if (!bedWard) return false;
+    const b = bedWard.toLowerCase().trim();
+    const t = targetWard.toLowerCase().trim();
+    if (b === t) return true;
+    if (t.includes('icu') && (b.includes('icu') || b.includes('intensive'))) return true;
+    if ((t.includes('emergency') || t.includes('er')) && (b.includes('emergency') || b.includes('er'))) return true;
+    if (t.includes('cardio') && b.includes('cardio')) return true;
+    if (t.includes('pediatric') && b.includes('pediatric')) return true;
+    if ((t.includes('surgery') || t.includes('general')) && (b.includes('surgery') || b.includes('general') || b.includes('surg'))) return true;
+    if (t.includes('neuro') && b.includes('neuro')) return true;
+    if (t.includes('onco') && b.includes('onco')) return true;
+    if (t.includes('radio') && b.includes('radio')) return true;
+    if (t.includes('maternity') && b.includes('maternity')) return true;
+    return false;
+  };
 
   // Compute Overall Stats (Fallback to local memo if backendStats is null)
   const stats = useMemo(() => {
@@ -177,11 +180,12 @@ export default function BedManagementPage() {
   const filteredBeds = useMemo(() => {
     return beds.filter((bed) => {
       const matchesBranch = selectedBranch === 'All' ? true : (bed.branchCode === selectedBranch || bed.branchId === selectedBranch);
-      const matchesWard = bed.ward === selectedWard;
+      const matchesWard = isWardMatch(bed.ward, selectedWard);
       const matchesStatus = statusFilter === 'All' ? true : bed.status === statusFilter;
       const matchesSearch =
-        bed.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        bed.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bed.id || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bed.code || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (bed.bedId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
         (bed.patient?.firstName.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (bed.patient?.lastName.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (bed.patient?.id.toLowerCase() || '').includes(searchTerm.toLowerCase());
@@ -219,42 +223,23 @@ export default function BedManagementPage() {
     e.preventDefault();
     if (!allocatingBed) return;
 
-    const newPatient: PatientInfo = {
-      id: allocateForm.patientId || `PID-${Math.floor(10000 + Math.random() * 90000)}`,
-      firstName: allocateForm.firstName || '',
-      lastName: allocateForm.lastName || '',
-      dob: '',
-      age: 0,
-      gender: 'Male',
-      assignedDoctor: allocateForm.assignedDoctor || '',
-      admissionDate: allocateForm.admissionDate,
-      expDischarge: allocateForm.expDischarge,
-      admissionNotes: allocateForm.admissionNotes
-    };
-
     try {
-      const res = await fetch(`${API_BASE_URL}/${allocatingBed.id}/allocate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(allocateForm)
+      await bedService.allocate(allocatingBed.id, {
+        firstName: allocateForm.firstName,
+        lastName: allocateForm.lastName,
+        patientId: allocateForm.patientId || `PID-${Math.floor(10000 + Math.random() * 90000)}`,
+        department: allocateForm.department,
+        bedType: allocateForm.bedType,
+        assignedDoctor: allocateForm.assignedDoctor,
+        admissionDate: allocateForm.admissionDate,
+        expDischarge: allocateForm.expDischarge,
+        admissionNotes: allocateForm.admissionNotes
       });
-      if (res.ok) {
-        await fetchBedData();
-      } else {
-        setBeds((prev) =>
-          prev.map((b) =>
-            b.id === allocatingBed.id ? { ...b, status: 'Occupied', patient: newPatient } : b
-          )
-        );
-      }
+      await fetchBedData();
       toast.success(`Patient allocated to bed ${allocatingBed.id} successfully!`);
-    } catch {
-      setBeds((prev) =>
-        prev.map((b) =>
-          b.id === allocatingBed.id ? { ...b, status: 'Occupied', patient: newPatient } : b
-        )
-      );
-      toast.success(`Patient allocated to bed ${allocatingBed.id}.`);
+    } catch (err) {
+      console.error('Error allocating bed:', err);
+      toast.error('Failed to allocate bed.');
     }
 
     setAllocatingBed(null);
@@ -266,48 +251,19 @@ export default function BedManagementPage() {
     if (!viewingBedPatient || !transferForm.destinationWard) return;
 
     try {
-      const res = await fetch(`${API_BASE_URL}/${viewingBedPatient.id}/transfer`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(transferForm)
+      await bedService.transfer(viewingBedPatient.id, {
+        destinationWard: transferForm.destinationWard,
+        availableBedId: transferForm.availableBedId,
+        reason: transferForm.reason,
+        transferDate: transferForm.transferDate,
+        transferTime: transferForm.transferTime,
+        priority: transferForm.priority
       });
-      if (res.ok) {
-        await fetchBedData();
-      } else {
-        setBeds((prev) =>
-          prev.map((b) => {
-            if (b.id === viewingBedPatient.id) {
-              return { ...b, status: 'Available', patient: undefined };
-            }
-            if (b.id === transferForm.availableBedId) {
-              return {
-                ...b,
-                status: 'Occupied',
-                patient: viewingBedPatient.patient
-              };
-            }
-            return b;
-          })
-        );
-      }
+      await fetchBedData();
       toast.success(`Patient transfer requested to ${transferForm.destinationWard}!`);
-    } catch {
-      setBeds((prev) =>
-        prev.map((b) => {
-          if (b.id === viewingBedPatient.id) {
-            return { ...b, status: 'Available', patient: undefined };
-          }
-          if (b.id === transferForm.availableBedId) {
-            return {
-              ...b,
-              status: 'Occupied',
-              patient: viewingBedPatient.patient
-            };
-          }
-          return b;
-        })
-      );
-      toast.success(`Patient transfer requested to ${transferForm.destinationWard}!`);
+    } catch (err) {
+      console.error('Error transferring patient:', err);
+      toast.error('Failed to transfer patient.');
     }
 
     setViewingBedPatient(null);
@@ -322,51 +278,32 @@ export default function BedManagementPage() {
     }
 
     try {
-      const res = await fetch(API_BASE_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(addBedForm)
+      await bedService.create(addBedForm);
+      await fetchBedData();
+      toast.success(`Bed ${addBedForm.bedId} created successfully!`);
+      setIsAddBedOpen(false);
+      setAddBedForm({
+        bedId: '',
+        code: '',
+        ward: 'ICU',
+        bedType: 'ICU Standard',
+        status: 'Available'
       });
-      if (res.ok) {
-        await fetchBedData();
-        toast.success(`Bed ${addBedForm.bedId} created successfully!`);
-        setIsAddBedOpen(false);
-        setAddBedForm({
-          bedId: '',
-          code: '',
-          ward: 'ICU',
-          bedType: 'ICU Standard',
-          status: 'Available'
-        });
-      } else {
-        const errData = await res.json().catch(() => ({}));
-        toast.error(errData.message || 'Failed to create bed.');
-      }
     } catch (err) {
       console.error('Error creating bed:', err);
-      toast.error('Error creating bed.');
+      toast.error('Failed to create bed.');
     }
   };
 
   // Quick Action Handlers for Maintenance / Cleaning / Confirm Reservation
   const handleQuickStatusChange = async (bedId: string, newStatus: BedStatus) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/${bedId}/status?status=${newStatus}`, {
-        method: 'PATCH'
-      });
-      if (res.ok) {
-        await fetchBedData();
-      } else {
-        setBeds((prev) =>
-          prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
-        );
-      }
+      await bedService.updateStatus(bedId, newStatus);
+      await fetchBedData();
       toast.success(`Bed ${bedId} status changed to ${newStatus}.`);
-    } catch {
-      setBeds((prev) =>
-        prev.map((b) => (b.id === bedId ? { ...b, status: newStatus } : b))
-      );
-      toast.success(`Bed ${bedId} status changed to ${newStatus}.`);
+    } catch (err) {
+      console.error('Error updating bed status:', err);
+      toast.error(`Failed to change status of bed ${bedId}.`);
     }
   };
 

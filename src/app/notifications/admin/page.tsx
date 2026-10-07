@@ -2,7 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-
+import { MessageCircle } from "lucide-react";
+import Navbar from "@/components/ui/Navbar";
+import Sidebar from "@/components/ui/Sidebar";
 
 import {
   getNotifications,
@@ -15,6 +17,8 @@ export default function AdminNotificationsPage() {
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function loadNotifications() {
     try {
@@ -28,7 +32,8 @@ export default function AdminNotificationsPage() {
   }
 
   useEffect(() => {
-    loadNotifications();
+    const timer = window.setTimeout(() => void loadNotifications(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function handleNotificationClick(
@@ -67,32 +72,34 @@ export default function AdminNotificationsPage() {
     return new Date(date).toLocaleString();
   }
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        Loading notifications...
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
- 
-      <div className="mx-auto max-w-5xl">
+    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+      <Sidebar
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed(!collapsed)}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+        userRole="ADMIN"
+      />
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-slate-50">
+        <Navbar
+          title="Admin Notifications"
+          onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)}
+          userRole="ADMIN"
+        />
+        <main className="flex-1 px-4 py-4 md:px-6">
+          {loading ? (
+            <div className="mx-auto w-full max-w-5xl p-6">
+              Loading notifications...
+            </div>
+          ) : (
+            <div className="mx-auto w-full max-w-5xl">
 
         {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">
-            Admin Notifications
-          </h1>
-
-          <p className="mt-1 text-sm text-gray-500">
-            New support tickets and patient replies
-          </p>
-        </div>
+        
 
         {/* Notifications */}
-        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm">
 
           {notifications.length === 0 ? (
             <div className="p-10 text-center">
@@ -115,16 +122,16 @@ export default function AdminNotificationsPage() {
                 onClick={() =>
                   handleNotificationClick(notification)
                 }
-                className={`flex w-full gap-4 border-b p-5 text-left transition hover:bg-gray-50 ${
+                className={`flex w-full gap-4 p-5 text-left transition hover:bg-gray-50 ${
                   !notification.read
                     ? "bg-blue-50"
                     : "bg-white"
                 }`}
               >
                 {/* Icon */}
-                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-purple-100">
-                  💬
-                </div>
+              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100">
+  <MessageCircle className="h-5 w-5 text-[#0052CC]" />
+</div>
 
                 {/* Content */}
                 <div className="flex-1">
@@ -156,6 +163,9 @@ export default function AdminNotificationsPage() {
             ))
           )}
         </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );
