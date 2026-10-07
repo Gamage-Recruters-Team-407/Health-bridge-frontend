@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -63,7 +62,7 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const getNavGroups = (role: string): NavGroup[] => {
+const getNavGroups = (role: string, pathname?: string): NavGroup[] => {
   const roleUpper = role?.toUpperCase() || "PATIENT";
 
   function roleLower(r: string): string {
@@ -76,7 +75,7 @@ const getNavGroups = (role: string): NavGroup[] => {
       {
         groupTitle: "Overview",
         items: [
-          { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+          { title: "Dashboard", href: getRoleRedirectPath(roleUpper), icon: LayoutDashboard },
           { title: "Analytics", href: "/analytics", icon: TrendingUp },
         ],
       },
@@ -260,7 +259,7 @@ const getNavGroups = (role: string): NavGroup[] => {
     {
       groupTitle: "Core Modules",
       items: [
-        { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+        { title: "Dashboard", href: getRoleRedirectPath(roleUpper), icon: LayoutDashboard },
         { title: "Appointments", href: "/appointments", icon: Calendar },
       ],
     },
@@ -277,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const navGroups = getNavGroups(userRole);
+  const navGroups = getNavGroups(userRole, pathname);
 
   const sidebarContent = (
     <div

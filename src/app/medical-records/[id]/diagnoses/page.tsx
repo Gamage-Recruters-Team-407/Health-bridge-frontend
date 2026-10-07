@@ -842,8 +842,8 @@ export default function DiagnosisManagementPage({
               gap-2
               text-sm
               font-semibold
-              text-teal-600
-              hover:text-teal-700
+              text-blue-600
+              hover:text-blue-700
             `
                 : `
               inline-flex
@@ -887,8 +887,8 @@ export default function DiagnosisManagementPage({
                 items-center
                 justify-center
                 rounded-2xl
-                bg-teal-50
-                text-teal-600
+                bg-blue-50
+                text-blue-600
               `
                 : `
                 flex
@@ -1071,7 +1071,7 @@ export default function DiagnosisManagementPage({
                   h-8
                   w-8
                   animate-spin
-                  text-teal-600
+                  text-blue-600
                 `
                 : `
                   mx-auto
@@ -1228,7 +1228,7 @@ export default function DiagnosisManagementPage({
                 ? `
                     rounded-2xl
                     border
-                    border-teal-100
+                    border-blue-100
                     bg-white
                     p-5
                     shadow-sm
@@ -1373,9 +1373,9 @@ export default function DiagnosisManagementPage({
                           py-2.5
                           text-sm
                           outline-none
-                          focus:border-teal-500
+                          focus:border-blue-500
                           focus:ring-2
-                          focus:ring-teal-100
+                          focus:ring-blue-100
                         `
                 : `
                           w-full
@@ -1439,9 +1439,9 @@ export default function DiagnosisManagementPage({
                           py-2.5
                           text-sm
                           outline-none
-                          focus:border-teal-500
+                          focus:border-blue-500
                           focus:ring-2
-                          focus:ring-teal-100
+                          focus:ring-blue-100
                         `
                 : `
                           w-full
@@ -1502,9 +1502,9 @@ export default function DiagnosisManagementPage({
                           py-2.5
                           text-sm
                           outline-none
-                          focus:border-teal-500
+                          focus:border-blue-500
                           focus:ring-2
-                          focus:ring-teal-100
+                          focus:ring-blue-100
                         `
                 : `
                           w-full
@@ -1595,9 +1595,9 @@ export default function DiagnosisManagementPage({
                           text-sm
                           leading-6
                           outline-none
-                          focus:border-teal-500
+                          focus:border-blue-500
                           focus:ring-2
-                          focus:ring-teal-100
+                          focus:ring-blue-100
                         `
                 : `
                           w-full
@@ -1643,14 +1643,14 @@ export default function DiagnosisManagementPage({
                           justify-center
                           gap-2
                           rounded-xl
-                          bg-teal-600
+                          bg-blue-600
                           px-5
                           py-2.5
                           text-sm
                           font-semibold
                           text-white
                           transition
-                          hover:bg-teal-700
+                          hover:bg-blue-700
                           disabled:cursor-not-allowed
                           disabled:opacity-50
                         `
@@ -1749,7 +1749,7 @@ export default function DiagnosisManagementPage({
                 ? `
                       h-5
                       w-5
-                      text-teal-600
+                      text-blue-600
                     `
                 : `
                       h-5
@@ -1776,12 +1776,12 @@ export default function DiagnosisManagementPage({
               isDoctor
                 ? `
                       rounded-full
-                      bg-teal-50
+                      bg-blue-50
                       px-2.5
                       py-1
                       text-xs
                       font-bold
-                      text-teal-700
+                      text-blue-700
                     `
                 : `
                       rounded-full
@@ -1874,8 +1874,8 @@ export default function DiagnosisManagementPage({
                 ? `
                                 rounded-2xl
                                 border
-                                border-teal-100
-                                bg-teal-50/50
+                                border-blue-100
+                                bg-blue-50/50
                                 p-4
                               `
                 : `
@@ -1904,7 +1904,7 @@ export default function DiagnosisManagementPage({
               isDoctor
                 ? `
                                       font-bold
-                                      text-teal-950
+                                      text-blue-950
                                     `
                 : `
                                       font-bold
@@ -1924,7 +1924,7 @@ export default function DiagnosisManagementPage({
                 ? `
                                       mt-1
                                       text-xs
-                                      text-teal-500
+                                      text-blue-500
                                     `
                 : `
                                       mt-1
@@ -1954,7 +1954,7 @@ export default function DiagnosisManagementPage({
                                       text-[10px]
                                       font-bold
                                       uppercase
-                                      text-teal-600
+                                      text-blue-600
                                     `
                 : `
                                       rounded-full
@@ -1986,7 +1986,7 @@ export default function DiagnosisManagementPage({
                                     mt-3
                                     text-sm
                                     leading-6
-                                    text-teal-700
+                                    text-blue-700
                                   `
                 : `
                                     mt-3
@@ -2016,7 +2016,7 @@ export default function DiagnosisManagementPage({
                                       flex-wrap
                                       gap-2
                                       border-t
-                                      border-teal-100
+                                      border-blue-100
                                       pt-3
                                     `
                 : `
@@ -2047,14 +2047,14 @@ export default function DiagnosisManagementPage({
                                         gap-1.5
                                         rounded-lg
                                         border
-                                        border-teal-200
+                                        border-blue-200
                                         bg-white
                                         px-3
                                         py-2
                                         text-xs
                                         font-semibold
-                                        text-teal-700
-                                        hover:bg-teal-50
+                                        text-blue-700
+                                        hover:bg-blue-50
                                       `
                 : `
                                         inline-flex

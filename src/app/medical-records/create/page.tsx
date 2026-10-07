@@ -1344,8 +1344,8 @@ export default function CreateMedicalRecordPage() {
               gap-2
               text-sm
               font-semibold
-              text-teal-600
-              hover:text-teal-700
+              text-blue-600
+              hover:text-blue-700
             "
           >
             <ArrowLeft
@@ -1376,8 +1376,8 @@ export default function CreateMedicalRecordPage() {
                 items-center
                 justify-center
                 rounded-2xl
-                bg-teal-50
-                text-teal-600
+                bg-blue-50
+                text-blue-600
               "
             >
               <ClipboardPlus
@@ -1428,8 +1428,8 @@ export default function CreateMedicalRecordPage() {
             className="
               rounded-2xl
               border
-              border-teal-100
-              bg-teal-50/60
+              border-blue-100
+              bg-blue-50/60
               p-4
             "
           >
@@ -1451,7 +1451,7 @@ export default function CreateMedicalRecordPage() {
                   justify-center
                   rounded-xl
                   bg-white
-                  text-teal-600
+                  text-blue-600
                 "
               >
                 <Stethoscope
@@ -1470,7 +1470,7 @@ export default function CreateMedicalRecordPage() {
                     text-xs
                     font-semibold
                     uppercase
-                    text-teal-500
+                    text-blue-500
                   "
                 >
                   Authenticated Doctor
@@ -1649,7 +1649,7 @@ export default function CreateMedicalRecordPage() {
                   className="
                     h-5
                     w-5
-                    text-teal-600
+                    text-blue-600
                   "
                 />
 
@@ -1708,14 +1708,14 @@ export default function CreateMedicalRecordPage() {
                         className={`
                           rounded-2xl
                           border
-                          bg-teal-50/60
+                          bg-blue-50/60
                           p-4
                           ${
                             showError(
                               "patient"
                             )
                               ? "border-red-300"
-                              : "border-teal-200"
+                              : "border-blue-200"
                           }
                         `}
                       >
@@ -1750,7 +1750,7 @@ export default function CreateMedicalRecordPage() {
                                 overflow-hidden
                                 rounded-xl
                                 bg-white
-                                text-teal-600
+                                text-blue-600
                               "
                             >
 
@@ -1792,7 +1792,7 @@ export default function CreateMedicalRecordPage() {
                                   text-xs
                                   font-semibold
                                   uppercase
-                                  text-teal-500
+                                  text-blue-500
                                 "
                               >
                                 Selected Patient
@@ -1924,15 +1924,15 @@ export default function CreateMedicalRecordPage() {
                             className="
                               rounded-xl
                               border
-                              border-teal-200
+                              border-blue-200
                               bg-white
                               px-4
                               py-2.5
                               text-sm
                               font-semibold
-                              text-teal-700
+                              text-blue-700
                               transition
-                              hover:bg-teal-50
+                              hover:bg-blue-50
                             "
                           >
                             Change Patient
@@ -2029,9 +2029,9 @@ export default function CreateMedicalRecordPage() {
                                   )
                                   : (
                                     "border-slate-200 "
-                                    + "focus:border-teal-500 "
+                                    + "focus:border-blue-500 "
                                     + "focus:ring-2 "
-                                    + "focus:ring-teal-100"
+                                    + "focus:ring-blue-100"
                                   )
                               }
                             `}
@@ -2049,7 +2049,7 @@ export default function CreateMedicalRecordPage() {
                                 w-4
                                 -translate-y-1/2
                                 animate-spin
-                                text-teal-600
+                                text-blue-600
                               "
                             />
 
@@ -2282,7 +2282,7 @@ export default function CreateMedicalRecordPage() {
                                             p-3
                                             text-left
                                             transition
-                                            hover:bg-teal-50
+                                            hover:bg-blue-50
                                           "
                                         >
 
@@ -2297,7 +2297,7 @@ export default function CreateMedicalRecordPage() {
                                               overflow-hidden
                                               rounded-xl
                                               bg-slate-100
-                                              text-teal-600
+                                              text-blue-600
                                             "
                                           >
 
@@ -2544,9 +2544,9 @@ export default function CreateMedicalRecordPage() {
                           )
                           : (
                             "border-slate-200 "
-                            + "focus:border-teal-500 "
+                            + "focus:border-blue-500 "
                             + "focus:ring-2 "
-                            + "focus:ring-teal-100"
+                            + "focus:ring-blue-100"
                           )
                       }
                     `}
@@ -2645,9 +2645,9 @@ export default function CreateMedicalRecordPage() {
                           )
                           : (
                             "border-slate-200 "
-                            + "focus:border-teal-500 "
+                            + "focus:border-blue-500 "
                             + "focus:ring-2 "
-                            + "focus:ring-teal-100"
+                            + "focus:ring-blue-100"
                           )
                       }
                     `}
@@ -2774,9 +2774,9 @@ export default function CreateMedicalRecordPage() {
                           )
                           : (
                             "border-slate-200 "
-                            + "focus:border-teal-500 "
+                            + "focus:border-blue-500 "
                             + "focus:ring-2 "
-                            + "focus:ring-teal-100"
+                            + "focus:ring-blue-100"
                           )
                       }
                     `}
@@ -2931,9 +2931,9 @@ export default function CreateMedicalRecordPage() {
                           )
                           : (
                             "border-slate-200 "
-                            + "focus:border-teal-500 "
+                            + "focus:border-blue-500 "
                             + "focus:ring-2 "
-                            + "focus:ring-teal-100"
+                            + "focus:ring-blue-100"
                           )
                       }
                     `}
@@ -3062,9 +3062,9 @@ export default function CreateMedicalRecordPage() {
                           )
                           : (
                             "border-slate-200 "
-                            + "focus:border-teal-500 "
+                            + "focus:border-blue-500 "
                             + "focus:ring-2 "
-                            + "focus:ring-teal-100"
+                            + "focus:ring-blue-100"
                           )
                       }
                     `}
@@ -3133,8 +3133,8 @@ export default function CreateMedicalRecordPage() {
               className="
                 rounded-2xl
                 border
-                border-teal-100
-                bg-teal-50/60
+                border-blue-100
+                bg-blue-50/60
                 p-4
               "
             >
@@ -3143,7 +3143,7 @@ export default function CreateMedicalRecordPage() {
                 className="
                   text-sm
                   font-semibold
-                  text-teal-900
+                  text-blue-900
                 "
               >
                 Additional diagnoses and treatment records
@@ -3156,7 +3156,7 @@ export default function CreateMedicalRecordPage() {
                   mt-1
                   text-xs
                   leading-5
-                  text-teal-700
+                  text-blue-700
                 "
               >
                 After saving, use Manage Diagnoses and
@@ -3255,9 +3255,9 @@ export default function CreateMedicalRecordPage() {
                       )
                       : (
                         "border-slate-200 "
-                        + "focus:border-teal-500 "
+                        + "focus:border-blue-500 "
                         + "focus:ring-2 "
-                        + "focus:ring-teal-100"
+                        + "focus:ring-blue-100"
                       )
                   }
                 `}
@@ -3327,8 +3327,8 @@ export default function CreateMedicalRecordPage() {
                 gap-4
                 rounded-2xl
                 border
-                border-teal-100
-                bg-teal-50/60
+                border-blue-100
+                bg-blue-50/60
                 p-4
                 sm:flex-row
                 sm:items-center
@@ -3344,7 +3344,7 @@ export default function CreateMedicalRecordPage() {
                     font-semibold
                     uppercase
                     tracking-wide
-                    text-teal-600
+                    text-blue-600
                   "
                 >
                   Patient Confirmation
@@ -3415,14 +3415,14 @@ export default function CreateMedicalRecordPage() {
                   justify-center
                   gap-2
                   rounded-xl
-                  bg-teal-600
+                  bg-blue-600
                   px-6
                   py-3
                   text-sm
                   font-semibold
                   text-white
                   transition
-                  hover:bg-teal-700
+                  hover:bg-blue-700
                   disabled:cursor-not-allowed
                   disabled:opacity-50
                 "

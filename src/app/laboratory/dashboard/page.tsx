@@ -5,13 +5,23 @@ import DashboardLayout from "@/app/dashboard/layout";
 import { getAllTestOrders } from "../api/labApi";
 import { LabTest } from "../types";
 import { ClipboardList, TestTube2, Microscope, CheckCircle2 } from "lucide-react";
+import { getStoredUser } from "@/lib/auth";
 
 export default function LabDashboardPage() {
     const [orders, setOrders] = useState<LabTest[]>([]);
     const [error, setError] = useState<string | null>(null);
     const [loading, setLoading] = useState(true);
+    const [userDisplayName, setUserDisplayName] = useState("Lab Officer");
 
     useEffect(() => {
+        const user = getStoredUser();
+        if (user) {
+            const roleLabel = user.role === "ADMIN" || user.role === "SUPER_ADMIN"
+                ? "Administrator"
+                : user.fullName || "Lab Officer";
+            setUserDisplayName(roleLabel);
+        }
+
         getAllTestOrders()
             .then(setOrders)
             .catch((e) => setError(e instanceof Error ? e.message : "Failed to load"))
@@ -35,7 +45,7 @@ export default function LabDashboardPage() {
     return (
         <DashboardLayout pageTitle="Laboratory Dashboard">
             <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
-                <h1 className="text-2xl font-bold">Welcome back, Lab Officer! 🧪</h1>
+                <h1 className="text-2xl font-bold">Welcome back, {userDisplayName}! 🧪</h1>
                 <p className="mt-1 text-emerald-100">
                     {loading ? "Loading today's overview..." : `You have ${counts.requested} pending test order(s) today.`}
                 </p>
