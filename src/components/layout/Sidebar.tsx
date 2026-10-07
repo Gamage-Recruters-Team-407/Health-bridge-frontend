@@ -61,7 +61,7 @@ const navGroups: NavGroup[] = [
     items: [
       { title: "Prescriptions", href: "/prescriptions", icon: FileText },
       { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
-      { title: "Laboratory", href: "/laboratory", icon: FlaskConical },
+      { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
       { title: "Pharmacy", href: "/pharmacy", icon: Pill },
     ],
   },
