@@ -62,23 +62,49 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const getNavGroups = (role: string): NavGroup[] => {
+const getNavGroups = (role: string, pathname?: string): NavGroup[] => {
   const roleUpper = role?.toUpperCase() || "PATIENT";
 
   function roleLower(r: string): string {
     return r?.toLowerCase() || "patient";
   }
 
+  // When an Admin/Super Admin is inside /laboratory/*, show lab officer nav
+  const isOnLabRoute = pathname?.startsWith("/laboratory");
+
   // Admin & Super Admin
   if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
     const isAdmin = roleUpper === "ADMIN";
     const isSuperAdmin = roleUpper === "SUPER_ADMIN";
 
+    // If admin is on a laboratory route, show full lab navigation (same as LAB_OFFICER)
+    if (isOnLabRoute) {
+      return [
+        {
+          groupTitle: "Navigation",
+          items: [
+            { title: "← Back to Admin", href: getRoleRedirectPath(roleUpper), icon: ChevronLeft },
+          ],
+        },
+        {
+          groupTitle: "Laboratory",
+          items: [
+            { title: "Dashboard", href: "/laboratory/dashboard", icon: LayoutDashboard },
+            { title: "Test Orders", href: "/laboratory/test-orders", icon: ClipboardCheck },
+            { title: "Samples", href: "/laboratory/samples", icon: TestTube2 },
+            { title: "Processing", href: "/laboratory/processing", icon: FlaskConical },
+            { title: "Results", href: "/laboratory/results", icon: FileText },
+            { title: "Reports", href: "/laboratory/reports", icon: FileSpreadsheet },
+          ],
+        },
+      ];
+    }
+
     return [
       {
         groupTitle: "Overview",
         items: [
-          { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+          { title: "Dashboard", href: getRoleRedirectPath(roleUpper), icon: LayoutDashboard },
           { title: "Analytics", href: "/analytics", icon: TrendingUp },
         ],
       },
@@ -223,7 +249,7 @@ const getNavGroups = (role: string): NavGroup[] => {
     {
       groupTitle: "Core Modules",
       items: [
-        { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+        { title: "Dashboard", href: getRoleRedirectPath(roleUpper), icon: LayoutDashboard },
         { title: "Appointments", href: "/appointments", icon: Calendar },
       ],
     },
@@ -240,7 +266,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const navGroups = getNavGroups(userRole);
+  const navGroups = getNavGroups(userRole, pathname);
 
   const sidebarContent = (
     <div
