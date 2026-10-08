@@ -6,7 +6,6 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
-  User,
   Calendar,
   FileText,
   FileSpreadsheet,
@@ -63,23 +62,20 @@ interface NavGroup {
   items: NavItem[];
 }
 
-const getNavGroups = (role: string): NavGroup[] => {
+const getNavGroups = (role: string, pathname?: string): NavGroup[] => {
   const roleUpper = role?.toUpperCase() || "PATIENT";
 
   function roleLower(r: string): string {
     return r?.toLowerCase() || "patient";
   }
 
-  // Admin & Super Admin
-  if (roleUpper === "ADMIN" || roleUpper === "SUPER_ADMIN") {
-    const isAdmin = roleUpper === "ADMIN";
-    const isSuperAdmin = roleUpper === "SUPER_ADMIN";
-
+  // Admin
+  if (roleUpper === "ADMIN") {
     return [
       {
         groupTitle: "Overview",
         items: [
-          { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+          { title: "Dashboard", href: getRoleRedirectPath(roleUpper), icon: LayoutDashboard },
           { title: "Analytics", href: "/analytics", icon: TrendingUp },
         ],
       },
@@ -91,14 +87,10 @@ const getNavGroups = (role: string): NavGroup[] => {
           // ✅ FIXED: Compliance moved outside billing
           { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
           { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
-          ...(isAdmin
-            ? [
-                { title: "Branch Management", href: "/hospital-admin/branch-management", icon: Landmark },
-                { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
-                { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
-                { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
-              ]
-            : []),
+          { title: "Branch Management", href: "/hospital-admin/branch-management", icon: Landmark },
+          { title: "Department Management", href: "/hospital-admin/department-management", icon: Building2 },
+          { title: "Bed Management", href: "/hospital-admin/bed-management", icon: Bed },
+          { title: "Equipment Management", href: "/hospital-admin/equipment-management", icon: Wrench },
         ],
       },
       {
@@ -111,11 +103,54 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "System Admin",
         items: [
           { title: "Users", href: "/admin/users", icon: Users },
-          ...(isSuperAdmin
-            ? [{ title: "Staff Management", href: "/hospital-admin/staff-management", icon: UserCog }]
-            : []),
           { title: "Settings", href: "/admin/settings", icon: Settings },
-          { title: "Support", href: "/support/admin", icon: LifeBuoy },
+
+        ],
+      },
+    ];
+  }
+
+  // Super Admin
+  if (roleUpper === "SUPER_ADMIN") {
+    return [
+      {
+        groupTitle: "Super Admin",
+        items: [
+          { title: "Super Admin Dashboard", href: "/super-admin/dashboard", icon: LayoutDashboard },
+          { title: "System Analytics", href: "/super-admin/analytics", icon: TrendingUp },
+          { title: "Audit Logs", href: "/super-admin/audit-logs", icon: ClipboardCheck },
+          { title: "User Management", href: "/super-admin/users", icon: Users },
+          { title: "Staff Management", href: "/super-admin/staff", icon: Users },
+          { title: "Roles & Permissions", href: "/super-admin/roles", icon: ShieldAlert },
+          { title: "Hospital Management", href: "/super-admin/hospitals", icon: Building2 },
+          { title: "Doctor Management", href: "/super-admin/doctors", icon: User },
+          { title: "Pharmacy Management", href: "/super-admin/pharmacy", icon: Pill },
+          { title: "Laboratory Management", href: "/super-admin/laboratories", icon: FlaskConical },
+          { title: "Insurance Management", href: "/super-admin/insurance", icon: ShieldAlert },
+          { title: "Settings", href: "/super-admin/settings", icon: Settings },
+        ],
+      },
+    ];
+  }
+
+  // Super Admin
+  if (roleUpper === "SUPER_ADMIN") {
+    return [
+      {
+        groupTitle: "Super Admin",
+        items: [
+          { title: "Super Admin Dashboard", href: "/super-admin/dashboard", icon: LayoutDashboard },
+          { title: "System Analytics", href: "/super-admin/analytics", icon: TrendingUp },
+          { title: "Audit Logs", href: "/super-admin/audit-logs", icon: ClipboardCheck },
+          { title: "User Management", href: "/super-admin/users", icon: Users },
+          { title: "Staff Management", href: "/super-admin/staff", icon: Users },
+          { title: "Roles & Permissions", href: "/super-admin/roles", icon: ShieldAlert },
+          { title: "Hospital Management", href: "/super-admin/hospitals", icon: Building2 },
+          { title: "Doctor Management", href: "/super-admin/doctors", icon: User },
+          { title: "Pharmacy Management", href: "/super-admin/pharmacy", icon: Pill },
+          { title: "Laboratory Management", href: "/super-admin/laboratories", icon: FlaskConical },
+          { title: "Insurance Management", href: "/super-admin/insurance", icon: ShieldAlert },
+          { title: "Settings", href: "/super-admin/settings", icon: Settings },
         ],
       },
     ];
@@ -128,7 +163,6 @@ const getNavGroups = (role: string): NavGroup[] => {
         groupTitle: "Clinical",
         items: [
           { title: "Dashboard", href: "/doctor/dashboard", icon: LayoutDashboard },
-          { title: "My profile", href: "/doctor/profile", icon: User },
           { title: "Doctor directory", href: "/doctor/doctors", icon: Users },
           { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
           { title: "Schedule", href: "/doctor/schedule", icon: Calendar },
@@ -225,7 +259,7 @@ const getNavGroups = (role: string): NavGroup[] => {
     {
       groupTitle: "Core Modules",
       items: [
-        { title: "Dashboard", href: `/${roleLower(role)}/dashboard`, icon: LayoutDashboard },
+        { title: "Dashboard", href: getRoleRedirectPath(roleUpper), icon: LayoutDashboard },
         { title: "Appointments", href: "/appointments", icon: Calendar },
       ],
     },
@@ -242,7 +276,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const pathname = usePathname();
   const router = useRouter();
-  const navGroups = getNavGroups(userRole);
+  const navGroups = getNavGroups(userRole, pathname);
 
   const sidebarContent = (
     <div

@@ -194,11 +194,11 @@ export default function PolicyDetailsPage() {
             <Button
               size="sm"
               variant="outline"
+              leftIcon={<Printer className="w-4 h-4" />}
               onClick={() => window.print()}
-              className="gap-1.5 text-slate-600"
+              className="text-slate-600 whitespace-nowrap"
             >
-              <Printer className="w-4 h-4" />
-              <span>Print Summary</span>
+              Print Summary
             </Button>
 
             {/* Status Transition Actions */}
@@ -207,11 +207,11 @@ export default function PolicyDetailsPage() {
                 size="sm"
                 variant="outline"
                 isLoading={updating}
+                leftIcon={<PauseCircle className="w-4 h-4" />}
                 onClick={() => handleStatusChange("SUSPENDED")}
-                className="gap-1.5 text-amber-700 hover:bg-amber-50 border-amber-200"
+                className="text-amber-700 hover:bg-amber-50 border-amber-200 whitespace-nowrap"
               >
-                <PauseCircle className="w-4 h-4" />
-                <span>Suspend Policy</span>
+                Suspend Policy
               </Button>
             )}
 
@@ -219,11 +219,11 @@ export default function PolicyDetailsPage() {
               <Button
                 size="sm"
                 isLoading={updating}
+                leftIcon={<PlayCircle className="w-4 h-4" />}
                 onClick={() => handleStatusChange("ACTIVE")}
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white whitespace-nowrap"
               >
-                <PlayCircle className="w-4 h-4" />
-                <span>Reactivate Policy</span>
+                Reactivate Policy
               </Button>
             )}
 
@@ -232,11 +232,11 @@ export default function PolicyDetailsPage() {
                 size="sm"
                 variant="outline"
                 isLoading={updating}
+                leftIcon={<XCircle className="w-4 h-4" />}
                 onClick={() => handleStatusChange("CANCELLED")}
-                className="gap-1.5 text-rose-700 hover:bg-rose-50 border-rose-200"
+                className="text-rose-700 hover:bg-rose-50 border-rose-200 whitespace-nowrap"
               >
-                <XCircle className="w-4 h-4" />
-                <span>Cancel Policy</span>
+                Cancel Policy
               </Button>
             )}
           </div>
@@ -451,11 +451,11 @@ export default function PolicyDetailsPage() {
                               <Button
                                 size="sm"
                                 variant="outline"
+                                rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
                                 onClick={() => router.push(`/insurance-officer/claims/${c.id}`)}
-                                className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] inline-flex items-center justify-center"
+                                className="h-7 text-xs px-2.5 min-w-[76px] whitespace-nowrap"
                               >
-                                <span>View</span>
-                                <ArrowUpRight className="w-3.5 h-3.5" />
+                                View
                               </Button>
                             </div>
                           </TableCell>

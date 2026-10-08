@@ -279,11 +279,12 @@ export default function EquipmentManagementPage() {
 
   // Open Modal for Add
   const handleOpenAddModal = () => {
+    const defaultDept = departmentsList.length > 0 ? departmentsList[0] : 'Cardiology';
     setFormData({
       name: '',
-      category: '',
-      department: '',
-      serialNo: ``,
+      category: 'Diagnostic',
+      department: defaultDept,
+      serialNo: '',
       status: 'Available',
       calibrationDueDate: new Date().toISOString().split('T')[0],
       model: '',
@@ -313,20 +314,31 @@ export default function EquipmentManagementPage() {
   // Save Asset (Add or Edit)
   const handleSaveAsset = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.name || !formData.category || !formData.department) {
-      toast.error('Please fill in required fields (Name, Category, Department).');
+    const finalName = formData.name?.trim();
+    const finalCategory = formData.category || 'Diagnostic';
+    const finalDept = formData.department || departmentsList[0] || 'Cardiology';
+
+    if (!finalName) {
+      toast.error('Please enter the Equipment Name.');
       return;
     }
 
+    const resolvedFormData: Partial<EquipmentAsset> = {
+      ...formData,
+      name: finalName,
+      category: finalCategory,
+      department: finalDept
+    };
+
     try {
       if (editingAsset) {
-        const updated = await equipmentService.update(editingAsset.id, formData);
+        const updated = await equipmentService.update(editingAsset.id, resolvedFormData);
         setEquipmentList((prev) =>
           prev.map((item) => (item.id === editingAsset.id ? updated : item))
         );
         toast.success('Equipment asset updated successfully!');
       } else {
-        const created = await equipmentService.create(formData);
+        const created = await equipmentService.create(resolvedFormData);
         setEquipmentList((prev) => [created, ...prev]);
         toast.success('New equipment asset created successfully!');
       }
@@ -337,28 +349,28 @@ export default function EquipmentManagementPage() {
       console.warn('API save error, updating local state:', err);
       if (editingAsset) {
         setEquipmentList((prev) =>
-          prev.map((item) => (item.id === editingAsset.id ? ({ ...item, ...formData } as EquipmentAsset) : item))
+          prev.map((item) => (item.id === editingAsset.id ? ({ ...item, ...resolvedFormData } as EquipmentAsset) : item))
         );
         toast.success('Asset updated locally.');
       } else {
         const newAsset: EquipmentAsset = {
           id: `eq-${Date.now()}`,
-          assetId: formData.assetId || `#EQ-${Math.floor(10000 + Math.random() * 90000)}`,
-          name: formData.name || 'New Asset',
-          category: formData.category || 'General',
-          department: formData.department || 'ICU',
-          location: formData.location || 'Storage',
-          serialNo: formData.serialNo || `SN-${Math.floor(1000000 + Math.random() * 9000000)}`,
-          status: (formData.status as EquipmentStatus) || 'Available',
-          calibrationDueDate: formData.calibrationDueDate || '2026-10-15',
-          model: formData.model || 'Standard',
-          supplier: formData.supplier || 'MedTech Corp',
-          purchaseDate: formData.purchaseDate || '2024-01-12',
-          warrantyExpiry: formData.warrantyExpiry || '2026-12-31',
-          depreciationPercentage: formData.depreciationPercentage || 85,
-          initialValue: formData.initialValue || 25000,
-          currentValue: formData.currentValue || 21250,
-          alertMessage: formData.alertMessage || ''
+          assetId: resolvedFormData.assetId || `#EQ-${Math.floor(10000 + Math.random() * 90000)}`,
+          name: resolvedFormData.name || 'New Asset',
+          category: resolvedFormData.category || 'Diagnostic',
+          department: resolvedFormData.department || 'Cardiology',
+          location: resolvedFormData.location || 'Storage',
+          serialNo: resolvedFormData.serialNo || `SN-${Math.floor(1000000 + Math.random() * 9000000)}`,
+          status: (resolvedFormData.status as EquipmentStatus) || 'Available',
+          calibrationDueDate: resolvedFormData.calibrationDueDate || '2026-10-15',
+          model: resolvedFormData.model || 'Standard',
+          supplier: resolvedFormData.supplier || 'MedTech Corp',
+          purchaseDate: resolvedFormData.purchaseDate || '2024-01-12',
+          warrantyExpiry: resolvedFormData.warrantyExpiry || '2026-12-31',
+          depreciationPercentage: resolvedFormData.depreciationPercentage || 85,
+          initialValue: resolvedFormData.initialValue || 25000,
+          currentValue: resolvedFormData.currentValue || 21250,
+          alertMessage: resolvedFormData.alertMessage || ''
         };
         setEquipmentList((prev) => [newAsset, ...prev]);
         toast.success('New asset created locally.');
@@ -642,6 +654,14 @@ export default function EquipmentManagementPage() {
 
         {/* --- 4. ASSET LIST TABLE (DESKTOP) & CARD LIST (MOBILE RESPONSIVE) --- */}
         <div className="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+          {/* Click outside overlay for action menu */}
+          {activeMenuId && (
+            <div
+              className="fixed inset-0 z-20 cursor-default"
+              onClick={() => setActiveMenuId(null)}
+            />
+          )}
+
           {/* Desktop Data Table */}
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left text-xs font-semibold">
@@ -665,8 +685,9 @@ export default function EquipmentManagementPage() {
               </thead>
               <tbody className="divide-y divide-slate-100 text-slate-700">
                 {paginatedEquipment.length > 0 ? (
-                  paginatedEquipment.map((asset) => {
+                  paginatedEquipment.map((asset, index) => {
                     const isSelected = selectedIds.includes(asset.id);
+                    const isNearBottom = index >= Math.max(0, paginatedEquipment.length - 2);
                     return (
                       <tr key={asset.id} className={`hover:bg-slate-50/60 transition-colors ${isSelected ? 'bg-blue-50/40' : ''}`}>
                         <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -693,32 +714,32 @@ export default function EquipmentManagementPage() {
                       <td className="p-4 text-right relative">
                         <button
                           onClick={() => setActiveMenuId(activeMenuId === asset.id ? null : asset.id)}
-                          className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-slate-700 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
 
-                        {/* Action Dropdown Menu */}
+                        {/* Action Dropdown Menu with Smart Upward/Downward Positioning */}
                         {activeMenuId === asset.id && (
-                          <div className="absolute right-4 top-12 z-30 w-44 bg-white rounded-xl shadow-xl border border-slate-100 py-1.5 text-left animate-in fade-in duration-100">
+                          <div className={`absolute right-4 ${isNearBottom ? 'bottom-10 origin-bottom-right' : 'top-10 origin-top-right'} z-30 w-44 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
                             <button
                               onClick={() => {
                                 setViewingAsset(asset);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Eye className="w-4 h-4 text-blue-600" /> View Details
                             </button>
                             <button
                               onClick={() => handleOpenEditModal(asset)}
-                              className="w-full px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Pencil className="w-4 h-4 text-amber-600" /> Edit Asset
                             </button>
                             <button
                               onClick={() => handleStatusChange(asset.id, asset.status === 'In Use' ? 'Available' : 'In Use')}
-                              className="w-full px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-3.5 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Activity className="w-4 h-4 text-emerald-600" /> Toggle Status
                             </button>
@@ -728,7 +749,7 @@ export default function EquipmentManagementPage() {
                                 setDeletingAsset(asset);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              className="w-full px-3.5 py-2 text-xs font-bold text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Trash2 className="w-4 h-4" /> Delete Asset
                             </button>
@@ -1015,7 +1036,7 @@ export default function EquipmentManagementPage() {
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Category</label>
                   <select
-                    value={formData.category || 'Life Support'}
+                    value={formData.category || 'Diagnostic'}
                     onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white font-semibold"
                   >
@@ -1029,15 +1050,28 @@ export default function EquipmentManagementPage() {
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Department</label>
                   <select
-                    value={formData.department || departmentsList[0] || 'ICU'}
+                    value={formData.department || departmentsList[0] || 'Cardiology'}
                     onChange={(e) => setFormData({ ...formData, department: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-100 outline-none bg-white font-semibold"
                   >
-                    {departmentsList.map((dept) => (
-                      <option key={dept} value={dept}>
-                        {dept}
-                      </option>
-                    ))}
+                    {departmentsList.length > 0 ? (
+                      departmentsList.map((dept) => (
+                        <option key={dept} value={dept}>
+                          {dept}
+                        </option>
+                      ))
+                    ) : (
+                      <>
+                        <option value="Cardiology">Cardiology</option>
+                        <option value="Intensive Care Unit (ICU)">Intensive Care Unit (ICU)</option>
+                        <option value="Emergency Medicine">Emergency Medicine</option>
+                        <option value="Radiology & Imaging">Radiology & Imaging</option>
+                        <option value="General Surgery">General Surgery</option>
+                        <option value="Pediatrics">Pediatrics</option>
+                        <option value="Neurology">Neurology</option>
+                        <option value="Oncology">Oncology</option>
+                      </>
+                    )}
                   </select>
                 </div>
               </div>

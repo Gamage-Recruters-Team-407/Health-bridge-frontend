@@ -213,7 +213,7 @@ export default function PrescriptionsPage() {
                             <button
                               onClick={() => setConfirmDeleteId(p.id)}
                               disabled={deletingId === p.id}
-                              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50"
+                              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 cursor-pointer"
                               title="Delete"
                             >
                               {deletingId === p.id ? (

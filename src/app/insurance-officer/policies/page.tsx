@@ -229,19 +229,19 @@ export default function PolicyDirectoryPage() {
             <Button
               variant="outline"
               size="sm"
+              leftIcon={<RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />}
               onClick={() => loadPolicies(true)}
-              className="gap-1.5 text-slate-600"
+              className="text-slate-600 whitespace-nowrap"
             >
-              <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin" : ""}`} />
-              <span>Refresh</span>
+              Refresh
             </Button>
             <Button
               size="sm"
+              leftIcon={<Plus className="w-4 h-4" />}
               onClick={() => router.push("/insurance-officer/policies/new")}
-              className="gap-1.5 shadow-sm"
+              className="shadow-sm whitespace-nowrap"
             >
-              <Plus className="w-4 h-4" />
-              <span>Register New Policy</span>
+              Register New Policy
             </Button>
           </div>
         </div>
@@ -571,11 +571,11 @@ export default function PolicyDirectoryPage() {
                             <Button
                               size="sm"
                               variant="outline"
+                              rightIcon={<ArrowUpRight className="w-3.5 h-3.5" />}
                               onClick={() => router.push(`/insurance-officer/policies/${p.id}`)}
-                              className="h-7 text-xs px-3.5 gap-1.5 whitespace-nowrap min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center"
+                              className="h-7 text-xs px-2.5 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                             >
-                              <span>View</span>
-                              <ArrowUpRight className="w-3.5 h-3.5" />
+                              View
                             </Button>
 
                             {/* Status Toggle Quick Buttons */}
@@ -584,12 +584,12 @@ export default function PolicyDirectoryPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={updatingId === p.id}
+                                leftIcon={<PauseCircle className="w-3.5 h-3.5" />}
                                 onClick={() => handleStatusChange(p.id, "SUSPENDED")}
-                                className="h-7 text-xs px-2 text-amber-700 hover:bg-amber-50 border-amber-200 min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center gap-1"
+                                className="h-7 text-xs px-2 text-amber-700 hover:bg-amber-50 border-amber-200 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                                 title="Suspend Policy"
                               >
-                                <PauseCircle className="w-3.5 h-3.5" />
-                                <span>Suspend</span>
+                                Suspend
                               </Button>
                             )}
 
@@ -598,12 +598,12 @@ export default function PolicyDirectoryPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={updatingId === p.id}
+                                leftIcon={<PlayCircle className="w-3.5 h-3.5" />}
                                 onClick={() => handleStatusChange(p.id, "ACTIVE")}
-                                className="h-7 text-xs px-2 text-emerald-700 hover:bg-emerald-50 border-emerald-200 min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center gap-1"
+                                className="h-7 text-xs px-2 text-emerald-700 hover:bg-emerald-50 border-emerald-200 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                                 title="Reactivate Policy"
                               >
-                                <PlayCircle className="w-3.5 h-3.5" />
-                                <span>Activate</span>
+                                Activate
                               </Button>
                             )}
 
@@ -612,12 +612,12 @@ export default function PolicyDirectoryPage() {
                                 size="sm"
                                 variant="outline"
                                 disabled={updatingId === p.id}
+                                leftIcon={<XCircle className="w-3.5 h-3.5" />}
                                 onClick={() => handleStatusChange(p.id, "CANCELLED")}
-                                className="h-7 text-xs px-2 text-rose-700 hover:bg-rose-50 border-rose-200 min-w-[76px] w-full max-w-[80px] inline-flex items-center justify-center gap-1"
+                                className="h-7 text-xs px-2 text-rose-700 hover:bg-rose-50 border-rose-200 min-w-[76px] w-full max-w-[80px] whitespace-nowrap"
                                 title="Cancel Policy"
                               >
-                                <XCircle className="w-3.5 h-3.5" />
-                                <span>Cancel</span>
+                                Cancel
                               </Button>
                             )}
                           </div>

@@ -64,7 +64,8 @@ export default function LoginPage() {
         role: data.role,
       });
 
-      const targetPath = getRoleRedirectPath(data.role);
+      const requestedRedirect = typeof window !== "undefined" ? new URLSearchParams(window.location.search).get("redirect") : null;
+      const targetPath = requestedRedirect && requestedRedirect.startsWith("/") ? requestedRedirect : getRoleRedirectPath(data.role);
       router.push(targetPath);
     } catch (err: unknown) {
       // ✅ Proper error handling without 'any'

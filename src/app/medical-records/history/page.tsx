@@ -507,9 +507,9 @@ export default function MedicalHistoryPage() {
                 gap-2
                 text-sm
                 font-semibold
-                text-teal-600
+                text-blue-600
                 transition
-                hover:text-teal-700
+                hover:text-blue-700
               `
                 : `
                 inline-flex
@@ -579,7 +579,7 @@ export default function MedicalHistoryPage() {
                   justify-center
                   gap-2
                   rounded-xl
-                  bg-teal-600
+                  bg-blue-600
                   px-4
                   py-2.5
                   text-sm
@@ -587,7 +587,7 @@ export default function MedicalHistoryPage() {
                   text-white
                   shadow-sm
                   transition
-                  hover:bg-teal-700
+                  hover:bg-blue-700
                 `
                 : `
                   inline-flex
@@ -642,8 +642,8 @@ export default function MedicalHistoryPage() {
                   text-slate-700
                   shadow-sm
                   transition
-                  hover:border-teal-300
-                  hover:text-teal-600
+                  hover:border-blue-300
+                  hover:text-blue-600
                 `
                 : `
                   inline-flex
@@ -693,8 +693,8 @@ export default function MedicalHistoryPage() {
                 ? `
               rounded-2xl
               border
-              border-teal-100
-              bg-teal-50/70
+              border-blue-100
+              bg-blue-50/70
               p-4
             `
                 : `
@@ -774,9 +774,9 @@ export default function MedicalHistoryPage() {
                     text-sm
                     outline-none
                     transition
-                    focus:border-teal-500
+                    focus:border-blue-500
                     focus:ring-2
-                    focus:ring-teal-100
+                    focus:ring-blue-100
                   `
                 : `
                     w-full
@@ -814,14 +814,14 @@ export default function MedicalHistoryPage() {
                   justify-center
                   gap-2
                   rounded-xl
-                  bg-teal-600
+                  bg-blue-600
                   px-5
                   py-2.5
                   text-sm
                   font-semibold
                   text-white
                   transition
-                  hover:bg-teal-700
+                  hover:bg-blue-700
                   disabled:opacity-50
                 `
                 : `
@@ -949,7 +949,7 @@ export default function MedicalHistoryPage() {
                     h-8
                     w-8
                     animate-spin
-                    text-teal-600
+                    text-blue-600
                   `
                 : `
                     mx-auto
@@ -1156,7 +1156,7 @@ export default function MedicalHistoryPage() {
                 ? `
                     h-5
                     w-5
-                    text-teal-600
+                    text-blue-600
                   `
                 : `
                     h-5
@@ -1210,7 +1210,7 @@ export default function MedicalHistoryPage() {
                 ? `
                     h-5
                     w-5
-                    text-teal-600
+                    text-blue-600
                   `
                 : `
                     h-5
@@ -1403,7 +1403,7 @@ export default function MedicalHistoryPage() {
                             ? (
                               (
                                 isDoctor
-                                  ? "bg-teal-600 "
+                                  ? "bg-blue-600 "
                                   : "bg-blue-600 "
                               )
                               + "text-white"
@@ -1501,7 +1501,7 @@ export default function MedicalHistoryPage() {
                             left-[9px]
                             top-4
                             w-px
-                            bg-teal-100
+                            bg-blue-100
                           `
                 : `
                             absolute
@@ -1558,8 +1558,8 @@ export default function MedicalHistoryPage() {
                                       isDoctor
                                         ? (
                                           index === 0
-                                            ? "bg-teal-600"
-                                            : "bg-teal-300"
+                                            ? "bg-blue-600"
+                                            : "bg-blue-300"
                                         )
                                         : (
                                           index === 0
@@ -1611,12 +1611,12 @@ export default function MedicalHistoryPage() {
               isDoctor
                 ? `
                                           rounded-full
-                                          bg-teal-50
+                                          bg-blue-50
                                           px-2.5
                                           py-1
                                           text-[11px]
                                           font-bold
-                                          text-teal-700
+                                          text-blue-700
                                         `
                 : `
                                           rounded-full
@@ -1817,8 +1817,8 @@ export default function MedicalHistoryPage() {
                 ? `
                                                   rounded-xl
                                                   border
-                                                  border-teal-100
-                                                  bg-teal-50/50
+                                                  border-blue-100
+                                                  bg-blue-50/50
                                                   p-3
                                                 `
                 : `
@@ -1844,7 +1844,7 @@ export default function MedicalHistoryPage() {
                 ? `
                                                       text-sm
                                                       font-semibold
-                                                      text-teal-900
+                                                      text-blue-900
                                                     `
                 : `
                                                       text-sm
@@ -1870,7 +1870,7 @@ export default function MedicalHistoryPage() {
                                                         text-[10px]
                                                         font-bold
                                                         uppercase
-                                                        text-teal-600
+                                                        text-blue-600
                                                       `
                 : `
                                                         rounded-full
@@ -1899,7 +1899,7 @@ export default function MedicalHistoryPage() {
                                                       mt-2
                                                       text-xs
                                                       leading-5
-                                                      text-teal-700
+                                                      text-blue-700
                                                     `
                 : `
                                                       mt-2
@@ -2131,14 +2131,14 @@ export default function MedicalHistoryPage() {
                                         items-center
                                         justify-center
                                         rounded-xl
-                                        bg-teal-600
+                                        bg-blue-600
                                         px-3
                                         py-2.5
                                         text-xs
                                         font-semibold
                                         text-white
                                         transition
-                                        hover:bg-teal-700
+                                        hover:bg-blue-700
                                       `
                 : `
                                         inline-flex
@@ -2199,7 +2199,7 @@ export default function MedicalHistoryPage() {
                 ? `
                       h-5
                       w-5
-                      text-teal-600
+                      text-blue-600
                     `
                 : `
                       h-5
@@ -2224,12 +2224,12 @@ export default function MedicalHistoryPage() {
               isDoctor
                 ? `
                       rounded-full
-                      bg-teal-50
+                      bg-blue-50
                       px-2.5
                       py-1
                       text-xs
                       font-bold
-                      text-teal-700
+                      text-blue-700
                     `
                 : `
                       rounded-full
@@ -2290,8 +2290,8 @@ export default function MedicalHistoryPage() {
                 ? `
                               rounded-2xl
                               border
-                              border-teal-100
-                              bg-teal-50/50
+                              border-blue-100
+                              bg-blue-50/50
                               p-4
                             `
                 : `
@@ -2316,7 +2316,7 @@ export default function MedicalHistoryPage() {
               isDoctor
                 ? `
                                   font-bold
-                                  text-teal-950
+                                  text-blue-950
                                 `
                 : `
                                   font-bold
@@ -2341,7 +2341,7 @@ export default function MedicalHistoryPage() {
                                     text-[10px]
                                     font-bold
                                     uppercase
-                                    text-teal-600
+                                    text-blue-600
                                   `
                 : `
                                     rounded-full
@@ -2371,7 +2371,7 @@ export default function MedicalHistoryPage() {
                                   mt-3
                                   text-sm
                                   leading-6
-                                  text-teal-700
+                                  text-blue-700
                                 `
                 : `
                                   mt-3
@@ -2394,7 +2394,7 @@ export default function MedicalHistoryPage() {
                 ? `
                                 mt-4
                                 text-xs
-                                text-teal-500
+                                text-blue-500
                               `
                 : `
                                 mt-4
@@ -2425,15 +2425,15 @@ export default function MedicalHistoryPage() {
                                 inline-flex
                                 rounded-lg
                                 border
-                                border-teal-200
+                                border-blue-200
                                 bg-white
                                 px-3
                                 py-2
                                 text-xs
                                 font-semibold
-                                text-teal-700
+                                text-blue-700
                                 transition
-                                hover:bg-teal-50
+                                hover:bg-blue-50
                               `
                 : `
                                 mt-4
