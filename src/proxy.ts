@@ -20,6 +20,11 @@ const redirectToRoleDashboard = (request: NextRequest, role: string) => {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // API authentication is enforced by the backend using the bearer token.
+  if (pathname === "/api" || pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }
@@ -37,14 +42,6 @@ export function proxy(request: NextRequest) {
 
     if (!role || !ROLE_ROUTE_MAP[role]) {
       return redirectToLogin(request);
-    }
-
-    // Laboratory routes: accessible by LAB_OFFICER, ADMIN, and SUPER_ADMIN
-    if (pathname === "/laboratory" || pathname.startsWith("/laboratory/")) {
-      if (role === "LAB_OFFICER" || role === "ADMIN" || role === "SUPER_ADMIN") {
-        return NextResponse.next();
-      }
-      return redirectToRoleDashboard(request, role);
     }
 
     const requestedDashboard = Object.entries(ROLE_ROUTE_MAP).find(([, route]) =>

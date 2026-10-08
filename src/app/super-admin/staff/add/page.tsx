@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck, MapPin, Briefcase } from "lucide-react";
+import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck, Building, Briefcase } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { superAdminService } from "@/services/superadmin.service";
@@ -16,9 +16,9 @@ export default function AddStaffPage() {
     email: "",
     phone: "",
     role: "Doctor",
-    department: "",
+    department: "General Medicine",
     staffId: `HB-${Math.floor(Math.random() * 9000) + 1000}`,
-    accountStatus: "PENDING_APPROVAL"
+    accountStatus: "ACTIVE"
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -43,20 +43,23 @@ export default function AddStaffPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
+    <div className="flex flex-col w-full min-h-screen bg-slate-50">
       
       {/* Top Navigation Bar */}
-      <div className="flex items-center gap-4 mb-2">
-        <Link href="/super-admin/staff" className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
-          <ArrowLeft size={20} />
-        </Link>
-        <div>
-          <h1 className="text-xl font-bold text-slate-900">Add New Staff</h1>
-          <p className="text-xs text-slate-500 font-medium">Create a new staff profile in Health Bridge</p>
+      <div className="w-full bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between sticky top-0 z-10">
+        <div className="flex items-center gap-4">
+          <Link href="/super-admin/staff" className="p-2 -ml-2 rounded-full hover:bg-slate-100 text-slate-500 transition-colors">
+            <ArrowLeft size={20} />
+          </Link>
+          <div>
+            <h1 className="text-xl font-bold text-slate-900">Add New Staff</h1>
+            <p className="text-xs text-slate-500 font-medium">Create a new staff profile in Health Bridge</p>
+          </div>
         </div>
       </div>
 
-      <div className="w-full">
+      <div className="flex-1 w-full max-w-4xl mx-auto p-6 lg:p-8">
+        
         <form onSubmit={handleSubmit} className="space-y-8">
           
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
@@ -179,7 +182,7 @@ export default function AddStaffPage() {
                 <label className="text-sm font-bold text-slate-700">Department</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <MapPin size={16} className="text-slate-400" />
+                    <Building size={16} className="text-slate-400" />
                   </div>
                   <select 
                     name="department"
@@ -187,13 +190,12 @@ export default function AddStaffPage() {
                     onChange={handleChange}
                     className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20 outline-none transition-all text-sm appearance-none bg-white"
                   >
-                    <option value="" disabled>Select Department</option>
-                    <option value="General Medical">General Medical</option>
-                    <option value="Surgical">Surgical</option>
-                    <option value="Emergency">Emergency</option>
-                    <option value="Laboratory">Laboratory</option>
-                    <option value="Pharmacy">Pharmacy</option>
+                    <option value="General Medicine">General Medicine</option>
+                    <option value="Cardiology">Cardiology</option>
                     <option value="Pediatrics">Pediatrics</option>
+                    <option value="Orthopedics">Orthopedics</option>
+                    <option value="Laboratory">Laboratory</option>
+                    <option value="Administration">Administration</option>
                   </select>
                 </div>
               </div>
