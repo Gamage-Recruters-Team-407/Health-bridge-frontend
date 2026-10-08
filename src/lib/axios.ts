@@ -173,6 +173,10 @@ class ApiClient {
                 // ============================================================
                 // 403 - Forbidden
                 // ============================================================
+                else if (status === 503) {
+                    console.warn(`Service unavailable: ${method} ${url}. ${getApiErrorMessage(error, "Please try again shortly.")}`);
+                }
+
                 else if (status === 403) {
                     console.error(`🚫 403 Forbidden: ${method} ${url}`);
                 }
