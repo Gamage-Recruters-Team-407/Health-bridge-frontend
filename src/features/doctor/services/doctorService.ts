@@ -1,6 +1,6 @@
 import api, { getApiErrorMessage } from "@/lib/axios";
 import axios from "axios";
-import { getStoredUser } from "@/lib/auth";
+import { getStoredUser, getToken, saveAuthData } from "@/lib/auth";
 import type { Availability, AvailabilityInput, Doctor, DoctorLeave, DoctorProfileUpdate, Earnings, LeaveInput } from "../types";
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -119,7 +119,11 @@ export async function updateDoctorProfile(data: DoctorProfileUpdate): Promise<Do
     userObj.fullName = profile.fullName;
     userObj.name = profile.fullName;
     userObj.email = profile.email;
-    localStorage.setItem("healthbridge_user", JSON.stringify(userObj));
+    const token = getToken();
+    const currentUser = getStoredUser();
+    if (token && currentUser) {
+      saveAuthData(token, { ...currentUser, fullName: profile.fullName, email: profile.email });
+    }
 
     window.dispatchEvent(new Event("user-profile-updated"));
     window.dispatchEvent(new Event("storage"));

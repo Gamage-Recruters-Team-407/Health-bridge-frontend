@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Sidebar from "@/components/ui/Sidebar";
 import Navbar from "@/components/ui/Navbar";
+import Footer from "@/components/ui/Footer";
 import { authService } from "@/services/auth.service";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/useAuth";
@@ -81,7 +82,7 @@ export default function DoctorShell({ children }: { children: React.ReactNode })
   return (
     <div className="flex min-h-screen bg-[#f4f7f9] text-slate-900">
       <Sidebar userRole="DOCTOR" userName={userName} mobileOpen={open} onCloseMobile={() => setOpen(false)} />
-      <div className="min-w-0 flex-1">
+      <div className="flex min-w-0 flex-1 flex-col">
         <Navbar
           onToggleMobileSidebar={() => setOpen(true)}
           title="Doctor Dashboard"
@@ -89,7 +90,8 @@ export default function DoctorShell({ children }: { children: React.ReactNode })
           userRole="DOCTOR"
           fixed
         />
-        <main className="mx-auto max-w-[1440px] p-4 pt-20 sm:p-6 sm:pt-20 lg:p-8 lg:pt-20">{children}</main>
+        <main className="mx-auto w-full max-w-[1440px] flex-1 p-4 pt-20 sm:p-6 sm:pt-20 lg:p-8 lg:pt-20">{children}</main>
+        <Footer />
       </div>
     </div>
   );
