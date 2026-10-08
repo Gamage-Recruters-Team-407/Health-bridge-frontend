@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  User,
   Calendar,
   FileText,
   FileSpreadsheet,
