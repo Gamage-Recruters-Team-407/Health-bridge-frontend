@@ -367,8 +367,15 @@ export default function ManageDepartmentPage() {
         </div>
 
         {/* Data Table Container */}
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col justify-between min-h-[480px]">
+          {/* Click outside to close active action menu */}
+          {activeMenuId && (
+            <div
+              className="fixed inset-0 z-20 cursor-default"
+              onClick={() => setActiveMenuId(null)}
+            />
+          )}
+          <div className="overflow-x-auto min-h-[400px]">
             <table className="w-full text-left text-xs text-slate-600">
               <thead className="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold uppercase tracking-wider">
                 <tr>
@@ -390,7 +397,9 @@ export default function ManageDepartmentPage() {
                     </td>
                   </tr>
                 ) : (
-                  paginatedDepartments.map((dept) => (
+                  paginatedDepartments.map((dept, index) => {
+                    const isNearBottom = index >= Math.max(0, paginatedDepartments.length - 2);
+                    return (
                     <tr key={dept.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="py-4 px-6 font-semibold text-slate-500">{dept.id}</td>
                       <td className="py-4 px-6 font-bold text-slate-900 text-sm">{dept.name}</td>
@@ -413,21 +422,21 @@ export default function ManageDepartmentPage() {
                         <button
                           type="button"
                           onClick={() => setActiveMenuId(activeMenuId === dept.id ? null : dept.id)}
-                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors"
+                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
                         >
                           <MoreVertical className="w-4 h-4" />
                         </button>
 
                         {/* Action Menu Dropdown */}
                         {activeMenuId === dept.id && (
-                          <div className="absolute right-6 top-12 z-20 w-50 bg-white rounded-xl shadow-lg border border-slate-100 py-1 text-left">
+                          <div className={`absolute right-6 ${isNearBottom ? 'bottom-10 origin-bottom-right' : 'top-12 origin-top-right'} z-30 w-50 bg-white rounded-xl shadow-2xl border border-slate-100 py-1 text-left animate-in fade-in zoom-in-95 duration-100`}>
                             <button
                               type="button"
                               onClick={() => {
                                 setViewingDepartment(dept);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Eye className="w-3.5 h-3.5 text-slate-400" />
                               View Details
@@ -435,7 +444,7 @@ export default function ManageDepartmentPage() {
                             <button
                               type="button"
                               onClick={() => handleOpenEditModal(dept)}
-                              className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Pencil className="w-3.5 h-3.5 text-slate-400" />
                               Edit Department
@@ -443,7 +452,7 @@ export default function ManageDepartmentPage() {
                             <button
                               type="button"
                               onClick={() => handleToggleStatus(dept.id)}
-                              className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
                             >
                               <UserCheck className="w-3.5 h-3.5 text-slate-400" />
                               Toggle Status ({dept.status === 'Active' ? 'Inactive' : 'Active'})
@@ -455,7 +464,7 @@ export default function ManageDepartmentPage() {
                                 setDeletingDepartment(dept);
                                 setActiveMenuId(null);
                               }}
-                              className="w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                              className="w-full px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5 text-red-500" />
                               Delete Department
@@ -464,7 +473,8 @@ export default function ManageDepartmentPage() {
                         )}
                       </td>
                     </tr>
-                  ))
+                    );
+                  })
                 )}
               </tbody>
             </table>

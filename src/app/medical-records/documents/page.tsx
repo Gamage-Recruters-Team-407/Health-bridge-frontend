@@ -1296,9 +1296,9 @@ export default function MedicalDocumentsPage() {
                 gap-2
                 text-sm
                 font-semibold
-                text-teal-600
+                text-blue-600
                 transition
-                hover:text-teal-700
+                hover:text-blue-700
               `
                 : `
                 inline-flex
@@ -1381,8 +1381,8 @@ export default function MedicalDocumentsPage() {
                 text-slate-700
                 shadow-sm
                 transition
-                hover:border-teal-300
-                hover:text-teal-600
+                hover:border-blue-300
+                hover:text-blue-600
                 disabled:opacity-50
               `
                 : `
@@ -1449,8 +1449,8 @@ export default function MedicalDocumentsPage() {
                 ? `
               rounded-2xl
               border
-              border-teal-100
-              bg-teal-50/60
+              border-blue-100
+              bg-blue-50/60
               p-4
             `
                 : `
@@ -1535,9 +1535,9 @@ export default function MedicalDocumentsPage() {
                     text-sm
                     outline-none
                     transition
-                    focus:border-teal-500
+                    focus:border-blue-500
                     focus:ring-2
-                    focus:ring-teal-100
+                    focus:ring-blue-100
                   `
                 : `
                     w-full
@@ -1576,14 +1576,14 @@ export default function MedicalDocumentsPage() {
                   justify-center
                   gap-2
                   rounded-xl
-                  bg-teal-600
+                  bg-blue-600
                   px-5
                   py-2.5
                   text-sm
                   font-semibold
                   text-white
                   transition
-                  hover:bg-teal-700
+                  hover:bg-blue-700
                   disabled:opacity-50
                 `
                 : `
@@ -1758,7 +1758,7 @@ export default function MedicalDocumentsPage() {
                     h-8
                     w-8
                     animate-spin
-                    text-teal-600
+                    text-blue-600
                   `
                 : `
                     mx-auto
@@ -1855,7 +1855,7 @@ export default function MedicalDocumentsPage() {
               isDoctor
                 ? `
                       rounded-xl
-                      bg-teal-50
+                      bg-blue-50
                       px-4
                       py-3
                       text-center
@@ -1875,7 +1875,7 @@ export default function MedicalDocumentsPage() {
                 ? `
                         text-xl
                         font-bold
-                        text-teal-700
+                        text-blue-700
                       `
                 : `
                         text-xl
@@ -1894,7 +1894,7 @@ export default function MedicalDocumentsPage() {
               isDoctor
                 ? `
                         text-xs
-                        text-teal-600
+                        text-blue-600
                       `
                 : `
                         text-xs
@@ -1948,8 +1948,8 @@ export default function MedicalDocumentsPage() {
                       items-center
                       justify-center
                       rounded-xl
-                      bg-teal-50
-                      text-teal-600
+                      bg-blue-50
+                      text-blue-600
                     `
                 : `
                       flex
@@ -2088,9 +2088,9 @@ export default function MedicalDocumentsPage() {
                             py-2.5
                             text-sm
                             outline-none
-                            focus:border-teal-500
+                            focus:border-blue-500
                             focus:ring-2
-                            focus:ring-teal-100
+                            focus:ring-blue-100
                           `
                 : `
                             w-full
@@ -2186,9 +2186,9 @@ export default function MedicalDocumentsPage() {
                             py-2.5
                             text-sm
                             outline-none
-                            focus:border-teal-500
+                            focus:border-blue-500
                             focus:ring-2
-                            focus:ring-teal-100
+                            focus:ring-blue-100
                           `
                 : `
                             w-full
@@ -2253,12 +2253,12 @@ export default function MedicalDocumentsPage() {
                             file:mr-3
                             file:rounded-lg
                             file:border-0
-                            file:bg-teal-50
+                            file:bg-blue-50
                             file:px-3
                             file:py-1.5
                             file:text-xs
                             file:font-semibold
-                            file:text-teal-700
+                            file:text-blue-700
                           `
                 : `
                             block
@@ -2324,9 +2324,9 @@ export default function MedicalDocumentsPage() {
                             py-2.5
                             text-sm
                             outline-none
-                            focus:border-teal-500
+                            focus:border-blue-500
                             focus:ring-2
-                            focus:ring-teal-100
+                            focus:ring-blue-100
                           `
                 : `
                             w-full
@@ -2369,14 +2369,14 @@ export default function MedicalDocumentsPage() {
                             justify-center
                             gap-2
                             rounded-xl
-                            bg-teal-600
+                            bg-blue-600
                             px-5
                             py-2.5
                             text-sm
                             font-semibold
                             text-white
                             transition
-                            hover:bg-teal-700
+                            hover:bg-blue-700
                             disabled:cursor-not-allowed
                             disabled:opacity-50
                           `
@@ -2573,7 +2573,7 @@ export default function MedicalDocumentsPage() {
                               bg-slate-50/60
                               p-4
                               transition
-                              hover:border-teal-200
+                              hover:border-blue-200
                               hover:bg-white
                               hover:shadow-sm
                             `
@@ -2613,8 +2613,8 @@ export default function MedicalDocumentsPage() {
                                   items-center
                                   justify-center
                                   rounded-xl
-                                  bg-teal-100
-                                  text-teal-600
+                                  bg-blue-100
+                                  text-blue-600
                                 `
                 : `
                                   flex
@@ -2687,7 +2687,7 @@ export default function MedicalDocumentsPage() {
                                   mt-1
                                   text-xs
                                   font-semibold
-                                  text-teal-600
+                                  text-blue-600
                                 `
                 : `
                                   mt-1
@@ -2795,14 +2795,14 @@ export default function MedicalDocumentsPage() {
                                     items-center
                                     gap-1.5
                                     rounded-lg
-                                    bg-teal-600
+                                    bg-blue-600
                                     px-3
                                     py-2
                                     text-xs
                                     font-semibold
                                     text-white
                                     transition
-                                    hover:bg-teal-700
+                                    hover:bg-blue-700
                                   `
                 : `
                                     inline-flex
@@ -2850,8 +2850,8 @@ export default function MedicalDocumentsPage() {
                                       font-semibold
                                       text-slate-700
                                       transition
-                                      hover:border-teal-300
-                                      hover:text-teal-600
+                                      hover:border-blue-300
+                                      hover:text-blue-600
                                     `
                 : `
                                       inline-flex
@@ -3250,7 +3250,7 @@ export default function MedicalDocumentsPage() {
                                     mt-1
                                     text-xs
                                     font-semibold
-                                    text-teal-600
+                                    text-blue-600
                                   `
                 : `
                                     mt-1
@@ -3367,8 +3367,8 @@ export default function MedicalDocumentsPage() {
                                       font-semibold
                                       text-slate-700
                                       transition
-                                      hover:border-teal-300
-                                      hover:text-teal-600
+                                      hover:border-blue-300
+                                      hover:text-blue-600
                                     `
                 : `
                                       inline-flex

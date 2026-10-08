@@ -838,9 +838,9 @@ export default function EditMedicalRecordPage({
               gap-2
               text-sm
               font-semibold
-              text-teal-600
+              text-blue-600
               transition
-              hover:text-teal-700
+              hover:text-blue-700
             "
           >
             <ArrowLeft
@@ -870,8 +870,8 @@ export default function EditMedicalRecordPage({
                 items-center
                 justify-center
                 rounded-2xl
-                bg-teal-50
-                text-teal-600
+                bg-blue-50
+                text-blue-600
               "
             >
               <Stethoscope
@@ -1015,7 +1015,7 @@ export default function EditMedicalRecordPage({
                   h-8
                   w-8
                   animate-spin
-                  text-teal-600
+                  text-blue-600
                 "
               />
 
@@ -1061,8 +1061,8 @@ export default function EditMedicalRecordPage({
                   className="
                     rounded-2xl
                     border
-                    border-teal-100
-                    bg-teal-50/60
+                    border-blue-100
+                    bg-blue-50/60
                     p-4
                   "
                 >
@@ -1077,7 +1077,7 @@ export default function EditMedicalRecordPage({
                       className="
                         h-5
                         w-5
-                        text-teal-600
+                        text-blue-600
                       "
                     />
 
@@ -1087,7 +1087,7 @@ export default function EditMedicalRecordPage({
                           text-xs
                           font-semibold
                           uppercase
-                          text-teal-500
+                          text-blue-500
                         "
                       >
                         Doctor
@@ -1200,7 +1200,7 @@ export default function EditMedicalRecordPage({
                     className="
                       h-5
                       w-5
-                      text-teal-600
+                      text-blue-600
                     "
                   />
 
@@ -1286,9 +1286,9 @@ export default function EditMedicalRecordPage({
                             )
                             : (
                               "border-slate-200 "
-                              + "focus:border-teal-500 "
+                              + "focus:border-blue-500 "
                               + "focus:ring-2 "
-                              + "focus:ring-teal-100"
+                              + "focus:ring-blue-100"
                             )
                         }
                       `}
@@ -1401,9 +1401,9 @@ export default function EditMedicalRecordPage({
                             )
                             : (
                               "border-slate-200 "
-                              + "focus:border-teal-500 "
+                              + "focus:border-blue-500 "
                               + "focus:ring-2 "
-                              + "focus:ring-teal-100"
+                              + "focus:ring-blue-100"
                             )
                         }
                       `}
@@ -1494,9 +1494,9 @@ export default function EditMedicalRecordPage({
                             )
                             : (
                               "border-slate-200 "
-                              + "focus:border-teal-500 "
+                              + "focus:border-blue-500 "
                               + "focus:ring-2 "
-                              + "focus:ring-teal-100"
+                              + "focus:ring-blue-100"
                             )
                         }
                       `}
@@ -1627,9 +1627,9 @@ export default function EditMedicalRecordPage({
                             )
                             : (
                               "border-slate-200 "
-                              + "focus:border-teal-500 "
+                              + "focus:border-blue-500 "
                               + "focus:ring-2 "
-                              + "focus:ring-teal-100"
+                              + "focus:ring-blue-100"
                             )
                         }
                       `}
@@ -1745,9 +1745,9 @@ export default function EditMedicalRecordPage({
                             )
                             : (
                               "border-slate-200 "
-                              + "focus:border-teal-500 "
+                              + "focus:border-blue-500 "
                               + "focus:ring-2 "
-                              + "focus:ring-teal-100"
+                              + "focus:ring-blue-100"
                             )
                         }
                       `}
@@ -1805,8 +1805,8 @@ export default function EditMedicalRecordPage({
                 className="
                   rounded-2xl
                   border
-                  border-teal-100
-                  bg-teal-50/60
+                  border-blue-100
+                  bg-blue-50/60
                   p-4
                 "
               >
@@ -1814,7 +1814,7 @@ export default function EditMedicalRecordPage({
                   className="
                     text-sm
                     font-semibold
-                    text-teal-900
+                    text-blue-900
                   "
                 >
                   Diagnoses and treatment records are managed separately.
@@ -1825,7 +1825,7 @@ export default function EditMedicalRecordPage({
                     mt-1
                     text-xs
                     leading-5
-                    text-teal-700
+                    text-blue-700
                   "
                 >
                   Return to the Medical Record Details page and use
@@ -1856,7 +1856,7 @@ export default function EditMedicalRecordPage({
                     className="
                       h-5
                       w-5
-                      text-teal-600
+                      text-blue-600
                     "
                   />
 
@@ -1933,9 +1933,9 @@ export default function EditMedicalRecordPage({
                         )
                         : (
                           "border-slate-200 "
-                          + "focus:border-teal-500 "
+                          + "focus:border-blue-500 "
                           + "focus:ring-2 "
-                          + "focus:ring-teal-100"
+                          + "focus:ring-blue-100"
                         )
                     }
                   `}
@@ -2060,14 +2060,14 @@ export default function EditMedicalRecordPage({
                     justify-center
                     gap-2
                     rounded-xl
-                    bg-teal-600
+                    bg-blue-600
                     px-6
                     py-2.5
                     text-sm
                     font-semibold
                     text-white
                     transition
-                    hover:bg-teal-700
+                    hover:bg-blue-700
                     disabled:cursor-not-allowed
                     disabled:opacity-50
                   "

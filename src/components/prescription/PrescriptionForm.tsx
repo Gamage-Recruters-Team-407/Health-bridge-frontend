@@ -261,7 +261,7 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
               </div>
             </div>
           </div>
-          <button type="submit" disabled={isSubmitting || loadingOptions} className="w-full rounded-xl bg-emerald-600 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-emerald-700 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2">
+          <button type="submit" disabled={isSubmitting || loadingOptions} className="w-full rounded-xl bg-blue-500 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-blue-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2">
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : null}
             {isSubmitting ? "Saving Prescription..." : mode === "edit" ? "Save Changes" : "Save Prescription"}
           </button>
