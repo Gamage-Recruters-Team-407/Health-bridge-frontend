@@ -4,12 +4,16 @@ const { get, put } = vi.hoisted(() => ({ get: vi.fn(), put: vi.fn() }));
 vi.mock("@/lib/axios", () => ({ default: { get, put }, getApiErrorMessage: (_error: unknown, fallback: string) => fallback }));
 vi.mock("@/lib/auth", () => ({ getStoredUser: () => null }));
 
-import { getDoctors, updateDoctorProfile } from "./doctorService";
+import { getDoctors, getEarnings, updateDoctorProfile } from "./doctorService";
 import type { DoctorProfileUpdate } from "../types";
 
 beforeEach(() => { get.mockReset(); put.mockReset(); });
 
 describe("doctor directory fallback", () => {
+  it("does not replace unavailable earnings with zero income", async () => {
+    get.mockRejectedValue(new Error("Database unavailable"));
+    await expect(getEarnings()).rejects.toThrow("Database unavailable");
+  });
   it("does not report a successful save when the backend times out", async () => {
     put.mockRejectedValue(new Error("Timeout"));
     await expect(updateDoctorProfile({} as DoctorProfileUpdate)).rejects.toThrow("Unable to save your profile");

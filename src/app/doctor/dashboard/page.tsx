@@ -56,8 +56,10 @@ export default function DoctorDashboardPage() {
         const list = data || [];
         setSessions(list);
         
-        const booked = list.reduce((acc, s) => acc + (s.activeAppointments || 0), 0);
-        const remaining = list.reduce((acc, s) => acc + (s.remainingAppointments || 0), 0);
+        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+        const todaysSessions = list.filter(s => s.sessionDate === today && !["CANCELLED", "HOLIDAY"].includes(s.status));
+        const booked = todaysSessions.reduce((acc, s) => acc + (s.activeAppointments || 0), 0);
+        const remaining = todaysSessions.reduce((acc, s) => acc + (s.remainingAppointments || 0), 0);
         setTodayAppointmentsCount(booked);
         setRemainingSlotsCount(remaining);
       })
@@ -98,14 +100,14 @@ export default function DoctorDashboardPage() {
       <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <DoctorStatsCard 
           label="Today's appointments" 
-          value={String(todayAppointmentsCount)} 
+          value={earnings ? String(earnings.todayAppointments) : String(todayAppointmentsCount)}
           detail={remainingSlotsCount > 0 ? `${remainingSlotsCount} slots remaining` : "No active slots remaining"} 
           icon={UsersRound} 
         />
         <DoctorStatsCard 
           label="Monthly earnings" 
-          value={earnings ? `LKR ${(earnings.monthlyEarnings / 1000).toFixed(1)}K` : "LKR 0"} 
-          detail="12.4% above last month" 
+          value={earnings ? `LKR ${(earnings.monthlyEarnings / 1000).toFixed(1)}K` : "LKR 0.0K"}
+          detail="Paid consultation invoices issued this month"
           icon={CircleDollarSign} 
           tone="amber" 
         />
@@ -137,7 +139,7 @@ export default function DoctorDashboardPage() {
                 No upcoming sessions created yet.
               </div>
             ) : (
-              sessions.slice(0, 4).map((slot) => {
+              sessions.map((slot) => {
                 const dateObj = new Date(`${slot.sessionDate}T00:00:00`);
                 const isValidDate = !isNaN(dateObj.getTime());
                 return (
@@ -227,13 +229,13 @@ export default function DoctorDashboardPage() {
           <div>
             <p className="text-sm text-blue-100">Consultation income this month</p>
             <p className="mt-1 text-3xl font-bold">
-              LKR {(earnings?.consultationIncome || 0).toLocaleString()}
+              {earnings ? `LKR ${earnings.consultationIncome.toLocaleString()}` : "LKR 0"}
             </p>
           </div>
           <div className="sm:text-right">
             <p className="text-sm text-blue-100">Total consultations</p>
             <p className="mt-1 text-xl font-bold">
-              {earnings?.payments?.length || 0} completed
+              {earnings ? `${earnings.completedConsultations} completed` : "0 completed"}
             </p>
           </div>
         </div>

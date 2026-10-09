@@ -230,21 +230,7 @@ export async function getLeaves(): Promise<DoctorLeave[]> {
 }
 
 export async function getEarnings(): Promise<Earnings> {
-  try {
-    const res = await api.get<Earnings>("/doctors/me/earnings");
-    if (res) return res;
-  } catch {
-    // calculate or return default zero earnings state when live api isn't connected
-  }
-
-  return {
-    totalEarnings: 0,
-    monthlyEarnings: 0,
-    consultationIncome: 0,
-    pendingAmount: 0,
-    revenue: [],
-    payments: [],
-  };
+  return api.get<Earnings>("/doctors/me/earnings");
 }
 
 export const doctorService = {
