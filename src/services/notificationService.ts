@@ -1,4 +1,6 @@
-const API_BASE = (
+import { getToken } from "@/lib/auth";
+
+const API_BASE = typeof window !== "undefined" ? "" : (
   process.env.NEXT_PUBLIC_API_BASE_URL ||
   process.env.NEXT_PUBLIC_API_URL ||
   "http://localhost:8088"
@@ -14,12 +16,6 @@ export interface Notification {
   referenceId: string;
   read: boolean;
   createdAt: string;
-}
-
-function getToken() {
-  if (typeof window === "undefined") return null;
-
-  return localStorage.getItem("healthbridge_token");
 }
 
 async function request<T>(
@@ -62,8 +58,16 @@ async function request<T>(
   return payload as T;
 }
 
-export async function getNotifications() {
-  return request<Notification[]>("");
+let pendingNotifications: { token: string | null; promise: Promise<Notification[]> } | null = null;
+
+export function getNotifications() {
+  const token = getToken();
+  if (pendingNotifications?.token === token) return pendingNotifications.promise;
+  const promise = request<Notification[]>("").finally(() => {
+    if (pendingNotifications?.promise === promise) pendingNotifications = null;
+  });
+  pendingNotifications = { token, promise };
+  return promise;
 }
 
 export async function getUnreadNotificationCount() {
