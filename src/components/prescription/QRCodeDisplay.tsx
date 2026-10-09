@@ -30,7 +30,7 @@ export default function QRCodeDisplay({ value, size = 200 }: QRCodeDisplayProps)
     setFailed(false);
 
     QRCode.toDataURL(value, {
-      margin: 4, // ✅ required quiet zone — same value used in the PDF generator
+      margin: 4, // required quiet zone — same value used in the PDF generator
       width: size * 2, // render at 2x so it stays crisp on high-DPI phone screens
       errorCorrectionLevel: "M", // "M" keeps modules a bit larger/less dense than "H" for the same payload
     })

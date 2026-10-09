@@ -2,7 +2,7 @@
 import { useState, useEffect } from "react";
 import { patientService, PatientOption, medicineService, MedicineOption } from "@/services/prescriptionService";
 import MedicineSelector from "./MedicineSelector";
-import { UserRound, Phone, Plus, Trash2, AlertTriangle, Loader2, Stethoscope } from "lucide-react";
+import { UserRound, Phone, Plus, Trash2, AlertTriangle, Loader2, Stethoscope, AlertCircle } from "lucide-react";
 
 interface MedicineItem { medicineId: string; medicineName: string; dosage: string; frequency: string; duration: string; quantity: number; instructions: string; }
 interface Interaction { medicine1: string; medicine2: string; description: string; }
@@ -37,6 +37,9 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
   const [interactions, setInteractions] = useState<Interaction[]>([]);
 
   const [validDays, setValidDays] = useState(30);
+
+  // Form Error State 
+  const [formError, setFormError] = useState("");
 
   const [selectedMed, setSelectedMed] = useState("");
   const [selectedMedLabel, setSelectedMedLabel] = useState("");
@@ -92,11 +95,23 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (items.length === 0) return alert("Add at least one medicine!");
-    if (!patientId) return alert("Please select a patient from the database!");
+    setFormError(""); // Clear previous errors
+
+    // FIXED: Alert for form validation errors
+    if (items.length === 0) {
+      setFormError("Please add at least one medicine to the prescription.");
+      return;
+    }
+    if (!patientId) {
+      setFormError("Please select a patient from the database!");
+      return;
+    }
 
     const cleanPhone = patientPhone.replace(/\D/g, "");
-    if (cleanPhone.length < 10) return alert("Please enter a valid 10-digit phone number!");
+    if (cleanPhone.length < 10) {
+      setFormError("Please enter a valid 10-digit phone number!");
+      return;
+    }
 
     onSubmit({
       patientId,
@@ -112,7 +127,7 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {interactions.length > 0 && (
-        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5">
+        <div className="rounded-2xl border border-rose-200 bg-rose-50 p-5" role="alert">
           <div className="flex items-center gap-2 text-rose-700">
             <AlertTriangle className="h-5 w-5" />
             <h2 className="text-sm font-bold">Drug Interactions Detected</h2>
@@ -128,6 +143,14 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
         </div>
       )}
 
+      {/*  Form Error Message UI  */}
+      {formError && (
+        <div className="rounded-xl border border-red-200 bg-red-50 p-4 flex items-start gap-3 text-red-700" role="alert">
+          <AlertCircle className="h-5 w-5 shrink-0 mt-0.5" />
+          <p className="text-sm font-medium">{formError}</p>
+        </div>
+      )}
+
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_380px]">
         <div className="space-y-6">
           <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
@@ -139,11 +162,13 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Dosage *</label>
-                <input type="text" value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="e.g., 500mg" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                <input type="text" value={dosage} onChange={(e) => setDosage(e.target.value)} placeholder="e.g., 500mg" className="w-full cursor-text rounded-xl border border-slate-200
+                 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Frequency *</label>
-                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+                <select value={frequency} onChange={(e) => setFrequency(e.target.value)} className="w-full cursor-pointer rounded-xl border border-slate-200
+                 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
                   <option value="">-- Select --</option>
                   <option value="Once daily">Once daily</option>
                   <option value="Twice daily">Twice daily</option>
@@ -152,18 +177,22 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Duration</label>
-                <input type="text" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g., 7 days" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                <input type="text" value={duration} onChange={(e) => setDuration(e.target.value)} placeholder="e.g., 7 days" className="w-full cursor-text rounded-xl border
+                 border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
               </div>
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Quantity</label>
-                <input type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                <input type="number" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} className="w-full cursor-text rounded-xl border
+                 border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
               </div>
               <div className="sm:col-span-2">
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Instructions</label>
-                <input type="text" value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g., Take after meals" className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                <input type="text" value={instructions} onChange={(e) => setInstructions(e.target.value)} placeholder="e.g., Take after meals" className="w-full cursor-text rounded-xl border
+                 border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
               </div>
             </div>
-            <button type="button" onClick={handleAddMedicine} className="mt-5 w-full rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition hover:bg-blue-700 active:scale-[0.98]">
+            <button type="button" onClick={handleAddMedicine} className="mt-5 w-full cursor-pointer rounded-xl bg-blue-600 px-4 py-3 text-sm font-bold text-white transition
+             hover:bg-blue-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2">
               + Add to Prescription
             </button>
           </div>
@@ -175,12 +204,18 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
             ) : (
               <div className="mt-4 space-y-3">
                 {items.map((item, index) => (
-                  <div key={index} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
-                    <div>
-                      <p className="text-sm font-bold text-slate-900">{item.medicineName}</p>
+                  <div key={index} className="flex items-center justify-between gap-3 rounded-xl border border-slate-100 bg-slate-50 p-4 transition hover:border-blue-200 hover:bg-blue-50/30">
+                    <div className="min-w-0">
+                      <p className="truncate text-sm font-bold text-slate-900">{item.medicineName}</p>
                       <p className="mt-1 text-xs text-slate-500">{item.dosage} • {item.frequency} • {item.duration}</p>
                     </div>
-                    <button type="button" onClick={() => setItems(items.filter((_, i) => i !== index))} className="rounded-lg p-2 text-rose-500 transition hover:bg-rose-50">
+                    <button
+                      type="button"
+                      onClick={() => setItems(items.filter((_, i) => i !== index))}
+                      aria-label={`Remove ${item.medicineName}`}
+                      title="Remove medicine"
+                      className="shrink-0 cursor-pointer rounded-lg p-2 text-rose-500 transition hover:bg-rose-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
+                    >
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
@@ -204,7 +239,7 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
                     setPatientName(selected?.label || "");
                     setPatientPhone(selected?.phone || "");
                   }}
-                  className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  className="w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:cursor-not-allowed disabled:opacity-60"
                   disabled={loadingOptions || mode === "edit"}
                 >
                   <option value="">-- Search and Select Patient --</option>
@@ -229,13 +264,13 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Diagnosis</label>
                 <div className="relative">
-                  <Stethoscope className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Stethoscope className="pointer-events-none absolute left-3 top-3 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
                     value={diagnosis}
                     onChange={(e) => setDiagnosis(e.target.value)}
                     placeholder="e.g., Acute upper respiratory infection"
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className="w-full cursor-text rounded-xl border border-slate-200 bg-slate-50 py-2.5 pl-10 pr-4 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
               </div>
@@ -246,7 +281,8 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
                   <select
                     value={validDays}
                     onChange={(e) => setValidDays(Number(e.target.value))}
-                    className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    className="w-full cursor-pointer rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm outline-none transition
+                     focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   >
                     {VALID_DAYS_OPTIONS.map((d) => (
                       <option key={d} value={d}>{d} days</option>
@@ -257,11 +293,13 @@ export default function PrescriptionForm({ mode = "create", initialData, onSubmi
 
               <div>
                 <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500">Doctor's Notes</label>
-                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Add any special instructions or clinical notes..." className="w-full rounded-xl border border-slate-200 bg-slate-50 px-4 py-2.5 text-sm leading-relaxed outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+                <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={5} placeholder="Add any special instructions or clinical notes..." className="w-full cursor-text resize-y rounded-xl border
+                 border-slate-200 bg-slate-50 px-4 py-2.5 text-sm leading-relaxed outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
               </div>
             </div>
           </div>
-          <button type="submit" disabled={isSubmitting || loadingOptions} className="w-full rounded-xl bg-blue-500 px-4 py-3.5 text-sm font-bold text-white transition hover:bg-blue-600 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2">
+          <button type="submit" disabled={isSubmitting || loadingOptions} aria-busy={isSubmitting} className="w-full cursor-pointer rounded-xl bg-blue-500 px-4 py-3.5 text-sm font-bold
+           text-white transition hover:bg-blue-600 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 flex items-center justify-center gap-2">
             {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin"/> : null}
             {isSubmitting ? "Saving Prescription..." : mode === "edit" ? "Save Changes" : "Save Prescription"}
           </button>
