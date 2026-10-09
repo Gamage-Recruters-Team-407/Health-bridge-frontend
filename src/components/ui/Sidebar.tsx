@@ -90,7 +90,9 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Inventory", href: "/hospital/inventory", icon: Pill },
           // ✅ FIXED: Compliance moved outside billing
           { title: "Compliance", href: "/hospital/compliance", icon: ClipboardCheck },
-          { title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical },
+          ...(isSuperAdmin
+            ? [{ title: "Laboratory", href: "/laboratory/dashboard", icon: FlaskConical }]
+            : []),
           ...(isAdmin
             ? [
                 { title: "Branch Management", href: "/hospital-admin/branch-management", icon: Landmark },
@@ -110,11 +112,11 @@ const getNavGroups = (role: string): NavGroup[] => {
       {
         groupTitle: "System Admin",
         items: [
-          { title: "Users", href: "/admin/users", icon: Users },
+          ...(isSuperAdmin ? [{ title: "Users", href: "/admin/users", icon: Users }] : []),
           ...(isSuperAdmin
             ? [{ title: "Staff Management", href: "/hospital-admin/staff-management", icon: UserCog }]
             : []),
-          { title: "Settings", href: "/admin/settings", icon: Settings },
+          ...(isSuperAdmin ? [{ title: "Settings", href: "/admin/settings", icon: Settings }] : []),
           { title: "Support", href: "/support/admin", icon: LifeBuoy },
         ],
       },
