@@ -15,6 +15,8 @@ export interface MonthlyRevenue {
 }
 
 export interface Earnings {
+  completedConsultations: number;
+  todayAppointments: number;
   totalEarnings: number;
   monthlyEarnings: number;
   consultationIncome: number;
