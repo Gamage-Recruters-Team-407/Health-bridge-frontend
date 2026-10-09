@@ -30,7 +30,11 @@ import {
   UserPlus,
   Bell,
   Settings,
-  HelpCircle
+  HelpCircle,
+  MoreVertical,
+  Pencil,
+  Trash2,
+  Eye
 } from 'lucide-react';
 
 export default function BedManagementPage() {
@@ -57,6 +61,19 @@ export default function BedManagementPage() {
   const [allocatingBed, setAllocatingBed] = useState<Bed | null>(null);
   const [viewingBedPatient, setViewingBedPatient] = useState<Bed | null>(null);
   const [isAddBedOpen, setIsAddBedOpen] = useState<boolean>(false);
+  const [editingBed, setEditingBed] = useState<Bed | null>(null);
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [deletingBed, setDeletingBed] = useState<Bed | null>(null);
+
+  // Edit Bed Form State
+  const [editBedForm, setEditBedForm] = useState({
+    bedId: '',
+    code: '',
+    ward: 'General Ward' as WardType,
+    bedType: 'Standard',
+    status: 'Available' as BedStatus,
+    branchCode: 'BR-COL-01'
+  });
 
   // Add Bed Form State
   const [addBedForm, setAddBedForm] = useState({
@@ -307,9 +324,59 @@ export default function BedManagementPage() {
     }
   };
 
+  // Open Edit Bed Modal
+  const handleOpenEditModal = (bed: Bed) => {
+    setEditingBed(bed);
+    setEditBedForm({
+      bedId: bed.bedId || bed.id,
+      code: bed.code || '',
+      ward: bed.ward,
+      bedType: bed.bedType || 'Standard',
+      status: bed.status,
+      branchCode: bed.branchCode || 'BR-COL-01'
+    });
+    setActiveMenuId(null);
+  };
+
+  // Save Edit Bed
+  const handleSaveEditBed = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBed) return;
+    try {
+      await bedService.update(editingBed.id, editBedForm);
+      await fetchBedData();
+      toast.success(`Bed ${editingBed.id} updated successfully!`);
+      setEditingBed(null);
+    } catch (err) {
+      console.error('Error updating bed:', err);
+      toast.error('Failed to update bed.');
+    }
+  };
+
+  // Delete Bed
+  const handleDeleteBed = async (bed: Bed) => {
+    try {
+      await bedService.delete(bed.id);
+      await fetchBedData();
+      toast.success(`Bed ${bed.id} deleted successfully!`);
+      setDeletingBed(null);
+    } catch (err) {
+      console.error('Error deleting bed:', err);
+      toast.error(`Failed to delete bed ${bed.id}.`);
+    }
+  };
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
       <Toaster position="top-right" reverseOrder={false} />
+
+      {/* Click outside to close active menu */}
+      {activeMenuId && (
+        <div
+          className="fixed inset-0 z-20 cursor-default"
+          onClick={() => setActiveMenuId(null)}
+        />
+      )}
 
       {/* 4 Overview Stat Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
@@ -524,30 +591,106 @@ export default function BedManagementPage() {
                 No beds match your selected filters.
               </div>
             ) : (
-              paginatedBeds.map((bed) => (
+              paginatedBeds.map((bed, index) => {
+                const isNearBottom = paginatedBeds.length > 3 && index >= paginatedBeds.length - 2;
+                return (
                 <div
                   key={bed.id}
-                  className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between"
+                  className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-md transition-shadow flex flex-col justify-between relative"
                 >
-                  {/* Card Header: Bed ID & Status Badge */}
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                  {/* Card Header: Bed ID & Status Badge & Actions */}
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 relative">
                     <h3 className="text-lg font-extrabold text-slate-900 tracking-tight">{bed.id}</h3>
-                    <span
-                      className={`px-3 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 ${
-                        bed.status === 'Occupied'
-                          ? 'bg-blue-100 text-blue-700'
-                          : bed.status === 'Available'
-                          ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
-                          : bed.status === 'Reserved'
-                          ? 'bg-amber-50 text-amber-600 border border-amber-200'
-                          : bed.status === 'Maintenance'
-                          ? 'bg-slate-100 text-slate-600 border border-slate-200'
-                          : 'bg-sky-50 text-sky-600 border border-sky-200'
-                      }`}
-                    >
-                      {bed.status === 'Cleaning' && <Sparkles className="w-3 h-3" />}
-                      {bed.status}
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`px-3 py-0.5 rounded-full text-xs font-semibold flex items-center gap-1 ${
+                          bed.status === 'Occupied'
+                            ? 'bg-blue-100 text-blue-700'
+                            : bed.status === 'Available'
+                            ? 'bg-emerald-50 text-emerald-600 border border-emerald-200'
+                            : bed.status === 'Reserved'
+                            ? 'bg-amber-50 text-amber-600 border border-amber-200'
+                            : bed.status === 'Maintenance'
+                            ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                            : 'bg-sky-50 text-sky-600 border border-sky-200'
+                        }`}
+                      >
+                        {bed.status === 'Cleaning' && <Sparkles className="w-3 h-3" />}
+                        {bed.status}
+                      </span>
+                      <div className="relative">
+                        <button
+                          type="button"
+                          onClick={() => setActiveMenuId(activeMenuId === bed.id ? null : bed.id)}
+                          className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                        {activeMenuId === bed.id && (
+                          <div className={`absolute right-0 ${isNearBottom ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'} z-50 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenEditModal(bed)}
+                              className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                              Edit Bed
+                            </button>
+                            {bed.status !== 'Available' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleQuickStatusChange(bed.id, 'Available');
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                Mark Available
+                              </button>
+                            )}
+                            {bed.status !== 'Maintenance' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleQuickStatusChange(bed.id, 'Maintenance');
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Wrench className="w-3.5 h-3.5 text-slate-500" />
+                                Put in Maintenance
+                              </button>
+                            )}
+                            {bed.status !== 'Cleaning' && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  handleQuickStatusChange(bed.id, 'Cleaning');
+                                  setActiveMenuId(null);
+                                }}
+                                className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-sky-500" />
+                                Mark for Cleaning
+                              </button>
+                            )}
+                            <div className="my-1 border-t border-slate-100"></div>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeletingBed(bed);
+                                setActiveMenuId(null);
+                              }}
+                              className="w-full px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                              Delete Bed
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
                   </div>
 
                   {/* Card Body: Dynamic Status Content */}
@@ -656,7 +799,8 @@ export default function BedManagementPage() {
                     )}
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         ) : (
@@ -697,23 +841,97 @@ export default function BedManagementPage() {
                         </span>
                       </td>
                       <td className="py-4 px-6 text-right">
-                        {bed.status === 'Available' ? (
-                          <button
-                            type="button"
-                            onClick={() => handleOpenAllocate(bed)}
-                            className="px-3 py-1.5 rounded-lg bg-blue-900 text-white text-xs font-semibold"
-                          >
-                            Allocate
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() => setViewingBedPatient(bed)}
-                            className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 text-xs font-semibold"
-                          >
-                            Manage
-                          </button>
-                        )}
+                        <div className="flex items-center justify-end gap-2 relative">
+                          {bed.status === 'Available' ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAllocate(bed)}
+                              className="px-3 py-1.5 rounded-lg bg-blue-900 text-white text-xs font-semibold hover:bg-blue-950 transition-colors"
+                            >
+                              Allocate
+                            </button>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => setViewingBedPatient(bed)}
+                              className="px-3 py-1.5 rounded-lg border border-slate-200 text-slate-700 hover:bg-slate-50 text-xs font-semibold transition-colors"
+                            >
+                              Manage
+                            </button>
+                          )}
+                          <div className="relative">
+                            <button
+                              type="button"
+                              onClick={() => setActiveMenuId(activeMenuId === bed.id ? null : bed.id)}
+                              className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-colors cursor-pointer"
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </button>
+                            {activeMenuId === bed.id && (
+                              <div className={`absolute right-0 ${paginatedBeds.length > 3 && paginatedBeds.indexOf(bed) >= paginatedBeds.length - 2 ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'} z-50 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
+                                <button
+                                  type="button"
+                                  onClick={() => handleOpenEditModal(bed)}
+                                  className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Pencil className="w-3.5 h-3.5 text-amber-600" />
+                                  Edit Bed
+                                </button>
+                                {bed.status !== 'Available' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleQuickStatusChange(bed.id, 'Available');
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                    Mark Available
+                                  </button>
+                                )}
+                                {bed.status !== 'Maintenance' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleQuickStatusChange(bed.id, 'Maintenance');
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Wrench className="w-3.5 h-3.5 text-slate-500" />
+                                    Put in Maintenance
+                                  </button>
+                                )}
+                                {bed.status !== 'Cleaning' && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      handleQuickStatusChange(bed.id, 'Cleaning');
+                                      setActiveMenuId(null);
+                                    }}
+                                    className="w-full px-3.5 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 flex items-center gap-2 cursor-pointer"
+                                  >
+                                    <Sparkles className="w-3.5 h-3.5 text-sky-500" />
+                                    Mark for Cleaning
+                                  </button>
+                                )}
+                                <div className="my-1 border-t border-slate-100"></div>
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setDeletingBed(bed);
+                                    setActiveMenuId(null);
+                                  }}
+                                  className="w-full px-3.5 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 flex items-center gap-2 cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5 text-red-500" />
+                                  Delete Bed
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1113,19 +1331,19 @@ export default function BedManagementPage() {
       {/* --- MODAL: Add New Bed --- */}
       {isAddBedOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h2 className="text-lg font-bold text-slate-900">Add New Bed</h2>
               <button
                 type="button"
                 onClick={() => setIsAddBedOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateBed} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleCreateBed} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">Bed ID *</label>
                 <input
@@ -1195,18 +1413,145 @@ export default function BedManagementPage() {
                 <button
                   type="button"
                   onClick={() => setIsAddBedOpen(false)}
-                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors"
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
                 >
                   Create Bed
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: Edit Bed --- */}
+      {editingBed && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-md w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
+              <h2 className="text-lg font-bold text-slate-900">Edit Bed ({editingBed.id})</h2>
+              <button
+                type="button"
+                onClick={() => setEditingBed(null)}
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditBed} className="p-6 space-y-4 text-xs overflow-y-auto">
+              <div>
+                <label className="block text-slate-600 font-semibold mb-1">Bed Identifier *</label>
+                <input
+                  type="text"
+                  value={editBedForm.bedId}
+                  onChange={(e) => setEditBedForm({ ...editBedForm, bedId: e.target.value })}
+                  className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  required
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Bed Code</label>
+                  <input
+                    type="text"
+                    value={editBedForm.code}
+                    onChange={(e) => setEditBedForm({ ...editBedForm, code: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Ward *</label>
+                  <select
+                    value={editBedForm.ward}
+                    onChange={(e) => setEditBedForm({ ...editBedForm, ward: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                  >
+                    {availableWards.map((ward) => (
+                      <option key={ward} value={ward}>
+                        {ward}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Bed Type</label>
+                  <input
+                    type="text"
+                    value={editBedForm.bedType}
+                    onChange={(e) => setEditBedForm({ ...editBedForm, bedType: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Status</label>
+                  <select
+                    value={editBedForm.status}
+                    onChange={(e) => setEditBedForm({ ...editBedForm, status: e.target.value as BedStatus })}
+                    className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none bg-white"
+                  >
+                    <option value="Available">Available</option>
+                    <option value="Reserved">Reserved</option>
+                    <option value="Occupied">Occupied</option>
+                    <option value="Maintenance">Maintenance</option>
+                    <option value="Cleaning">Cleaning</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setEditingBed(null)}
+                  className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-sm transition-colors cursor-pointer"
+                >
+                  Save Changes
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* --- MODAL: Delete Bed Confirmation --- */}
+      {deletingBed && (
+        <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-sm w-full p-6 animate-in fade-in zoom-in-95 duration-150">
+            <h3 className="text-base font-bold text-slate-900">Delete Bed {deletingBed.id}?</h3>
+            <p className="text-xs text-slate-500 mt-2">
+              Are you sure you want to remove bed {deletingBed.id}? This action cannot be undone.
+            </p>
+            <div className="mt-5 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setDeletingBed(null)}
+                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-100 font-semibold text-xs cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => handleDeleteBed(deletingBed)}
+                className="px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs shadow-sm cursor-pointer"
+              >
+                Delete
+              </button>
+            </div>
           </div>
         </div>
       )}

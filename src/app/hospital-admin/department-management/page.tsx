@@ -398,7 +398,7 @@ export default function ManageDepartmentPage() {
                   </tr>
                 ) : (
                   paginatedDepartments.map((dept, index) => {
-                    const isNearBottom = index >= Math.max(0, paginatedDepartments.length - 2);
+                    const isNearBottom = paginatedDepartments.length > 3 && index >= paginatedDepartments.length - 2;
                     return (
                     <tr key={dept.id} className="hover:bg-slate-50/60 transition-colors">
                       <td className="py-4 px-6 font-semibold text-slate-500">{dept.id}</td>
@@ -429,7 +429,7 @@ export default function ManageDepartmentPage() {
 
                         {/* Action Menu Dropdown */}
                         {activeMenuId === dept.id && (
-                          <div className={`absolute right-6 ${isNearBottom ? 'bottom-10 origin-bottom-right' : 'top-12 origin-top-right'} z-30 w-50 bg-white rounded-xl shadow-2xl border border-slate-100 py-1 text-left animate-in fade-in zoom-in-95 duration-100`}>
+                          <div className={`absolute right-6 ${isNearBottom ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'} z-50 w-52 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
                             <button
                               type="button"
                               onClick={() => {
@@ -527,19 +527,19 @@ export default function ManageDepartmentPage() {
       {/* --- MODAL: Add Department --- */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h2 className="text-lg font-bold text-slate-900">Add New Department</h2>
               <button
                 type="button"
                 onClick={() => setIsAddModalOpen(false)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDepartment} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveDepartment} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div>
                 <label className="block text-slate-600 font-semibold mb-1">Department Name *</label>
                 <input
@@ -656,19 +656,19 @@ export default function ManageDepartmentPage() {
       {/* --- MODAL: Edit Department --- */}
       {editingDepartment && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h2 className="text-lg font-bold text-slate-900">Edit Department ({editingDepartment.id})</h2>
               <button
                 type="button"
                 onClick={() => setEditingDepartment(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100"
+                className="p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-100 cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveDepartment} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveDepartment} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Department Name *</label>

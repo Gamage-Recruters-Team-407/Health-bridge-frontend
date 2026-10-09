@@ -687,7 +687,7 @@ export default function EquipmentManagementPage() {
                 {paginatedEquipment.length > 0 ? (
                   paginatedEquipment.map((asset, index) => {
                     const isSelected = selectedIds.includes(asset.id);
-                    const isNearBottom = index >= Math.max(0, paginatedEquipment.length - 2);
+                    const isNearBottom = paginatedEquipment.length > 3 && index >= paginatedEquipment.length - 2;
                     return (
                       <tr key={asset.id} className={`hover:bg-slate-50/60 transition-colors ${isSelected ? 'bg-blue-50/40' : ''}`}>
                         <td className="p-4 text-center" onClick={(e) => e.stopPropagation()}>
@@ -721,7 +721,7 @@ export default function EquipmentManagementPage() {
 
                         {/* Action Dropdown Menu with Smart Upward/Downward Positioning */}
                         {activeMenuId === asset.id && (
-                          <div className={`absolute right-4 ${isNearBottom ? 'bottom-10 origin-bottom-right' : 'top-10 origin-top-right'} z-30 w-44 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
+                          <div className={`absolute right-4 ${isNearBottom ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'} z-50 w-48 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
                             <button
                               onClick={() => {
                                 setViewingAsset(asset);
@@ -992,8 +992,8 @@ export default function EquipmentManagementPage() {
       {/* --- 6. ADD / EDIT ASSET MODAL --- */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="p-5 border-b border-slate-100 flex items-center justify-between">
+          <div className="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-lg w-full max-h-[90vh] flex flex-col my-auto overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="p-5 border-b border-slate-100 flex items-center justify-between shrink-0">
               <h3 className="text-lg font-extrabold text-slate-900">
                 {editingAsset ? 'Edit Equipment Asset' : 'Add New Equipment Asset'}
               </h3>
@@ -1005,7 +1005,7 @@ export default function EquipmentManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveAsset} className="p-5 space-y-4 text-xs max-h-[75vh] overflow-y-auto">
+            <form onSubmit={handleSaveAsset} className="p-5 space-y-4 text-xs overflow-y-auto">
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Equipment Name</label>

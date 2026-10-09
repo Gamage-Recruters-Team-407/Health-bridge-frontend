@@ -439,7 +439,7 @@ export default function BranchManagementPage() {
                 </tr>
               ) : (
                 paginatedBranches.map((branch, index) => {
-                  const isNearBottom = index >= Math.max(0, paginatedBranches.length - 2);
+                  const isNearBottom = paginatedBranches.length > 3 && index >= paginatedBranches.length - 2;
                   return (
                   <tr key={branch.id} className="hover:bg-slate-50/60 transition-colors">
                     <td className="py-4 px-6 font-semibold text-slate-500">{branch.branchCode}</td>
@@ -486,7 +486,7 @@ export default function BranchManagementPage() {
 
                       {/* Action Menu Dropdown */}
                       {activeMenuId === branch.id && (
-                        <div className={`absolute right-6 ${isNearBottom ? 'bottom-10 origin-bottom-right' : 'top-12 origin-top-right'} z-30 w-50 bg-white rounded-xl shadow-2xl border border-slate-100 py-1 text-left animate-in fade-in zoom-in-95 duration-100`}>
+                        <div className={`absolute right-6 ${isNearBottom ? 'bottom-full mb-1.5 origin-bottom-right' : 'top-full mt-1.5 origin-top-right'} z-50 w-52 bg-white rounded-xl shadow-2xl border border-slate-100 py-1.5 text-left animate-in fade-in zoom-in-95 duration-100`}>
                           <button
                             type="button"
                             onClick={() => {
@@ -584,8 +584,8 @@ export default function BranchManagementPage() {
       {/* --- MODAL: Add Branch --- */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h2 className="text-lg font-bold text-slate-900">Add New Branch</h2>
               <button
                 type="button"
@@ -596,7 +596,7 @@ export default function BranchManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveBranch} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveBranch} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Branch Code *</label>
@@ -728,8 +728,8 @@ export default function BranchManagementPage() {
       {/* --- MODAL: Edit Branch --- */}
       {editingBranch && (
         <div className="fixed inset-0 z-50 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95 duration-150">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="bg-white rounded-2xl shadow-xl border border-slate-100 max-w-lg w-full max-h-[90vh] flex flex-col overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
               <h2 className="text-lg font-bold text-slate-900">Edit Branch ({editingBranch.branchCode})</h2>
               <button
                 type="button"
@@ -740,7 +740,7 @@ export default function BranchManagementPage() {
               </button>
             </div>
 
-            <form onSubmit={handleSaveBranch} className="p-6 space-y-4 text-xs">
+            <form onSubmit={handleSaveBranch} className="p-6 space-y-4 text-xs overflow-y-auto">
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-slate-600 font-semibold mb-1">Branch Code *</label>
