@@ -44,7 +44,7 @@ export default function LabDashboardPage() {
 
     return (
         <DashboardLayout pageTitle="Laboratory Dashboard">
-            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-2xl p-6 text-white">
+            <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-2xl p-6 text-white">
                 <h1 className="text-2xl font-bold">Welcome back, {userDisplayName}! 🧪</h1>
                 <p className="mt-1 text-emerald-100">
                     {loading ? "Loading today's overview..." : `You have ${counts.requested} pending test order(s) today.`}
