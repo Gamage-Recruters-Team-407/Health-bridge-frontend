@@ -40,9 +40,9 @@ export type DepartmentPerformance = {
   department: string;
   patients: number;
   appointments: number;
-  utilization: number;
-  revenue: number;
-  status: string;
+  utilization: number | null;
+  revenue: number | null;
+  status: string | null;
 };
 
 export type AnalyticsDashboardData = {
@@ -620,9 +620,9 @@ export type DashboardOperationalSummaryDto = {
   department: string;
   patients: number;
   appointments: number;
-  utilization: number;
-  revenue: number;
-  status: string;
+  utilization: number | null;
+  revenue: number | null;
+  status: string | null;
 };
 
 export type AnalyticsDashboardResponseDto = {
