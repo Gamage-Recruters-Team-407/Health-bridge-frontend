@@ -2,6 +2,8 @@ import { apiClient } from './apiClient';
 
 export interface PaymentRequestData {
   patientId: string;
+  doctorId?: string;
+  doctorName?: string;
   description: string;
   category: string;
   amount: number;
@@ -34,6 +36,8 @@ export interface PaymentRecord {
   patientId: string;
   patientEmail: string;
   patientName: string;
+  doctorId?: string;
+  doctorName?: string;
   description: string;
   category: string;
   amount: number;
