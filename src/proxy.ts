@@ -39,6 +39,14 @@ export function proxy(request: NextRequest) {
       return redirectToLogin(request);
     }
 
+    // Laboratory routes: accessible by LAB_OFFICER, ADMIN, and SUPER_ADMIN
+    if (pathname === "/laboratory" || pathname.startsWith("/laboratory/")) {
+      if (role === "LAB_OFFICER" || role === "ADMIN" || role === "SUPER_ADMIN") {
+        return NextResponse.next();
+      }
+      return redirectToRoleDashboard(request, role);
+    }
+
     const requestedDashboard = Object.entries(ROLE_ROUTE_MAP).find(([, route]) =>
       isPathMatch(pathname, route)
     );
