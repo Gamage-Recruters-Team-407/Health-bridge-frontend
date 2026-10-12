@@ -123,6 +123,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Hospital Management", href: "/super-admin/hospitals", icon: Building2 },
           { title: "Doctor Management", href: "/super-admin/doctors", icon: User },
           { title: "Pharmacy Management", href: "/super-admin/pharmacy", icon: Pill },
+          { title: "Medical Records", href: "/medical-records", icon: FileSpreadsheet },
           { title: "Laboratory Management", href: "/super-admin/laboratories", icon: FlaskConical },
           { title: "Insurance Management", href: "/super-admin/insurance", icon: ShieldAlert },
           { title: "Settings", href: "/super-admin/settings", icon: Settings },
