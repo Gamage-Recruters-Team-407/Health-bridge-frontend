@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/app/dashboard/layout";
 import { getStoredUser, AuthUser } from "@/lib/auth";
+import api from "@/lib/axios";
 import { paymentService, PaymentRequestData } from "@/services/paymentService";
 import { prescriptionBillingService, DispensedPrescriptionBill } from "@/services/prescriptionBillingService";
 import { prescriptionService } from "@/services/prescriptionService";
@@ -42,7 +43,7 @@ interface CategoryOption {
   defaultAmount: number;
 }
 
-export interface LabTestOption {
+interface LabTestOption {
   id: string;
   code: string;
   name: string;
@@ -54,7 +55,7 @@ export interface LabTestOption {
   description: string;
 }
 
-export const LAB_TEST_OPTIONS: LabTestOption[] = [
+const LAB_TEST_OPTIONS: LabTestOption[] = [
   {
     id: "CBC",
     code: "LB-101",
@@ -143,6 +144,14 @@ export default function PaymentsPage() {
   const selectedLabTests = LAB_TEST_OPTIONS.filter((t) => selectedLabTestIds.includes(t.id));
   const totalLabAmount = selectedLabTests.reduce((sum, t) => sum + t.price, 0);
   const hasFastingRequired = selectedLabTests.some((t) => t.fastingRequired);
+
+  // Doctor Consultation State
+  const [selectedDoctorId, setSelectedDoctorId] = useState<string>("6ac3655bd404bf09e6430039");
+  const [selectedDoctorName, setSelectedDoctorName] = useState<string>("Dr.weerasinga");
+  const [doctorsList, setDoctorsList] = useState<{ id: string; fullName: string; specialization?: string; consultationFee?: number }[]>([
+    { id: "6ac3655bd404bf09e6430039", fullName: "Dr.weerasinga", specialization: "General Medicine", consultationFee: 3000 },
+    { id: "6ac36321d404bf09e643002d", fullName: "Dr. Maya Perera", specialization: "Cardiology", consultationFee: 3000 },
+  ]);
 
   // Medical Prescription Bills State
   const [prescriptionBills, setPrescriptionBills] = useState<DispensedPrescriptionBill[]>([]);
@@ -397,6 +406,8 @@ export default function PaymentsPage() {
     try {
       const payload: PaymentRequestData = {
         patientId: user.id,
+        doctorId: category === "CONSULTATION" ? selectedDoctorId : undefined,
+        doctorName: category === "CONSULTATION" ? selectedDoctorName : undefined,
         description: description.trim(),
         category,
         amount: parseFloat(amount),
@@ -514,6 +525,8 @@ export default function PaymentsPage() {
       const cleanCard = cardNumber.replace(/\s/g, "");
       const payload: PaymentRequestData = {
         patientId: user.id,
+        doctorId: category === "CONSULTATION" ? selectedDoctorId : undefined,
+        doctorName: category === "CONSULTATION" ? selectedDoctorName : undefined,
         description: description.trim(),
         category,
         amount: parseFloat(amount),
@@ -546,6 +559,8 @@ export default function PaymentsPage() {
     setAmount("3000.00");
     setDescription("Doctor Consultation");
     setCategory("CONSULTATION");
+    setSelectedDoctorId("6ac3655bd404bf09e6430039");
+    setSelectedDoctorName("Dr.weerasinga");
     setSelectedLabTestIds(["CBC"]);
     setSelectedPrescriptionBillId(null);
     setCardNumber("");
@@ -702,6 +717,71 @@ export default function PaymentsPage() {
                   );
                 })}
               </div>
+
+              {/* DOCTOR CONSULTATION SELECTION SECTION */}
+              {category === "CONSULTATION" && (
+                <div className="rounded-3xl border-2 border-blue-200/90 bg-gradient-to-br from-blue-50/80 via-indigo-50/30 to-white p-5 sm:p-6 shadow-sm space-y-4 animate-in fade-in duration-200">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-blue-100">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-600/20 shrink-0">
+                        <Stethoscope className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-slate-900">
+                            Select Consulting Doctor
+                          </h3>
+                          <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+                            Direct Channeling Fee
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-500 mt-0.5">
+                          Choose the doctor you are paying consultation fees for. Fees will update automatically.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {doctorsList.map((doc) => {
+                      const isSelected = selectedDoctorId === doc.id;
+                      return (
+                        <div
+                          key={doc.id}
+                          onClick={() => {
+                            setSelectedDoctorId(doc.id);
+                            setSelectedDoctorName(doc.fullName);
+                            const fee = doc.consultationFee || 3000;
+                            setAmount(fee.toFixed(2));
+                            setDescription(`Doctor Consultation - ${doc.fullName}`);
+                          }}
+                          className={`p-4 rounded-2xl border-2 cursor-pointer transition-all ${
+                            isSelected
+                              ? "border-blue-600 bg-white shadow-sm ring-2 ring-blue-500/15"
+                              : "border-slate-200/90 hover:border-blue-300 bg-white/70 hover:bg-white"
+                          }`}
+                        >
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <div className="font-bold text-slate-900 text-sm">
+                                {doc.fullName}
+                              </div>
+                              <div className="text-xs text-slate-500 mt-0.5">
+                                {doc.specialization || "Consultant"}
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="text-xs font-bold text-blue-600 bg-blue-50 px-2 py-1 rounded-lg">
+                                LKR {(doc.consultationFee || 3000).toLocaleString()}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* LABORATORY TEST MULTI-SELECTION SECTION */}
               {category === "LAB_TEST" && (

@@ -1,4 +1,5 @@
 "use client";
+
 import { useCallback } from "react";
 import { Banknote, CircleDollarSign, Clock3, TrendingUp } from "lucide-react";
 import DoctorStatsCard from "@/features/doctor/components/DoctorStatsCard";
@@ -8,4 +9,148 @@ import PageHeader from "@/features/doctor/components/PageHeader";
 import StatusBadge from "@/features/doctor/components/StatusBadge";
 import { useDoctorData } from "@/features/doctor/hooks/useDoctorData";
 import { getEarnings } from "@/features/doctor/services/doctorService";
-export default function DoctorEarningsPage() { const loader = useCallback(() => getEarnings(), []); const { data, loading } = useDoctorData(loader); if (loading) return <LoadingState />; const earnings = data ?? { totalEarnings: 0, monthlyEarnings: 0, consultationIncome: 0, pendingAmount: 0, completedConsultations: 0, todayAppointments: 0, revenue: [], payments: [] }; return <><PageHeader eyebrow="Finance" title="Earnings dashboard" description="Track consultation revenue and recent patient payments." /><section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4"><DoctorStatsCard label="Total earnings" value={`LKR ${(earnings.totalEarnings / 1000000).toFixed(2)}M`} detail="All-time consultation revenue" icon={CircleDollarSign} /><DoctorStatsCard label="This month" value={`LKR ${(earnings.monthlyEarnings / 1000).toFixed(1)}K`} detail="Paid consultation invoices issued this month" icon={TrendingUp} tone="blue" /><DoctorStatsCard label="Consultation income" value={`LKR ${(earnings.consultationIncome / 1000).toFixed(1)}K`} detail={`${earnings.completedConsultations} completed consultations`} icon={Banknote} tone="amber" /><DoctorStatsCard label="Pending" value={`LKR ${(earnings.pendingAmount / 1000).toFixed(1)}K`} detail="Awaiting payment settlement" icon={Clock3} tone="rose" /></section><section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6"><div><h2 className="font-bold">Revenue overview</h2><p className="mt-1 text-xs text-slate-500">Monthly consultation revenue for the last six months</p></div><div className="mt-5"><EarningsChart data={earnings.revenue} /></div></section><section className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm"><div className="border-b border-slate-100 px-5 py-4"><h2 className="font-bold">Payment history</h2><p className="mt-1 text-xs text-slate-500">Recent consultation transactions</p></div><div className="overflow-x-auto"><table className="w-full min-w-[700px] text-left text-sm"><thead className="bg-slate-50 text-xs text-slate-500"><tr><th className="px-5 py-3 font-semibold">Reference</th><th className="px-5 py-3 font-semibold">Patient</th><th className="px-5 py-3 font-semibold">Date</th><th className="px-5 py-3 font-semibold">Service</th><th className="px-5 py-3 font-semibold">Amount</th><th className="px-5 py-3 font-semibold">Status</th></tr></thead><tbody className="divide-y divide-slate-100">{earnings.payments.map((payment) => <tr key={payment.id}><td className="px-5 py-4 font-mono text-xs text-slate-500">{payment.id}</td><td className="px-5 py-4 font-semibold">{payment.patientName}</td><td className="px-5 py-4 text-slate-600">{payment.date}</td><td className="px-5 py-4 text-slate-600">{payment.service}</td><td className="px-5 py-4 font-semibold">LKR {payment.amount.toLocaleString()}</td><td className="px-5 py-4"><StatusBadge status={payment.status} /></td></tr>)}</tbody></table></div></section></>; }
+
+export default function DoctorEarningsPage() {
+  const loader = useCallback(() => getEarnings(), []);
+  const { data, loading } = useDoctorData(loader);
+
+  if (loading) return <LoadingState />;
+
+  const earnings = data ?? {
+    totalEarnings: 0,
+    monthlyEarnings: 0,
+    consultationIncome: 0,
+    pendingAmount: 0,
+    completedConsultations: 0,
+    todayAppointments: 0,
+    revenue: [],
+    payments: [],
+  };
+
+  const formattedTotalEarnings =
+    earnings.totalEarnings >= 1000000
+      ? `LKR ${(earnings.totalEarnings / 1000000).toFixed(2)}M`
+      : earnings.totalEarnings >= 1000
+      ? `LKR ${(earnings.totalEarnings / 1000).toFixed(1)}K`
+      : `LKR ${Number(earnings.totalEarnings).toLocaleString()}`;
+
+  const formattedMonthlyEarnings =
+    earnings.monthlyEarnings >= 1000
+      ? `LKR ${(earnings.monthlyEarnings / 1000).toFixed(1)}K`
+      : `LKR ${Number(earnings.monthlyEarnings).toLocaleString()}`;
+
+  const formattedConsultationIncome =
+    earnings.consultationIncome >= 1000
+      ? `LKR ${(earnings.consultationIncome / 1000).toFixed(1)}K`
+      : `LKR ${Number(earnings.consultationIncome).toLocaleString()}`;
+
+  const formattedPendingAmount =
+    earnings.pendingAmount >= 1000
+      ? `LKR ${(earnings.pendingAmount / 1000).toFixed(1)}K`
+      : `LKR ${Number(earnings.pendingAmount).toLocaleString()}`;
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="Finance"
+        title="Earnings dashboard"
+        description="Track consultation revenue and recent patient payments."
+      />
+
+      <section className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <DoctorStatsCard
+          label="Total earnings"
+          value={formattedTotalEarnings}
+          detail="All-time consultation revenue"
+          icon={CircleDollarSign}
+        />
+        <DoctorStatsCard
+          label="This month"
+          value={formattedMonthlyEarnings}
+          detail="Paid consultation invoices issued this month"
+          icon={TrendingUp}
+          tone="blue"
+        />
+        <DoctorStatsCard
+          label="Consultation income"
+          value={formattedConsultationIncome}
+          detail={`${earnings.completedConsultations} completed consultations`}
+          icon={Banknote}
+          tone="amber"
+        />
+        <DoctorStatsCard
+          label="Pending"
+          value={formattedPendingAmount}
+          detail="Awaiting payment settlement"
+          icon={Clock3}
+          tone="rose"
+        />
+      </section>
+
+      <section className="mt-6 rounded-lg border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+        <div>
+          <h2 className="font-bold">Revenue overview</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Monthly consultation revenue for the last six months
+          </p>
+        </div>
+        <div className="mt-5">
+          <EarningsChart data={earnings.revenue} />
+        </div>
+      </section>
+
+      <section className="mt-6 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+        <div className="border-b border-slate-100 px-5 py-4">
+          <h2 className="font-bold">Payment history</h2>
+          <p className="mt-1 text-xs text-slate-500">
+            Recent consultation transactions
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[700px] text-left text-sm">
+            <thead className="bg-slate-50 text-xs text-slate-500">
+              <tr>
+                <th className="px-5 py-3 font-semibold">Reference</th>
+                <th className="px-5 py-3 font-semibold">Patient</th>
+                <th className="px-5 py-3 font-semibold">Date</th>
+                <th className="px-5 py-3 font-semibold">Service</th>
+                <th className="px-5 py-3 font-semibold">Amount</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100">
+              {earnings.payments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="px-5 py-8 text-center text-slate-400">
+                    No recent consultation transactions found.
+                  </td>
+                </tr>
+              ) : (
+                earnings.payments.map((payment) => (
+                  <tr key={payment.id}>
+                    <td className="px-5 py-4 font-mono text-xs text-slate-500">
+                      {payment.id}
+                    </td>
+                    <td className="px-5 py-4 font-semibold">
+                      {payment.patientName}
+                    </td>
+                    <td className="px-5 py-4 text-slate-600">{payment.date}</td>
+                    <td className="px-5 py-4 text-slate-600">
+                      {payment.service}
+                    </td>
+                    <td className="px-5 py-4 font-semibold">
+                      LKR {payment.amount.toLocaleString()}
+                    </td>
+                    <td className="px-5 py-4">
+                      <StatusBadge status={payment.status} />
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </>
+  );
+}
