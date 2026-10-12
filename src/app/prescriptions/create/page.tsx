@@ -37,7 +37,7 @@ export default function CreatePrescriptionPage() {
 
   return (
     <div className="space-y-6">
-      <Link href="/prescriptions" className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-blue-600"><ArrowLeft className="w-4 h-4" /> Back to Prescriptions</Link>
+      <Link href="/prescriptions" className="inline-flex cursor-pointer items-center gap-1.5 rounded-md text-xs font-semibold text-slate-600 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"><ArrowLeft className="w-4 h-4" /> Back to Prescriptions</Link>
       <div><h1 className="text-2xl font-bold text-slate-900">Create E-Prescription</h1><p className="text-sm text-slate-500">Generate a new electronic prescription</p></div>
       <PrescriptionForm mode="create" onSubmit={handleSubmit} isSubmitting={isSubmitting} />
     </div>

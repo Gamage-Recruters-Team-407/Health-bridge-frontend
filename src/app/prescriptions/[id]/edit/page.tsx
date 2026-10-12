@@ -50,19 +50,24 @@ export default function EditPrescriptionPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
+      <div className="flex min-h-64 items-center justify-center" role="status" aria-live="polite">
         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
       </div>
     );
   }
 
   if (loadError || !initialData) {
-    return <div className="text-center text-sm text-rose-600">Failed to load prescription. Please go back and try again.</div>;
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+        <p className="text-sm text-rose-600">Failed to load prescription. Please go back and try again.</p>
+        <Link href={`/prescriptions/${id}`} className="inline-flex cursor-pointer items-center gap-1.5 rounded-md text-xs font-semibold text-slate-600 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"><ArrowLeft className="w-4 h-4" /> Back to Details</Link>
+      </div>
+    );
   }
 
   return (
     <div className="space-y-6">
-      <Link href={`/prescriptions/${id}`} className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-blue-600"><ArrowLeft className="w-4 h-4" /> Back to Details</Link>
+      <Link href={`/prescriptions/${id}`} className="inline-flex cursor-pointer items-center gap-1.5 rounded-md text-xs font-semibold text-slate-600 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"><ArrowLeft className="w-4 h-4" /> Back to Details</Link>
       <div><h1 className="text-2xl font-bold text-slate-900">Edit Prescription</h1></div>
       <PrescriptionForm mode="edit" initialData={initialData} onSubmit={handleSubmit} isSubmitting={isSubmitting} />
     </div>

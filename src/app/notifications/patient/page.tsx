@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Navbar from "@/components/ui/Navbar";
+import Sidebar from "@/components/ui/Sidebar";
+import { MessageCircle } from "lucide-react";
 import {
   getNotifications,
   markNotificationAsRead,
@@ -13,6 +16,8 @@ export default function PatientNotificationsPage() {
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
+  const [collapsed, setCollapsed] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   async function loadNotifications() {
     try {
@@ -65,17 +70,29 @@ export default function PatientNotificationsPage() {
     return new Date(date).toLocaleString();
   }
 
-  if (loading) {
-    return (
-      <div className="p-6">
-        Loading notifications...
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="mx-auto max-w-4xl">
+    <div className="flex min-h-screen bg-slate-50 text-slate-900">
+      <Sidebar
+        collapsed={collapsed}
+        onToggleCollapse={() => setCollapsed(!collapsed)}
+        mobileOpen={mobileOpen}
+        onCloseMobile={() => setMobileOpen(false)}
+        userRole="PATIENT"
+      />
+      <div className="flex min-h-screen min-w-0 flex-1 flex-col bg-slate-50">
+        <Navbar
+          title="Patient Notifications"
+          onToggleMobileSidebar={() => setMobileOpen(!mobileOpen)}
+          userRole="PATIENT"
+        />
+        <main className="flex-1">
+          {loading ? (
+            <div className="p-6">
+              Loading notifications...
+            </div>
+          ) : (
+            <div className="min-h-screen bg-gray-50 p-6">
+              <div className="mx-auto max-w-4xl">
 
         {/* Header */}
         <div className="mb-6">
@@ -89,7 +106,7 @@ export default function PatientNotificationsPage() {
         </div>
 
         {/* Notifications */}
-        <div className="overflow-hidden rounded-xl border bg-white shadow-sm">
+        <div className="overflow-hidden rounded-xl bg-white shadow-sm">
 
           {notifications.length === 0 ? (
             <div className="p-10 text-center">
@@ -112,7 +129,7 @@ export default function PatientNotificationsPage() {
                 onClick={() =>
                   handleNotificationClick(notification)
                 }
-                className={`flex w-full gap-4 border-b p-5 text-left transition hover:bg-gray-50 ${
+                className={`flex w-full gap-4  p-5 text-left transition hover:bg-gray-50 ${
                   !notification.read
                     ? "bg-blue-50"
                     : "bg-white"
@@ -120,8 +137,8 @@ export default function PatientNotificationsPage() {
               >
                 {/* Icon */}
                 <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-blue-100">
-                  💬
-                </div>
+                 <MessageCircle className="h-5 w-5 text-[#0052CC]" />
+               </div>
 
                 {/* Content */}
                 <div className="flex-1">
@@ -153,6 +170,10 @@ export default function PatientNotificationsPage() {
             ))
           )}
         </div>
+      </div>
+            </div>
+          )}
+        </main>
       </div>
     </div>
   );

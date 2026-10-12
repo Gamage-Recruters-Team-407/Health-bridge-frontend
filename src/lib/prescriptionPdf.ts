@@ -1,25 +1,5 @@
 import jsPDF from "jspdf";
-// qrcode does not ship TypeScript declarations in this project.
-// @ts-expect-error Missing declaration file for the qrcode package.
-import QRCode from "qrcode";
 import { Prescription } from "@/types/prescription";
-
-/**
- * ✅ FIX: single source of truth for the QR payload.
- * Both the on-screen QR (details page) and the downloaded PDF now call this
- * function, so scanning either one shows the SAME, real prescription data.
- */
-export function buildQrPayload(p: Prescription): string {
-  const date = p.createdAt ? new Date(p.createdAt).toLocaleDateString() : "-";
-  return [
-    `PRESCRIPTION:${p.prescriptionNumber}`,
-    `PATIENT:${p.patientName || "-"}`,
-    `DOCTOR:${p.doctorName || "-"}`,
-    `DATE:${date}`,
-    `STATUS:${p.status || "ACTIVE"}`,
-    "VERIFY:HEALTHBRIDGE",
-  ].join("\n");
-}
 
 // Palette kept in sync with the app's Tailwind theme
 const BRAND: [number, number, number] = [37, 99, 235];
@@ -32,17 +12,11 @@ const EMERALD_700: [number, number, number] = [4, 120, 87];
 const WHITE: [number, number, number] = [255, 255, 255];
 
 /**
- * ✅ FIX: proper single-page prescription PDF, generated entirely in the browser.
+ * FIX: proper single-page prescription PDF, generated entirely in the browser.
  * Includes Doctor's Hospital/Branch name as requested.
+ * ADDED: "VERIFIED PRESCRIPTION" stamp/text on every PDF.
  */
 export async function generatePrescriptionPdf(prescription: Prescription, doctorBranch?: string): Promise<void> {
-  const qrPayload = buildQrPayload(prescription);
-  const qrDataUrl = await QRCode.toDataURL(qrPayload, {
-    margin: 4, // ✅ Fixed: minimum 4-module quiet zone for reliable scanning
-    width: 320,
-    errorCorrectionLevel: "H",
-  });
-
   const doc = new jsPDF({ unit: "pt", format: "a4" });
   const pageWidth = doc.internal.pageSize.getWidth();
   const marginX = 40;
@@ -59,36 +33,35 @@ export async function generatePrescriptionPdf(prescription: Prescription, doctor
   doc.setTextColor(...SLATE_500);
   doc.text("Electronic Prescription", marginX, y + 16);
 
+  // Right side header
   doc.setFont("helvetica", "bold");
   doc.setFontSize(13);
   doc.setTextColor(...BRAND);
   doc.text(prescription.prescriptionNumber, pageWidth - marginX, y, { align: "right" });
 
-  doc.setFontSize(8);
+  // ADDED: Verified Prescription text in Emerald Green
+  doc.setFont("helvetica", "bold");
+  doc.setFontSize(10);
   doc.setTextColor(...EMERALD_700);
-  doc.text((prescription.status || "ACTIVE").toUpperCase(), pageWidth - marginX, y + 16, { align: "right" });
+  doc.text("VERIFIED PRESCRIPTION", pageWidth - marginX, y + 16, { align: "right" });
 
   y += 30;
   doc.setDrawColor(...SLATE_200);
   doc.line(marginX, y, pageWidth - marginX, y);
   y += 24;
 
-  // ---------- Info blocks + QR ----------
-  const qrSize = 120;
-  const gap = 16;
-  const infoAreaWidth = pageWidth - marginX * 2 - qrSize - gap;
+  // ---------- Info blocks ----------
+  const infoAreaWidth = pageWidth - marginX * 2;
+  const gap = 20;
   const colWidth = (infoAreaWidth - gap) / 2;
   const col1X = marginX;
   const col2X = marginX + colWidth + gap;
-  const qrX = pageWidth - marginX - qrSize;
-  
-  // ✅ Increased blockHeight to 110 to comfortably fit 3 rows
   const blockHeight = 110;
 
   const infoBlock = (x: number, labels: string[], values: (string | undefined)[]) => {
     doc.setFillColor(...SLATE_100);
     doc.roundedRect(x, y, colWidth, blockHeight, 6, 6, "F");
-    let ly = y + 16; // ✅ Adjusted starting Y for better vertical spacing
+    let ly = y + 16;
     labels.forEach((label, i) => {
       doc.setFont("helvetica", "bold");
       doc.setFontSize(7.5);
@@ -97,7 +70,7 @@ export async function generatePrescriptionPdf(prescription: Prescription, doctor
       doc.setFontSize(10.5);
       doc.setTextColor(...SLATE_900);
       doc.text(values[i] || "-", x + 12, ly + 14, { maxWidth: colWidth - 24 });
-      ly += 28; // ✅ Adjusted row height
+      ly += 28;
     });
   };
 
@@ -107,20 +80,13 @@ export async function generatePrescriptionPdf(prescription: Prescription, doctor
     prescription.diagnosis,
   ]);
 
-  // ✅ ADDED: Hospital / Branch name to the PDF
   infoBlock(col2X, ["PRESCRIBED BY", "HOSPITAL / BRANCH", "DATE ISSUED"], [
     prescription.doctorName,
     doctorBranch || "Health Bridge Hospital",
     prescription.createdAt ? new Date(prescription.createdAt).toLocaleDateString() : "-",
   ]);
 
-  doc.addImage(qrDataUrl, "PNG", qrX, y, qrSize, qrSize);
-  doc.setFont("helvetica", "normal");
-  doc.setFontSize(7);
-  doc.setTextColor(...SLATE_500);
-  doc.text("Scan to verify", qrX + qrSize / 2, y + qrSize + 12, { align: "center" });
-
-  y += blockHeight + 24;
+  y += blockHeight + 20;
 
   // ---------- Medicines table ----------
   doc.setFont("helvetica", "bold");
@@ -232,7 +198,7 @@ export async function generatePrescriptionPdf(prescription: Prescription, doctor
   doc.setFont("helvetica", "italic");
   doc.setFontSize(7.5);
   doc.setTextColor(...SLATE_500);
-  const footerText = `This is a digitally generated e-prescription issued via HealthBridge. Scan the QR code above to verify its authenticity. Generated on ${new Date().toLocaleDateString()}.`;
+  const footerText = `This is a digitally generated e-prescription issued via HealthBridge. Generated on ${new Date().toLocaleDateString()}.`;
   doc.text(doc.splitTextToSize(footerText, tableWidth), marginX, y);
 
   doc.save(`Prescription-${prescription.prescriptionNumber}.pdf`);
