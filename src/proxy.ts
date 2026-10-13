@@ -20,6 +20,11 @@ const redirectToRoleDashboard = (request: NextRequest, role: string) => {
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
+  // API authentication is enforced by the backend using the bearer token.
+  if (pathname === "/api" || pathname.startsWith("/api/")) {
+    return NextResponse.next();
+  }
+
   if (isPublicPath(pathname)) {
     return NextResponse.next();
   }

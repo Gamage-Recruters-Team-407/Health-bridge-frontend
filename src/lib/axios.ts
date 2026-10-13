@@ -1,11 +1,18 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { clearAuthData } from "@/lib/auth";
-
-const TOKEN_KEY = "healthbridge_token";
-const USER_KEY = "healthbridge_user";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+import { clearAuthData, getToken } from "@/lib/auth";
+const API_BASE_URL = typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_BASE_URL
     || process.env.NEXT_PUBLIC_API_URL
-    || 'http://localhost:8088/api';
+    || 'http://127.0.0.1:8088/api');
+
+export function isMissingDoctorSessionsEndpoint(error: unknown): boolean {
+    return axios.isAxiosError(error)
+        && error.config?.method?.toLowerCase() === 'get'
+        && error.config?.url === '/doctor-sessions/mine'
+        && (error.response?.status === 404
+            || (error.response?.status === 500
+                && typeof error.response.data?.message === 'string'
+                && error.response.data.message.startsWith('No static resource api/doctor-sessions/mine')));
+}
 
 interface ApiErrorPayload {
     message?: string;
@@ -60,9 +67,7 @@ class ApiClient {
         // ============================================================
         this.client.interceptors.request.use(
             (config) => {
-                const token = typeof window !== 'undefined'
-                    ? localStorage.getItem(TOKEN_KEY)
-                    : null;
+                const token = getToken();
 
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
@@ -101,6 +106,9 @@ class ApiClient {
             },
             (error) => {
                 const status = error.response?.status;
+                if (isMissingDoctorSessionsEndpoint(error)) {
+                    return Promise.reject(error);
+                }
                 const url = error.config?.url;
                 const method = error.config?.method?.toUpperCase();
 
@@ -108,9 +116,6 @@ class ApiClient {
                 // 500 - Internal Server Error
                 // ============================================================
                 if (status === 500) {
-                    console.error(`💥 500 Server Error: ${method} ${url}`);
-                    console.error('   Response:', error.response?.data);
-
                     // ✅ Silent handling for optional endpoints
                     const silentEndpoints = [
                         '/hospitals',
@@ -122,8 +127,9 @@ class ApiClient {
                         url?.includes(ep)
                     );
 
-                    if (isSilent) {
-                        console.warn(`   ⚠️ Silent 500 for optional endpoint: ${url}`);
+                    if (!isSilent) {
+                        console.error(`💥 500 Server Error: ${method} ${url}`);
+                        console.error('   Response:', error.response?.data);
                     }
                 }
 
@@ -167,6 +173,10 @@ class ApiClient {
                 // ============================================================
                 // 403 - Forbidden
                 // ============================================================
+                else if (status === 503) {
+                    console.warn(`Service unavailable: ${method} ${url}. ${getApiErrorMessage(error, "Please try again shortly.")}`);
+                }
+
                 else if (status === 403) {
                     console.error(`🚫 403 Forbidden: ${method} ${url}`);
                 }

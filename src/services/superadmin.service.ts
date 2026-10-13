@@ -278,7 +278,7 @@ export const superAdminService = {
   async getDashboardStats(): Promise<SuperAdminStatsDto> {
     return api.get<SuperAdminStatsDto>("/super-admin/dashboard/stats");
   },
-  
+
   async getGrowthData(): Promise<SuperAdminGrowthDto[]> {
     return api.get<SuperAdminGrowthDto[]>("/super-admin/dashboard/growth");
   },
@@ -475,7 +475,7 @@ export const superAdminService = {
     if (department && department !== "All departments") params.append("department", department);
     if (accountStatus && accountStatus !== "All statuses") params.append("accountStatus", accountStatus);
     if (search) params.append("search", search);
-    
+
     const res: any = await api.get(`/doctors?${params.toString()}`);
     if (Array.isArray(res)) return res;
     if (res && Array.isArray(res.data)) return res.data;

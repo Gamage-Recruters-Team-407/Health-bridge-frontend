@@ -45,6 +45,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
         purchasePrice: "",
         sellingPrice: "",
         currentStock: "",
+        expiryDate: "",
         reorderLevel: "",
         supplier: "",
         isActive: true,
@@ -116,6 +117,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
             purchasePrice: String(med.unitPrice ? (Number(med.unitPrice) * 0.8).toFixed(2) : ""),
             sellingPrice: String(med.unitPrice ?? ""),
             currentStock: "100",
+            expiryDate: "",
             reorderLevel: "20",
             supplier: med.manufacturer || "State Pharmaceuticals",
             isActive: true,
@@ -146,6 +148,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
             purchasePrice: "",
             sellingPrice: "",
             currentStock: "",
+            expiryDate: "",
             reorderLevel: "",
             supplier: "",
             isActive: true,
@@ -169,7 +172,6 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
         try {
             setSubmitting(true);
 
-            // Medicine type එකට අදාළ අනිවාර්ය properties සියල්ලම ඇතුළත් කිරීම
             const medicinePayload: Omit<Medicine, "id"> = {
                 name: formData.name.trim(),
                 medicineCode: formData.medicineCode.trim() || `MED-${Date.now().toString().slice(-5)}`,
@@ -191,14 +193,18 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                 await updateMedicine(selectedMedicineId, medicinePayload);
             }
 
-            // Add Stock if pharmacy is active and stock quantity is specified
+            // Add Stock with User Selected Expiry Date
             if (pharmacyId && Number(formData.currentStock) > 0) {
+                const calculatedExpiry = formData.expiryDate
+                    ? new Date(formData.expiryDate).toISOString()
+                    : new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString();
+
                 await addStock({
                     pharmacyId,
                     medicineId: savedMedId,
                     quantity: Number(formData.currentStock),
                     batchNumber: formData.batchNumber.trim() || `BAT-${Date.now().toString().slice(-4)}`,
-                    expiryDate: new Date(Date.now() + 180 * 24 * 60 * 60 * 1000).toISOString(),
+                    expiryDate: calculatedExpiry,
                 }).catch((err) => console.warn("Stock auto-add warning:", err));
             }
 
@@ -224,14 +230,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
         "w-full px-3.5 py-2.5 text-xs text-slate-800 placeholder:text-slate-400 bg-white border border-slate-200 rounded-xl outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 shadow-sm transition";
 
     return (
-        <div className="min-h-screen bg-slate-50/50 p-6 space-y-6">
-            <div>
-                <h1 className="text-xl font-bold text-slate-900 tracking-tight">Add/Edit Medicine</h1>
-                <p className="text-xs text-slate-500 mt-0.5">
-                    Create, update, and manage medicine records and stock levels.
-                </p>
-            </div>
-
+        <div className="space-y-6">
             {/* Tabs */}
             <div className="flex border-b border-slate-200 text-xs font-semibold gap-6">
                 <button
@@ -290,7 +289,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                             <option value="">-- Choose a medicine --</option>
                             {existingMedicines.map((m) => (
                                 <option key={m.id} value={m.id}>
-                                    {m.name} ({m.category || "General"}) — ${m.unitPrice}
+                                    {m.name} ({m.category || "General"}) — Rs. {m.unitPrice}
                                 </option>
                             ))}
                         </select>
@@ -414,7 +413,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-700 mb-1">Unit Price ($)</label>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">Unit Price (Rs.)</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -443,11 +442,11 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                         <div className="border-b border-slate-100 pb-3">
                             <h2 className="text-sm font-bold text-slate-900">Inventory & Pricing</h2>
                             <p className="text-[11px] text-slate-400 mt-0.5">
-                                Stock levels, batch numbers, and reorder alerts.
+                                Stock levels, batch numbers, expiry dates, and reorder alerts.
                             </p>
                         </div>
 
-                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-700 mb-1">Batch Number</label>
                                 <input
@@ -459,7 +458,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-700 mb-1">Purchase Price ($)</label>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">Purchase Price (Rs.)</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -470,7 +469,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                                 />
                             </div>
                             <div>
-                                <label className="block text-xs font-medium text-slate-700 mb-1">Selling Price ($)</label>
+                                <label className="block text-xs font-medium text-slate-700 mb-1">Selling Price (Rs.)</label>
                                 <input
                                     type="number"
                                     step="0.01"
@@ -480,6 +479,9 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                                     className={inputStyle}
                                 />
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                             <div>
                                 <label className="block text-xs font-medium text-slate-700 mb-1">Current Stock</label>
                                 <input
@@ -490,9 +492,17 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                                     className={inputStyle}
                                 />
                             </div>
-                        </div>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                                    Expiry Date <span className="text-red-500">*</span>
+                                </label>
+                                <input
+                                    type="date"
+                                    value={formData.expiryDate}
+                                    onChange={(e) => handleInputChange("expiryDate", e.target.value)}
+                                    className={inputStyle}
+                                />
+                            </div>
                             <div>
                                 <label className="block text-xs font-medium text-slate-700 mb-1">Reorder Level</label>
                                 <input
@@ -582,7 +592,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                         <button
                             type="submit"
                             disabled={submitting}
-                            className="w-full py-3 px-4 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
+                            className="w-full py-3 px-4 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 shadow-sm transition disabled:opacity-50 flex items-center justify-center gap-2 cursor-pointer"
                         >
                             {submitting ? (
                                 <>
@@ -597,7 +607,7 @@ export default function AddEditMedicinePage({ mode: initialMode = "add", initial
                         <button
                             type="button"
                             onClick={() => router.push("/pharmacy/inventory")}
-                            className="w-full py-2.5 px-4 border border-slate-200 bg-white text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition"
+                            className="w-full py-2.5 px-4 border border-slate-200 bg-white text-slate-600 rounded-xl text-xs font-semibold hover:bg-slate-50 transition cursor-pointer"
                         >
                             Cancel & Back to Inventory
                         </button>

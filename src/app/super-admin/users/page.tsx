@@ -136,7 +136,7 @@ export default function UserManagementPage() {
   // Filter the actual data based on the active tab
   const filteredUsers = users.filter(user => {
     const status = formatStatus(user.accountStatus);
-    
+
     // Tab filter
     if (activeTab === "Suspended" && status !== "Suspended") return false;
     if (activeTab === "Pending approval" && status !== "Pending approval") return false;
@@ -158,7 +158,7 @@ export default function UserManagementPage() {
     if (filterStatus !== "All statuses" && status !== filterStatus) return false;
     if (filterInstitution !== "All institutions" && (user.branch || "General / HQ") !== filterInstitution) return false;
 
-    return true; 
+    return true;
   });
 
   const roles = ["All roles", ...Array.from(new Set(users.map(u => u.role).filter(Boolean)))];
@@ -202,284 +202,278 @@ export default function UserManagementPage() {
     <>
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
 
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900">User Management</h1>
-          <p className="text-sm text-slate-500">Monitor all registered accounts, manage access permissions, and review approvals.</p>
+        {/* Page Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-slate-900">User Management</h1>
+            <p className="text-sm text-slate-500">Monitor all registered accounts, manage access permissions, and review approvals.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <Link href="/super-admin/users/add">
+              <Button variant="primary" size="sm" leftIcon={<UserPlus size={16} />}>
+                Add User
+              </Button>
+            </Link>
+          </div>
         </div>
-        <div className="flex items-center gap-3">
-          <Link href="/super-admin/users/add">
-            <Button variant="primary" size="sm" leftIcon={<UserPlus size={16} />}>
-              Add User
-            </Button>
-          </Link>
-        </div>
-      </div>
 
-      {/* Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
-        <StatCard
-          title="Total Users"
-          value={totalUsers.toString()}
-          icon={<Users size={24} />}
-          iconBgColor="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
-          trend={{ value: "Live", isPositive: true, label: "from database" }}
-        />
-        <StatCard
-          title="Active Accounts"
-          value={activeUsers.toString()}
-          icon={<CheckCircle size={24} />}
-          iconBgColor="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
-          subtitle={`${activePercentage} of total base`}
-        />
-        <StatCard
-          title="Pending Approval"
-          value={pendingUsers.toString()}
-          icon={<Clock size={24} />}
-          iconBgColor="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
-          subtitle="Needs registration review"
-        />
-        <StatCard
-          title="Suspended"
-          value={suspendedUsers.toString()}
-          icon={<Ban size={24} />}
-          iconBgColor="bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
-          subtitle="Flagged for security review"
-        />
-      </div>
-
-      {/* Tabs */}
-      <div className="flex items-center gap-8 border-b border-slate-200 dark:border-slate-800 mb-6">
-        {tabs.map((tab) => (
-          <button
-            key={tab.name}
-            onClick={() => {
-              if (tab.href) {
-                router.push(tab.href);
-              } else {
-                setActiveTab(tab.name);
-              }
-            }}
-            className={`pb-4 text-sm font-semibold transition-colors relative ${
-              activeTab === tab.name
-                ? "text-emerald-600 dark:text-emerald-400"
-                : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
-            }`}
-          >
-            {tab.name}
-            <span className="ml-2 text-xs font-medium text-slate-400">
-              {tab.count}
-            </span>
-            {activeTab === tab.name && (
-              <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-t-full" />
-            )}
-          </button>
-        ))}
-      </div>
-
-      {/* Filters */}
-      <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
-        <div className="w-full md:w-96">
-          <Input 
-            placeholder="Search by name, email or user ID..." 
-            leftIcon={<Search size={16} />}
-            value={searchTerm}
-            onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+        {/* Metrics Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
+          <StatCard
+            title="Total Users"
+            value={totalUsers.toString()}
+            icon={<Users size={24} />}
+            iconBgColor="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+            trend={{ value: "Live", isPositive: true, label: "from database" }}
+          />
+          <StatCard
+            title="Active Accounts"
+            value={activeUsers.toString()}
+            icon={<CheckCircle size={24} />}
+            iconBgColor="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+            subtitle={`${activePercentage} of total base`}
+          />
+          <StatCard
+            title="Pending Approval"
+            value={pendingUsers.toString()}
+            icon={<Clock size={24} />}
+            iconBgColor="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
+            subtitle="Needs registration review"
+          />
+          <StatCard
+            title="Suspended"
+            value={suspendedUsers.toString()}
+            icon={<Ban size={24} />}
+            iconBgColor="bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
+            subtitle="Flagged for security review"
           />
         </div>
-        <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <select 
-            className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
-            value={filterRole}
-            onChange={(e) => { setFilterRole(e.target.value); setCurrentPage(1); }}
-          >
-            {roles.map(role => (
-              <option key={role} value={role}>{role}</option>
-            ))}
-          </select>
-          <select 
-            className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
-            value={filterStatus}
-            onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
-          >
-            {statuses.map(status => (
-              <option key={status} value={status}>{status}</option>
-            ))}
-          </select>
-          <select 
-            className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-48"
-            value={filterInstitution}
-            onChange={(e) => { setFilterInstitution(e.target.value); setCurrentPage(1); }}
-          >
-            {institutions.map(inst => (
-              <option key={inst} value={inst}>{inst}</option>
-            ))}
-          </select>
-        </div>
-      </div>
 
-      {/* Data Table */}
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
-        <table className="w-full text-left text-sm text-slate-600">
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-12 text-center">ON</TableHead>
-            <TableHead>USER</TableHead>
-            <TableHead>USER ID</TableHead>
-            <TableHead>ROLE</TableHead>
-            <TableHead>INSTITUTION</TableHead>
-            <TableHead>STATUS</TableHead>
-            <TableHead>REGISTERED</TableHead>
-            <TableHead>LAST LOGIN</TableHead>
-            <TableHead className="text-right"></TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {isLoading ? (
-            <TableRow>
-              <TableCell colSpan={9} className="text-center py-8">Loading users...</TableCell>
-            </TableRow>
-          ) : filteredUsers.length === 0 ? (
-            <TableRow>
-              <TableCell colSpan={9} className="text-center py-24 text-slate-500">No users found.</TableCell>
-            </TableRow>
-          ) : paginatedUsers.map((user, index) => (
-            <TableRow key={index}>
-              <TableCell>
-                <div className={`w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xs flex items-center justify-center shadow-sm mx-auto`}>
-                  {user.fullName ? user.fullName.substring(0, 2).toUpperCase() : "HB"}
-                </div>
-              </TableCell>
-              <TableCell>
-                <div>
-                  <p className="font-bold text-[#0A2540] dark:text-white">{user.fullName}</p>
-                  <p className="text-xs text-slate-500">{user.email}</p>
-                </div>
-              </TableCell>
-              <TableCell>
-                <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">{user.id ? user.id.substring(0, 8) : "N/A"}</span>
-              </TableCell>
-              <TableCell>
-                {getRoleBadge(user.role)}
-              </TableCell>
-              <TableCell>
-                <span className="text-[#0A2540] dark:text-slate-300 font-medium">
-                  {user.branch || "General / HQ"}
-                </span>
-              </TableCell>
-              <TableCell>
-                {getStatusBadge(formatStatus(user.accountStatus))}
-              </TableCell>
-              <TableCell>
-                <span className="text-[#0A2540] dark:text-slate-300 font-medium">
-                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Unknown"}
-                </span>
-              </TableCell>
-              <TableCell>
-                <span className="text-[#0A2540] dark:text-slate-300 font-medium">Unknown</span>
-              </TableCell>
-              <TableCell className="text-right">
-                <div className="flex items-center justify-end gap-1">
-                  <button 
-                    onClick={() => setViewingUser(user)}
-                    className="p-1.5 text-slate-400 hover:text-[#0052CC] hover:bg-[#EBF3FF] rounded-lg transition-colors"
-                  >
-                    <Eye size={16} />
-                  </button>
-                  <Link href={`/super-admin/users/edit/${user.id}`} className="p-1.5 text-slate-400 hover:text-[#0052CC] hover:bg-[#EBF3FF] rounded-lg transition-colors">
-                    <Edit size={16} />
-                  </Link>
-                  <div className="relative">
-                    <button 
-                      onClick={() => setDropdownOpenId(dropdownOpenId === user.id ? null : user.id)}
-                      className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
-                    >
-                      <MoreVertical size={16} />
-                    </button>
-                    {dropdownOpenId === user.id && (
-                      <div className="absolute right-0 top-full mt-1 w-40 flex flex-col bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-10 overflow-hidden">
-                        <button 
-                          onClick={() => handleUpdateStatus(user.id, "Suspended")}
-                          disabled={formatStatus(user.accountStatus) === "Suspended" || formatStatus(user.accountStatus) === "Pending approval"}
-                          className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-                            formatStatus(user.accountStatus) === "Suspended" || formatStatus(user.accountStatus) === "Pending approval"
-                              ? "text-slate-300 cursor-not-allowed"
-                              : "text-amber-600 hover:bg-amber-50"
-                          }`}
-                        >
-                          Suspend User
-                        </button>
-                        
-                        <button 
-                          onClick={() => handleUpdateStatus(user.id, "Active")}
-                          disabled={formatStatus(user.accountStatus) !== "Suspended"}
-                          className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-                            formatStatus(user.accountStatus) !== "Suspended"
-                              ? "text-slate-300 cursor-not-allowed"
-                              : "text-emerald-600 hover:bg-emerald-50"
-                          }`}
-                        >
-                          Reactivate User
-                        </button>
-
-                        <button 
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors"
-                        >
-                          Delete User
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </TableCell>
-            </TableRow>
+        {/* Tabs */}
+        <div className="flex items-center gap-8 border-b border-slate-200 dark:border-slate-800 mb-6">
+          {tabs.map((tab) => (
+            <button
+              key={tab.name}
+              onClick={() => {
+                if (tab.href) {
+                  router.push(tab.href);
+                } else {
+                  setActiveTab(tab.name);
+                }
+              }}
+              className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === tab.name
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                }`}
+            >
+              {tab.name}
+              <span className="ml-2 text-xs font-medium text-slate-400">
+                {tab.count}
+              </span>
+              {activeTab === tab.name && (
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-t-full" />
+              )}
+            </button>
           ))}
-        </TableBody>
-        </table>
-        
-        <TablePagination 
-          currentPage={currentPage}
-          totalPages={totalPages}
-          totalRecords={filteredUsers.length}
-          pageSize={itemsPerPage}
-          onPageChange={setCurrentPage}
-        />
-      </div>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col md:flex-row items-center gap-4 mb-6">
+          <div className="w-full md:w-96">
+            <Input
+              placeholder="Search by name, email or user ID..."
+              leftIcon={<Search size={16} />}
+              value={searchTerm}
+              onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
+            <select
+              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              value={filterRole}
+              onChange={(e) => { setFilterRole(e.target.value); setCurrentPage(1); }}
+            >
+              {roles.map(role => (
+                <option key={role} value={role}>{role}</option>
+              ))}
+            </select>
+            <select
+              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              value={filterStatus}
+              onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
+            >
+              {statuses.map(status => (
+                <option key={status} value={status}>{status}</option>
+              ))}
+            </select>
+            <select
+              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-48"
+              value={filterInstitution}
+              onChange={(e) => { setFilterInstitution(e.target.value); setCurrentPage(1); }}
+            >
+              {institutions.map(inst => (
+                <option key={inst} value={inst}>{inst}</option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Data Table */}
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
+          <table className="w-full text-left text-sm text-slate-600">
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-12 text-center">ON</TableHead>
+                <TableHead>USER</TableHead>
+                <TableHead>USER ID</TableHead>
+                <TableHead>ROLE</TableHead>
+                <TableHead>INSTITUTION</TableHead>
+                <TableHead>STATUS</TableHead>
+                <TableHead>REGISTERED</TableHead>
+                <TableHead>LAST LOGIN</TableHead>
+                <TableHead className="text-right"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">Loading users...</TableCell>
+                </TableRow>
+              ) : filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-24 text-slate-500">No users found.</TableCell>
+                </TableRow>
+              ) : paginatedUsers.map((user, index) => (
+                <TableRow key={index}>
+                  <TableCell>
+                    <div className={`w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xs flex items-center justify-center shadow-sm mx-auto`}>
+                      {user.fullName ? user.fullName.substring(0, 2).toUpperCase() : "HB"}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div>
+                      <p className="font-bold text-[#0A2540] dark:text-white">{user.fullName}</p>
+                      <p className="text-xs text-slate-500">{user.email}</p>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">{user.id ? user.id.substring(0, 8) : "N/A"}</span>
+                  </TableCell>
+                  <TableCell>
+                    {getRoleBadge(user.role)}
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-[#0A2540] dark:text-slate-300 font-medium">
+                      {user.branch || "General / HQ"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    {getStatusBadge(formatStatus(user.accountStatus))}
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-[#0A2540] dark:text-slate-300 font-medium">
+                      {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Unknown"}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <span className="text-[#0A2540] dark:text-slate-300 font-medium">Unknown</span>
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <button
+                        onClick={() => setViewingUser(user)}
+                        className="p-1.5 text-slate-400 hover:text-[#0052CC] hover:bg-[#EBF3FF] rounded-lg transition-colors"
+                      >
+                        <Eye size={16} />
+                      </button>
+                      <div className="relative">
+                        <button
+                          onClick={() => setDropdownOpenId(dropdownOpenId === user.id ? null : user.id)}
+                          className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                        >
+                          <MoreVertical size={16} />
+                        </button>
+                        {dropdownOpenId === user.id && (
+                          <div className="absolute right-0 top-full mt-1 w-40 flex flex-col bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-10 overflow-hidden">
+                            <button
+                              onClick={() => handleUpdateStatus(user.id, "Suspended")}
+                              disabled={formatStatus(user.accountStatus) === "Suspended" || formatStatus(user.accountStatus) === "Pending approval"}
+                              className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${formatStatus(user.accountStatus) === "Suspended" || formatStatus(user.accountStatus) === "Pending approval"
+                                  ? "text-slate-300 cursor-not-allowed"
+                                  : "text-amber-600 hover:bg-amber-50"
+                                }`}
+                            >
+                              Suspend User
+                            </button>
+
+                            <button
+                              onClick={() => handleUpdateStatus(user.id, "Active")}
+                              disabled={formatStatus(user.accountStatus) !== "Suspended"}
+                              className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${formatStatus(user.accountStatus) !== "Suspended"
+                                  ? "text-slate-300 cursor-not-allowed"
+                                  : "text-emerald-600 hover:bg-emerald-50"
+                                }`}
+                            >
+                              Reactivate User
+                            </button>
+
+                            <button
+                              onClick={() => handleDeleteUser(user.id)}
+                              className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors"
+                            >
+                              Delete User
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </table>
+
+          <TablePagination
+            currentPage={currentPage}
+            totalPages={totalPages}
+            totalRecords={filteredUsers.length}
+            pageSize={itemsPerPage}
+            onPageChange={setCurrentPage}
+          />
+        </div>
       </div>
 
       {/* User Details Slide-out Drawer */}
       {viewingUser && (
         <div className="fixed inset-0 z-50 flex justify-end">
           {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" 
-            onClick={() => setViewingUser(null)} 
+          <div
+            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity"
+            onClick={() => setViewingUser(null)}
           />
-          
+
           {/* Drawer Panel */}
           <div className="relative w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-300">
             {/* Drawer Header */}
             <div className="flex items-center justify-between p-6 border-b border-slate-100">
               <h2 className="text-lg font-bold text-[#0A2540]">User Details</h2>
-              <button 
+              <button
                 onClick={() => setViewingUser(null)}
                 className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
               >
                 <X size={20} />
               </button>
             </div>
-            
-            {/* Drawer Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+
+            {/* Drawer Body (Form) */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xl flex items-center justify-center shadow-sm shrink-0">
-                  {viewingUser.fullName ? viewingUser.fullName.substring(0, 2).toUpperCase() : (viewingUser.firstName ? viewingUser.firstName.substring(0, 2).toUpperCase() : "HB")}
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xl flex items-center justify-center shadow-sm">
+                  {viewingUser.fullName ? viewingUser.fullName.substring(0, 2).toUpperCase() : "HB"}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-[#0A2540]">{viewingUser.fullName || (viewingUser.firstName ? viewingUser.firstName + " " + viewingUser.lastName : "Unknown")}</h3>
-                  <p className="text-sm font-medium text-slate-500">{viewingUser.email}</p>
+                  <h3 className="font-bold text-xl text-[#0A2540]">{viewingUser.fullName}</h3>
+                  {getRoleBadge(viewingUser.role)}
                 </div>
               </div>
 
@@ -505,9 +499,9 @@ export default function UserManagementPage() {
                   <p className="text-sm font-medium text-[#0A2540]">{viewingUser.branch || "General / HQ"}</p>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Registered</label>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Registered On</label>
                   <p className="text-sm font-medium text-[#0A2540]">
-                    {viewingUser.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "Unknown"}
+                    {viewingUser.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Unknown"}
                   </p>
                 </div>
               </div>
@@ -517,15 +511,15 @@ export default function UserManagementPage() {
             <div className="p-6 border-t border-slate-100 bg-white flex items-center gap-3">
               {formatStatus(viewingUser.accountStatus) === "Pending approval" ? (
                 <>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => handleUpdateStatus(viewingUser.id, "Rejected")}
                     className="flex-1 border-rose-200 text-rose-600 hover:bg-rose-50 hover:border-rose-300 shadow-sm font-bold"
                   >
                     Reject
                   </Button>
-                  <Button 
-                    variant="primary" 
+                  <Button
+                    variant="primary"
                     onClick={() => handleUpdateStatus(viewingUser.id, "Active")}
                     className="flex-1 bg-emerald-600 hover:bg-emerald-700 shadow-sm font-bold"
                   >
@@ -551,7 +545,7 @@ export default function UserManagementPage() {
                       Reactivate User
                     </Button>
                   )}
-                  <button 
+                  <button
                     onClick={() => setViewingUser(null)}
                     className="flex-1 py-2.5 bg-white border border-slate-200 rounded-xl text-[#0052CC] font-medium hover:bg-slate-50 transition-colors"
                   >

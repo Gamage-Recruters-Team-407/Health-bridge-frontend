@@ -32,7 +32,8 @@ export default function AdminNotificationsPage() {
   }
 
   useEffect(() => {
-    loadNotifications();
+    const timer = window.setTimeout(() => void loadNotifications(), 0);
+    return () => window.clearTimeout(timer);
   }, []);
 
   async function handleNotificationClick(

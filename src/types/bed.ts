@@ -20,6 +20,7 @@ export interface PatientInfo {
 
 export interface Bed {
   id: string; // e.g. "ICU-101"
+  bedId?: string;
   code: string; // e.g. "101"
   ward: WardType;
   status: BedStatus;
