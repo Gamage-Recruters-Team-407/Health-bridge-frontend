@@ -31,19 +31,20 @@ import Link from "next/link";
 import { superAdminService, SuperAdminStatsDto, SuperAdminGrowthDto } from "@/services/superadmin.service";
 
 export default function AdminDashboardPage() {
-  const [userName, setUserName] = useState("Kasuni");
+  const [userName, setUserName] = useState("Super Admin");
   const [stats, setStats] = useState<SuperAdminStatsDto | null>(null);
   const [chartData, setChartData] = useState<SuperAdminGrowthDto[]>([]);
   const [pendingCardScreen, setPendingCardScreen] = useState<0 | 1>(0);
   const [formattedDate, setFormattedDate] = useState("Loading...");
   const [formattedTime, setFormattedTime] = useState("");
+  const [isGeneratingReport, setIsGeneratingReport] = useState(false);
 
   useEffect(() => {
     const userStr = localStorage.getItem("healthbridge_user");
     if (userStr) {
       try {
         const user = JSON.parse(userStr);
-        setUserName(user.fullName || "Kasuni");
+        setUserName(user.fullName || user.username || "Super Admin");
       } catch (e) {
         console.error("Failed to parse user", e);
       }
@@ -85,6 +86,17 @@ export default function AdminDashboardPage() {
     return () => clearInterval(timer);
   }, []);
 
+  const handleDownloadReport = async () => {
+    try {
+      setIsGeneratingReport(true);
+      await superAdminService.downloadDashboardReport();
+    } catch (error) {
+      console.error("Failed to generate dashboard report:", error);
+    } finally {
+      setIsGeneratingReport(false);
+    }
+  };
+
   return (
     <>
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
@@ -94,7 +106,7 @@ export default function AdminDashboardPage() {
           <div>
             <h1 className="text-3xl font-bold text-slate-900">Welcome back, {userName}</h1>
             <p className="text-slate-500 mt-2 text-sm max-w-2xl">
-              Here is your overview of the with users, hospitals, doctors, revenue, active sessions, system health, and security alerts.
+              Here is your system overview covering users, branches, doctors, revenue, active sessions, system health, and security alerts.
             </p>
           </div>
           <div className="text-right">
@@ -124,8 +136,8 @@ export default function AdminDashboardPage() {
             </div>
           </Link>
 
-          {/* Card 2 */}
-          <Link href="/super-admin/hospitals" className="block transition-transform hover:-translate-y-1">
+          {/* Card 2 - Linked to /super-admin/branches */}
+          <Link href="/super-admin/branches" className="block transition-transform hover:-translate-y-1">
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between h-40 hover:shadow-md transition-shadow">
               <div className="flex justify-between items-start">
                 <div className="p-3 bg-cyan-100 text-cyan-600 rounded-xl">
@@ -136,8 +148,8 @@ export default function AdminDashboardPage() {
                 </div>
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-500">Registered Hospitals</p>
-                <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats ? stats.totalHospitals.toLocaleString() : "..."}</h3>
+                <p className="text-sm font-medium text-slate-500">Registered Branches</p>
+                <h3 className="text-2xl font-bold text-slate-900 mt-1">{stats ? (stats.totalBranches ?? (stats as any).totalHospitals ?? 0).toLocaleString() : "..."}</h3>
               </div>
             </div>
           </Link>
@@ -179,18 +191,24 @@ export default function AdminDashboardPage() {
           </Link>
         </div>
 
-        {/* Secondary Metrics (5 Cards) */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-6">
+        {/* Secondary Metrics (4 Cards) */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           
           {/* Card 5 - Pending Verifications */}
           <Link href="/super-admin/users?tab=pending" className="block transition-transform hover:-translate-y-1">
-            <div className="bg-white rounded-2xl border border-amber-200 p-6 shadow-sm flex flex-col justify-between h-40 hover:shadow-md transition-shadow">
+            <div className={`bg-white rounded-2xl border p-6 shadow-sm flex flex-col justify-between h-40 hover:shadow-md transition-shadow ${
+              (stats?.pendingVerifications ?? 0) > 0 ? "border-amber-200" : "border-slate-200"
+            }`}>
               <div className="flex justify-between items-start">
-                <div className="p-3 bg-amber-100 text-amber-600 rounded-xl">
+                <div className={`p-3 rounded-xl ${
+                  (stats?.pendingVerifications ?? 0) > 0 ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
+                }`}>
                   <Clock className="w-6 h-6" />
                 </div>
-                <div className="px-3 py-1.5 bg-amber-50 text-amber-600 text-xs font-bold rounded-full">
-                  Action required
+                <div className={`px-3 py-1.5 text-xs font-bold rounded-full ${
+                  (stats?.pendingVerifications ?? 0) > 0 ? "bg-amber-50 text-amber-600" : "bg-emerald-50 text-emerald-600"
+                }`}>
+                  {(stats?.pendingVerifications ?? 0) > 0 ? "Action required" : "All caught up"}
                 </div>
               </div>
               <div>
@@ -237,27 +255,6 @@ export default function AdminDashboardPage() {
             </div>
           </Link>
 
-          {/* Card 8 - Storage Used */}
-          <Link href="/super-admin/settings" className="block transition-transform hover:-translate-y-1">
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between h-40 hover:shadow-md transition-shadow">
-              <div className="flex justify-between items-start">
-                <div className="p-3 bg-blue-100 text-blue-600 rounded-xl">
-                  <HardDrive className="w-6 h-6" />
-                </div>
-                <div className="px-3 py-1.5 bg-blue-50 text-blue-600 text-xs font-bold rounded-full">
-                  Optimal
-                </div>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-slate-500">Storage Used</p>
-                <div className="flex items-end gap-2 mt-1">
-                  <h3 className="text-2xl font-bold text-slate-900">{stats?.storageUsedPercentage != null ? stats.storageUsedPercentage : "..."}%</h3>
-                  <span className="text-xs text-slate-400 mb-1">of 5TB</span>
-                </div>
-              </div>
-            </div>
-          </Link>
-
           {/* Card 9 - Security Alerts */}
           <Link href="/super-admin/audit-logs" className="block transition-transform hover:-translate-y-1">
             <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col justify-between h-40 hover:shadow-md transition-shadow">
@@ -285,11 +282,11 @@ export default function AdminDashboardPage() {
           <div className="bg-white rounded-2xl border border-slate-200 p-6 shadow-sm flex flex-col">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-base font-bold text-slate-900">User Activity</h3>
-              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">Last 7 days</span>
+              <span className="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-bold rounded-full">Last 6 Months</span>
             </div>
             <div className="flex-1 w-full min-h-[200px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData} margin={{ top: 5, right: 0, left: -20, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 10, right: 10, left: -10, bottom: 20 }}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
                   <XAxis 
                     dataKey="name" 
@@ -302,7 +299,8 @@ export default function AdminDashboardPage() {
                     axisLine={false} 
                     tickLine={false} 
                     tick={{ fill: '#94A3B8', fontSize: 12 }}
-                    tickFormatter={(value) => `${value / 1000}k`} 
+                    allowDecimals={false}
+                    tickFormatter={(value) => value >= 1000 ? `${(value / 1000).toFixed(1)}k` : `${value}`} 
                   />
                   <Tooltip 
                     contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
@@ -362,9 +360,9 @@ export default function AdminDashboardPage() {
             </div>
             <div className="flex-1 flex flex-col gap-3">
               
-              <Link href="/super-admin/hospitals/add" className="flex items-center gap-3 px-5 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-sm">
+              <Link href="/super-admin/branches/add" className="flex items-center gap-3 px-5 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-sm">
                 <Plus className="w-5 h-5" />
-                Add Hospital
+                Add Branch
               </Link>
 
               <Link href="/super-admin/doctors/add" className="flex items-center gap-3 px-5 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-xl transition-colors font-semibold shadow-sm">
@@ -372,9 +370,13 @@ export default function AdminDashboardPage() {
                 Add Doctor
               </Link>
 
-              <button onClick={() => superAdminService.downloadDashboardReport()} className="flex items-center gap-3 px-5 py-4 bg-white hover:bg-slate-50 text-blue-600 border border-slate-200 rounded-xl transition-colors font-semibold shadow-sm text-left">
+              <button 
+                onClick={handleDownloadReport} 
+                disabled={isGeneratingReport}
+                className="flex items-center gap-3 px-5 py-4 bg-white hover:bg-slate-50 text-blue-600 border border-slate-200 rounded-xl transition-colors font-semibold shadow-sm text-left disabled:opacity-60 disabled:cursor-not-allowed"
+              >
                 <FileText className="w-5 h-5" />
-                Generate Report
+                {isGeneratingReport ? "Generating Report..." : "Generate Report"}
               </button>
 
               <Link href="/super-admin/settings" className="flex items-center gap-3 px-5 py-4 bg-white hover:bg-slate-50 text-blue-600 border border-slate-200 rounded-xl transition-colors font-semibold shadow-sm">

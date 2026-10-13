@@ -28,7 +28,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
   else if (pathname.includes("/users")) pageTitle = "User Management";
   else if (pathname.includes("/staff")) pageTitle = "Staff Management";
   else if (pathname.includes("/roles")) pageTitle = "Roles & Permissions";
-  else if (pathname.includes("/hospitals")) pageTitle = "Hospital Management";
+  else if (pathname.includes("/branches")) pageTitle = "Hospital Branch Management";
   else if (pathname.includes("/doctors")) pageTitle = "Doctor Management";
   else if (pathname.includes("/pharmacy")) pageTitle = "Pharmacy Management";
   else if (pathname.includes("/laboratories")) pageTitle = "Laboratory Management";
