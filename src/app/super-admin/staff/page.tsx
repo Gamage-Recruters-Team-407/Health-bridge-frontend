@@ -35,10 +35,6 @@ export default function StaffManagementPage() {
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserProfileResponse | null>(null);
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [roleFilter, setRoleFilter] = useState("All roles");
-  const [statusFilter, setStatusFilter] = useState("All statuses");
-
   const router = useRouter();
 
   const fetchUsers = async () => {
@@ -93,55 +89,20 @@ export default function StaffManagementPage() {
     return status;
   };
 
-  const recentlyAddedFilter = (user: UserProfileResponse) => {
-    if (!user.createdAt) return false;
-    const createdAt = new Date(user.createdAt);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return createdAt >= sevenDaysAgo;
-  };
-
   const tabs = [
     { name: "All staff", count: users.length.toString(), href: null },
-    { name: "Pending approval", count: users.filter(u => formatStatus(u.accountStatus) === "Pending approval").length.toString(), href: null },
+    { name: "Pending approval", count: users.filter(u => formatStatus(u.accountStatus) === "Pending approval").length.toString(), href: "/super-admin/users/pending" },
     { name: "Suspended", count: users.filter(u => formatStatus(u.accountStatus) === "Suspended").length.toString(), href: null },
-    { name: "Recently added", count: users.filter(recentlyAddedFilter).length.toString(), href: null },
+    { name: "Recently added", count: "-", href: null },
   ];
 
+  // Filter the actual data based on the active tab
   const filteredUsers = users.filter(user => {
-    // 1. Tab Filtering
     const status = formatStatus(user.accountStatus);
-    let tabMatch = true;
-    if (activeTab === "Suspended") tabMatch = status === "Suspended";
-    else if (activeTab === "Pending approval") tabMatch = status === "Pending approval";
-    else if (activeTab === "Recently added") tabMatch = recentlyAddedFilter(user);
-    
-    // 2. Search Query Filtering
-    const searchMatch = !searchQuery || 
-      (user.fullName || (user.firstName ? user.firstName + " " + user.lastName : "")).toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.email || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.staffId || user.id || "").toLowerCase().includes(searchQuery.toLowerCase());
-      
-    // 3. Role Filtering
-    const roleMatch = roleFilter === "All roles" || 
-      (user.role && user.role.toLowerCase() === roleFilter.toLowerCase());
-      
-    // 4. Status Filtering
-    const statusMatch = statusFilter === "All statuses" || 
-      status.toLowerCase() === statusFilter.toLowerCase();
-      
-    return tabMatch && searchMatch && roleMatch && statusMatch;
+    if (activeTab === "Suspended") return status === "Suspended";
+    if (activeTab === "Pending approval") return status === "Pending approval";
+    return true; // "All staff"
   });
-
-  const itemsPerPage = 8;
-  const totalRecords = filteredUsers.length;
-  const totalPages = Math.ceil(totalRecords / itemsPerPage) || 1;
-  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
-
-  // Reset to first page when changing tabs
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [activeTab]);
 
   const getRoleBadge = (role: string) => {
     if (!role) return <Badge variant="neutral">Unknown</Badge>;
@@ -173,30 +134,27 @@ export default function StaffManagementPage() {
   const totalCount = users.length;
   const activePercentage = totalCount === 0 ? 0 : ((activeCount / totalCount) * 100).toFixed(1);
 
-  // Calculate dynamic trend for Total Staff (last 30 days)
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  const newStaffThisMonth = users.filter(u => u.createdAt && new Date(u.createdAt) >= thirtyDaysAgo).length;
-  const totalStaffLastMonth = totalCount - newStaffThisMonth;
-  
-  let staffGrowthPercent = 0;
-  if (totalStaffLastMonth === 0) {
-    staffGrowthPercent = newStaffThisMonth > 0 ? 100 : 0;
-  } else {
-    staffGrowthPercent = (newStaffThisMonth / totalStaffLastMonth) * 100;
-  }
-  
-  const trend = {
-    value: `${Math.abs(Number(staffGrowthPercent.toFixed(1)))}%`,
-    isPositive: staffGrowthPercent >= 0,
-    label: "vs last month"
-  };
-
   return (
     <>
-      {/* Header Section Removed as requested */}
+      {/* Header Section */}
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
+        <div>
+          <h1 className="text-3xl font-bold text-slate-900 mb-2">
+            Staff Management
+          </h1>
+          <p className="text-slate-500 text-sm max-w-2xl">
+            Create, verify and govern every account on Health Bridge — patients, clinicians,
+            hospital staff and partner organisations — from one place.
+          </p>
+        </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <Button variant="outline" leftIcon={<Download size={16} />} onClick={handleExportList}>
+            Export list
+          </Button>
+          <Button variant="primary" leftIcon={<UserPlus size={16} />} onClick={() => router.push('/super-admin/staff/add')}>
+            Add staff
+          </Button>
+        </div>
 
       {/* Metrics Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
@@ -205,7 +163,7 @@ export default function StaffManagementPage() {
           value={totalCount.toLocaleString()}
           icon={<Users size={24} />}
           iconBgColor="bg-emerald-50 text-emerald-600 "
-          trend={trend}
+          trend={{ value: "4.2%", isPositive: true, label: "vs last month" }}
         />
         <StatCard
           title="Active Accounts"
@@ -228,12 +186,6 @@ export default function StaffManagementPage() {
           iconBgColor="bg-rose-50 text-rose-600 "
           subtitle="Flagged for security review"
         />
-      </div>
-
-      <div className="flex justify-end mb-4">
-        <Button variant="primary" leftIcon={<UserPlus size={16} />} onClick={() => router.push('/super-admin/staff/add')}>
-          Add staff
-        </Button>
       </div>
 
       {/* Tabs */}
@@ -271,34 +223,30 @@ export default function StaffManagementPage() {
           <Input 
             placeholder="Search by name, email or user ID..." 
             leftIcon={<Search size={16} />}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
-          <select 
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 :ring-blue-900 flex-1 md:w-40"
-          >
+          <select className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 :ring-blue-900 flex-1 md:w-40">
             <option>All roles</option>
             <option>Doctor</option>
-            <option>Nurse</option>
-            <option>Hospital Admin</option>
-            <option>Lab Officer</option>
+            <option>Patient</option>
             <option>Pharmacist</option>
           </select>
-          <select 
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 :ring-blue-900 flex-1 md:w-40"
-          >
+          <select className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 :ring-blue-900 flex-1 md:w-40">
             <option>All statuses</option>
             <option>Active</option>
-            <option>Pending approval</option>
+            <option>Pending</option>
             <option>Suspended</option>
           </select>
+          <select className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 :ring-blue-900 flex-1 md:w-48">
+            <option>All institutions</option>
+            <option>Colombo General Hospital</option>
+            <option>Asiri Medical Group</option>
+          </select>
         </div>
+        <Button variant="outline" leftIcon={<Filter size={16} />} className="ml-auto w-full md:w-auto">
+          More filters
+        </Button>
       </div>
 
       {/* Data Table */}
@@ -321,11 +269,11 @@ export default function StaffManagementPage() {
             <TableRow>
               <TableCell colSpan={9} className="text-center py-8">Loading staff...</TableCell>
             </TableRow>
-          ) : paginatedUsers.length === 0 ? (
+          ) : filteredUsers.length === 0 ? (
             <TableRow>
               <TableCell colSpan={9} className="text-center py-8">No staff found.</TableCell>
             </TableRow>
-          ) : paginatedUsers.map((user, index) => (
+          ) : filteredUsers.map((user, index) => (
             <TableRow key={index}>
               <TableCell>
                 <div className={`w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xs flex items-center justify-center shadow-sm mx-auto`}>
@@ -380,37 +328,33 @@ export default function StaffManagementPage() {
                           className="fixed inset-0 z-40"
                           onClick={() => setOpenDropdownId(null)}
                         />
-                        <div className="absolute right-0 top-full mt-1 w-40 flex flex-col bg-white border border-slate-200 rounded-xl shadow-lg py-1 z-50 overflow-hidden">
-                          <button 
-                            onClick={() => updateUserStatus(user.id, "SUSPENDED")}
-                            disabled={formatStatus(user.accountStatus) === "Suspended" || formatStatus(user.accountStatus) === "Pending approval"}
-                            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-                              formatStatus(user.accountStatus) === "Suspended" || formatStatus(user.accountStatus) === "Pending approval"
-                                ? "text-slate-300 cursor-not-allowed"
-                                : "text-amber-600 hover:bg-amber-50"
-                            }`}
-                          >
-                            Suspend Staff
-                          </button>
-                          
-                          <button 
-                            onClick={() => updateUserStatus(user.id, "ACTIVE")}
-                            disabled={formatStatus(user.accountStatus) !== "Suspended"}
-                            className={`w-full text-left px-4 py-2 text-sm font-medium transition-colors ${
-                              formatStatus(user.accountStatus) !== "Suspended"
-                                ? "text-slate-300 cursor-not-allowed"
-                                : "text-emerald-600 hover:bg-emerald-50"
-                            }`}
-                          >
-                            Reactivate Staff
-                          </button>
-
-                          <button 
-                            onClick={() => { setOpenDropdownId(null); toast.error("Delete staff not implemented yet"); }}
-                            className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors"
-                          >
-                            Delete Staff
-                          </button>
+                        <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50 overflow-hidden">
+                          <ul className="flex flex-col">
+                            <li>
+                              <button 
+                                onClick={() => updateUserStatus(user.id, 'ACTIVE')}
+                                className="w-full text-left px-4 py-2 text-sm font-bold text-green-600 hover:bg-green-50"
+                              >
+                                ✓ Set as Approved
+                              </button>
+                            </li>
+                            <li>
+                              <button 
+                                onClick={() => updateUserStatus(user.id, 'PENDING_APPROVAL')}
+                                className="w-full text-left px-4 py-2 text-sm font-bold text-orange-500 hover:bg-orange-50"
+                              >
+                                ⚠ Set as Pending
+                              </button>
+                            </li>
+                            <li>
+                              <button 
+                                onClick={() => updateUserStatus(user.id, 'SUSPENDED')}
+                                className="w-full text-left px-4 py-2 text-sm font-bold text-red-600 hover:bg-red-50"
+                              >
+                                ✗ Suspend Account
+                              </button>
+                            </li>
+                          </ul>
                         </div>
                       </>
                     )}
@@ -424,46 +368,34 @@ export default function StaffManagementPage() {
       
       <TablePagination 
         currentPage={currentPage}
-        totalPages={totalPages}
-        totalRecords={totalRecords}
-        pageSize={itemsPerPage}
+        totalPages={156}
+        totalRecords={1248}
+        pageSize={8}
         onPageChange={setCurrentPage}
       />
       </div>
       {selectedUser && (
-        <div className="fixed inset-0 z-50 flex justify-end">
-          {/* Backdrop */}
-          <div 
-            className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm transition-opacity" 
-            onClick={() => setSelectedUser(null)} 
-          />
-          
-          {/* Drawer Panel */}
-          <div className="relative w-full max-w-md bg-white h-full shadow-2xl border-l border-slate-200 flex flex-col animate-in slide-in-from-right duration-300">
-            {/* Drawer Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-100">
-              <h2 className="text-lg font-bold text-[#0A2540]">Staff Details</h2>
-              <button 
-                onClick={() => setSelectedUser(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
-            </div>
-            
-            {/* Drawer Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-6">
-              <div className="flex items-center gap-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xl flex items-center justify-center shadow-sm">
-                  {(selectedUser.fullName || (selectedUser.firstName ? selectedUser.firstName + " " + selectedUser.lastName : "HB")).substring(0, 2).toUpperCase()}
-                </div>
-                <div>
-                  <h3 className="font-bold text-xl text-[#0A2540]">{selectedUser.fullName || (selectedUser.firstName ? selectedUser.firstName + " " + selectedUser.lastName : "Unknown")}</h3>
-                  <p className="text-sm font-medium text-slate-500 mt-1">{selectedUser.email}</p>
-                </div>
-              </div>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl p-8 max-w-lg w-full shadow-xl relative">
+            <button 
+              onClick={() => setSelectedUser(null)}
+              className="absolute top-6 right-6 text-slate-400 hover:text-slate-600 transition-colors"
+            >
+              <X size={24} />
+            </button>
 
-              <div className="space-y-4">
+            <div className="flex items-center gap-4 mb-8">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-2xl flex items-center justify-center shadow-sm shrink-0">
+                {(selectedUser.fullName || (selectedUser.firstName ? selectedUser.firstName + " " + selectedUser.lastName : "HB")).substring(0, 2).toUpperCase()}
+              </div>
+              <div>
+                <h2 className="text-2xl font-bold text-[#0A2540]">{selectedUser.fullName || (selectedUser.firstName ? selectedUser.firstName + " " + selectedUser.lastName : "Unknown")}</h2>
+                <p className="text-sm font-medium text-slate-500">{selectedUser.email}</p>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">User ID</p>
                   <p className="font-medium text-[#0A2540]">{selectedUser.id}</p>
@@ -483,24 +415,21 @@ export default function StaffManagementPage() {
                   </p>
                 </div>
               </div>
-            </div>
 
-            {/* Drawer Footer */}
-            <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-col gap-3">
-              {formatStatus(selectedUser.accountStatus) !== "Active" && (
+              <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
+                <Button variant="outline" onClick={() => setSelectedUser(null)}>
+                  Close
+                </Button>
                 <Button 
                   onClick={() => {
                     updateUserStatus(selectedUser.id, 'ACTIVE');
                     setSelectedUser(null);
                   }}
-                  className="w-full bg-[#0052CC] hover:bg-blue-700 text-white justify-center"
+                  className="bg-[#0052CC] hover:bg-blue-700 text-white"
                 >
                   Approve Account
                 </Button>
-              )}
-              <Button variant="outline" onClick={() => setSelectedUser(null)} className="w-full justify-center bg-white">
-                Close
-              </Button>
+              </div>
             </div>
           </div>
         </div>

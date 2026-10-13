@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useState } from "react";
+import toast, { Toaster } from "react-hot-toast";
 import { CalendarOff, Ellipsis, Pencil, Plus, Users, XCircle } from "lucide-react";
 import AppointmentBranchSelect from "@/components/appointment/AppointmentBranchSelect";
 import Badge from "@/components/ui/Badge";
@@ -20,11 +21,23 @@ export default function DoctorSchedulePage() {
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+
+  const showWarning = (message: string) => {
+    toast.error(message, {
+      duration: 4000,
+      position: "top-right",
+      style: {
+        background: "#fef3c7",
+        color: "#78350f",
+        border: "1px solid #f59e0b",
+        boxShadow: "0 10px 20px rgba(120, 53, 15, 0.12)",
+      },
+    });
+  };
 
   const load = useCallback(async () => {
     try { setLoading(true); setSessions(await appointmentService.getMySessions()); }
-    catch (loadError) { setError(loadError instanceof Error ? loadError.message : "Unable to load sessions."); }
+    catch (loadError) { showWarning(loadError instanceof Error ? loadError.message : "Unable to load sessions."); }
     finally { setLoading(false); }
   }, []);
 
@@ -34,12 +47,12 @@ export default function DoctorSchedulePage() {
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
-    if (!form.hospitalId || !form.hospitalName) { setError("Select a hospital branch before saving the session."); return; }
+    if (!form.hospitalId || !form.hospitalName) { showWarning("Select a hospital branch before saving the session."); return; }
     try {
-      setSaving(true); setError("");
+      setSaving(true);
       if (editing) await appointmentService.updateSession(editing, form); else await appointmentService.createSession(form);
       setForm(blank); setEditing(null); setShowForm(false); await load();
-    } catch (saveError) { setError(saveError instanceof Error ? saveError.message : "Unable to save session."); }
+    } catch (saveError) { showWarning(saveError instanceof Error ? saveError.message : "Unable to save session."); }
     finally { setSaving(false); }
   };
 
@@ -51,7 +64,7 @@ export default function DoctorSchedulePage() {
 
   const status = async (id: string, next: "HOLIDAY" | "CANCELLED") => {
     try { await appointmentService.updateSessionStatus(id, next); await load(); }
-    catch (statusError) { setError(statusError instanceof Error ? statusError.message : "Unable to update session."); }
+    catch (statusError) { showWarning(statusError instanceof Error ? statusError.message : "Unable to update session."); }
   };
 
   const closeMenu = (element: HTMLElement) => { element.closest("details")?.removeAttribute("open"); };
@@ -59,7 +72,7 @@ export default function DoctorSchedulePage() {
   return (
     <div className="space-y-6">
       <PageHeader eyebrow="Doctor channeling" title="Sessions & schedule" description="Create capacity-based sessions and manage your future channeling schedule." action={<Button type="button" size="lg" leftIcon={<Plus className="h-4 w-4" />} onClick={() => { setEditing(null); setForm(blank); setShowForm((visible) => !visible); }}>{showForm ? "Close" : "Create Session"}</Button>} />
-      {error && <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700" role="alert">{error}</div>}
+      <Toaster position="top-right" reverseOrder={false} />
       {showForm && <Card className="p-5 sm:p-6"><form onSubmit={submit}>
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center"><div><p className="text-xs font-semibold uppercase tracking-[0.16em] text-blue-600">Session details</p><h2 className="mt-1 text-lg font-bold text-slate-900">{editing ? "Edit session" : "New doctor session"}</h2></div><Badge variant="primary" size="md">Select a branch</Badge></div>
         <p className="mt-2 text-sm text-slate-500">Patients will see this branch when searching and booking your session.</p>

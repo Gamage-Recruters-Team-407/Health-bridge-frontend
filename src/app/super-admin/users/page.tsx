@@ -337,9 +337,6 @@ export default function UserManagementPage() {
                   >
                     <Eye size={16} />
                   </button>
-                  <Link href={`/super-admin/users/edit/${user.id}`} className="p-1.5 text-slate-400 hover:text-[#0052CC] hover:bg-[#EBF3FF] rounded-lg transition-colors">
-                    <Edit size={16} />
-                  </Link>
                   <div className="relative">
                     <button 
                       onClick={() => setDropdownOpenId(dropdownOpenId === user.id ? null : user.id)}
@@ -421,42 +418,42 @@ export default function UserManagementPage() {
               </button>
             </div>
             
-            {/* Drawer Body */}
-            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+            {/* Drawer Body (Form) */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xl flex items-center justify-center shadow-sm shrink-0">
-                  {viewingUser.fullName ? viewingUser.fullName.substring(0, 2).toUpperCase() : (viewingUser.firstName ? viewingUser.firstName.substring(0, 2).toUpperCase() : "HB")}
+                <div className="w-16 h-16 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xl flex items-center justify-center shadow-sm">
+                  {viewingUser.fullName ? viewingUser.fullName.substring(0, 2).toUpperCase() : "HB"}
                 </div>
                 <div>
-                  <h3 className="font-bold text-lg text-[#0A2540]">{viewingUser.fullName || (viewingUser.firstName ? viewingUser.firstName + " " + viewingUser.lastName : "Unknown")}</h3>
-                  <p className="text-sm font-medium text-slate-500">{viewingUser.email}</p>
+                  <h3 className="font-bold text-xl text-[#0A2540]">{viewingUser.fullName}</h3>
+                  {getRoleBadge(viewingUser.role)}
                 </div>
               </div>
 
-              <div className="space-y-6 pt-4">
+              <div className="space-y-4 pt-4 border-t border-slate-100">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">User ID</label>
-                  <p className="text-sm font-medium text-[#0A2540]">{viewingUser.id}</p>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Email Address</label>
+                  <Input defaultValue={viewingUser.email} className="h-11 bg-slate-50" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Role</label>
-                  <div>{getRoleBadge(viewingUser.role)}</div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">User ID</label>
+                  <Input defaultValue={viewingUser.id} disabled className="h-11 bg-slate-100 text-slate-500 cursor-not-allowed" />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Status</label>
-                  <div>{getStatusBadge(formatStatus(viewingUser.accountStatus))}</div>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Account Status</label>
+                  <div className="mt-1">{getStatusBadge(formatStatus(viewingUser.accountStatus))}</div>
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-400 mb-1.5 uppercase tracking-wider">Registered</label>
+                  <label className="block text-[11px] font-bold text-slate-500 mb-1.5 uppercase tracking-wider">Registered On</label>
                   <p className="text-sm font-medium text-[#0A2540]">
-                    {viewingUser.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "2-digit", year: "numeric" }) : "Unknown"}
+                    {viewingUser.createdAt ? new Date(viewingUser.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Unknown"}
                   </p>
                 </div>
               </div>
             </div>
 
             {/* Drawer Footer (Actions) */}
-            <div className="p-6 border-t border-slate-100 bg-white flex gap-3">
+            <div className="p-6 border-t border-slate-200 bg-slate-50 flex gap-3">
               {formatStatus(viewingUser.accountStatus) === "Pending approval" ? (
                 <>
                   <Button 
@@ -475,12 +472,13 @@ export default function UserManagementPage() {
                   </Button>
                 </>
               ) : (
-                <button 
+                <Button 
+                  variant="primary" 
                   onClick={() => setViewingUser(null)}
-                  className="w-full py-2.5 bg-white border border-slate-200 rounded-xl text-[#0052CC] font-medium hover:bg-slate-50 transition-colors"
+                  className="w-full bg-[#0052CC] hover:bg-blue-700 font-bold shadow-sm"
                 >
-                  Close
-                </button>
+                  Close & Save Changes
+                </Button>
               )}
             </div>
           </div>

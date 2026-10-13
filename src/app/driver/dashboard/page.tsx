@@ -26,6 +26,7 @@ export default function DriverDashboard() {
   const [pendingAlert, setPendingAlert] = useState<any>(null);
   const [cancelledMessage, setCancelledMessage] = useState<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
+  const stompClientRef = useRef<Client | null>(null);
 
   useEffect(() => {
     if (typeof navigator !== 'undefined' && navigator.geolocation) {
@@ -43,8 +44,6 @@ export default function DriverDashboard() {
     const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     setLogs(prev => [`[${time}] ${msg}`, ...prev].slice(0, 10));
   };
-
-  const stompClientRef = useRef<Client | null>(null);
 
   useEffect(() => {
     const stompClient = new Client({

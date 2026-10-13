@@ -24,10 +24,10 @@ export default function DownloadPrescriptionPage() {
         
         if (prescriptionData.doctorId) {
           try {
-            // ✅ FIXED: api.get already returns the data directly (due to interceptor)
+            // FIXED: api.get already returns the data directly (due to interceptor)
             const doctorProfile = await api.get<any>(`/users/profile/${prescriptionData.doctorId}`);
             
-            // ✅ Access branch directly from the returned data object
+            // Access branch directly from the returned data object
             if (doctorProfile && doctorProfile.branch) {
               setDoctorBranch(doctorProfile.branch);
               console.log("✅ Doctor branch loaded successfully:", doctorProfile.branch);
@@ -57,17 +57,29 @@ export default function DownloadPrescriptionPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3" role="status" aria-live="polite">
         <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+        <p className="text-xs font-medium text-slate-500">Loading prescription...</p>
       </div>
     );
   }
 
-  if (!data) return <div className="text-center text-red-600">Prescription not found</div>;
+  if (!data)
+    return (
+      <div className="flex min-h-64 flex-col items-center justify-center gap-3 text-center">
+        <p className="text-sm font-semibold text-red-600">Prescription not found</p>
+        <Link
+          href="/prescriptions"
+          className="inline-flex cursor-pointer items-center gap-1.5 text-xs font-semibold text-slate-600 transition hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 rounded-md"
+        >
+          <ArrowLeft className="h-4 w-4" /> Back to Prescriptions
+        </Link>
+      </div>
+    );
 
   return (
     <div className="flex min-h-[60vh] items-center justify-center p-6">
-      <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+      <div className="w-full max-w-2xl rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm transition-shadow hover:shadow-md">
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-blue-50">
           <FileText className="h-8 w-8 text-blue-600" />
         </div>
@@ -81,14 +93,15 @@ export default function DownloadPrescriptionPage() {
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+            aria-busy={downloading}
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg bg-blue-600 px-6 py-3 text-xs font-bold text-white transition hover:bg-blue-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             {downloading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
             {downloading ? "Generating..." : "Download PDF"}
           </button>
           <Link
             href={`/prescriptions/${id}`}
-            className="inline-flex items-center justify-center gap-2 rounded-lg border border-slate-200 px-6 py-3 text-xs font-semibold text-slate-700 hover:bg-slate-50"
+            className="inline-flex cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-200 px-6 py-3 text-xs font-semibold text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 focus-visible:ring-offset-2"
           >
             <ArrowLeft className="h-4 w-4" /> Cancel
           </Link>

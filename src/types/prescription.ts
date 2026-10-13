@@ -7,7 +7,7 @@ export interface Prescription {
   doctorId: string;
   doctorName: string;
   
-  // ✅ Backend එකෙන් එන්නේ Uppercase නිසා මේක වෙනස් කළා
+  
   status: "ACTIVE" | "COMPLETED" | "CANCELLED"; 
   
   items: PrescriptionItem[];
@@ -15,7 +15,6 @@ export interface Prescription {
   diagnosis?: string;
   validUntil: string;
   
-  // ✅ අඩුවෙලා තිබුණු fields එකතු කළා
   qrCodeData?: string;
   createdAt: string;
   updatedAt?: string;

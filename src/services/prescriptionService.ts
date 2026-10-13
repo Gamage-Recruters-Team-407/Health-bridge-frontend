@@ -16,7 +16,7 @@ export interface MedicineOption {
 export const patientService = {
   getAllPatients: async (): Promise<PatientOption[]> => {
     const response = await api.get<any[]>("/users");
-    return response  // ✅ FIXED: Remove .data - interceptor already extracts it
+    return response  
       .filter((user: any) => user.role === "PATIENT")
       .map((user: any) => ({
         value: user.id,
@@ -29,7 +29,7 @@ export const patientService = {
 export const medicineService = {
   getAllMedicines: async (): Promise<MedicineOption[]> => {
     const response = await api.get<any[]>("/v1/pharmacy/medicines");
-    return response.map((med: any) => ({  // ✅ FIXED: Remove .data
+    return response.map((med: any) => ({  
       value: med.id,
       label: `${med.name} (${med.category || 'General'})`,
       interactions: med.interactions || med.substituteMedicineCodes || [],
@@ -40,27 +40,27 @@ export const medicineService = {
 export const prescriptionService = {
   getAllPrescriptions: async (): Promise<Prescription[]> => {
     const response = await api.get<Prescription[]>("/prescriptions");
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
   
   getPrescriptionsByDoctorId: async (doctorId: string): Promise<Prescription[]> => {
     const response = await api.get<Prescription[]>(`/prescriptions/doctor/${doctorId}`);
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
   
   getPrescriptionById: async (id: string): Promise<Prescription> => {
     const response = await api.get<Prescription>(`/prescriptions/${id}`);
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
   
   createPrescription: async (data: CreatePrescriptionDTO): Promise<Prescription> => {
     const response = await api.post<Prescription>("/prescriptions", data);
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
   
   updatePrescription: async (id: string, data: Partial<CreatePrescriptionDTO>): Promise<Prescription> => {
     const response = await api.put<Prescription>(`/prescriptions/${id}`, data);
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
   
   deletePrescription: async (id: string): Promise<void> => {
@@ -69,11 +69,11 @@ export const prescriptionService = {
   
   downloadPrescription: async (id: string): Promise<Blob> => {
     const response = await api.get<Blob>(`/prescriptions/${id}/download`, { responseType: "blob" });
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
   
   getPatientPrescriptions: async (patientId: string): Promise<Prescription[]> => {
     const response = await api.get<Prescription[]>(`/prescriptions/patient/${patientId}`);
-    return response;  // ✅ FIXED: Remove .data
+    return response;  
   },
 };
