@@ -117,6 +117,10 @@ export default function StaffManagementPage() {
     if (activeTab === "Pending approval") return status === "Pending approval";
     return true; // "All staff"
   });
+  const itemsPerPage = 8;
+  const totalRecords = filteredUsers.length;
+  const totalPages = Math.ceil(totalRecords / itemsPerPage) || 1;
+  const paginatedUsers = filteredUsers.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
   const getRoleBadge = (role: string) => {
     if (!role) return <Badge variant="neutral">Unknown</Badge>;
@@ -284,7 +288,7 @@ export default function StaffManagementPage() {
                 <TableRow>
                   <TableCell colSpan={9} className="text-center py-8">No staff found.</TableCell>
                 </TableRow>
-              ) : filteredUsers.map((user, index) => (
+              ) : paginatedUsers.map((user, index) => (
                 <TableRow key={index}>
                   <TableCell>
                     <div className={`w-8 h-8 rounded-full bg-gradient-to-tr from-emerald-500 to-teal-500 text-white font-bold text-xs flex items-center justify-center shadow-sm mx-auto`}>
@@ -461,49 +465,49 @@ export default function StaffManagementPage() {
                   </p>
                 </div>
               </div>
+            </div>
 
-              <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
-                <Button variant="outline" onClick={() => setSelectedUser(null)}>
-                  Close
-                </Button>
-                <Button
+            {/* Drawer Footer */}
+            <div className="p-6 border-t border-slate-100 bg-slate-50 flex flex-col gap-3">
+              {formatStatus(selectedUser.accountStatus) !== "Active" && (
+                <Button 
                   onClick={() => {
                     updateUserStatus(selectedUser.id, 'ACTIVE');
                     setSelectedUser(null);
                   }}
-                  className="bg-[#0052CC] hover:bg-blue-700 text-white"
+                  className="w-full bg-[#0052CC] hover:bg-blue-700 text-white justify-center"
                 >
                   Approve Account
                 </Button>
               )}
-                {formatStatus(selectedUser.accountStatus) === "Active" && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      updateUserStatus(selectedUser.id, 'SUSPENDED');
-                      setSelectedUser(null);
-                    }}
-                    className="w-full text-amber-600 border-amber-200 hover:bg-amber-50 justify-center"
-                  >
-                    Suspend Account
-                  </Button>
-                )}
-                <Button
+              {formatStatus(selectedUser.accountStatus) === "Active" && (
+                <Button 
                   variant="outline"
                   onClick={() => {
-                    handleDeleteStaff(selectedUser.id, selectedUser.fullName || `${selectedUser.firstName} ${selectedUser.lastName}`);
+                    updateUserStatus(selectedUser.id, 'SUSPENDED');
+                    setSelectedUser(null);
                   }}
-                  className="w-full text-rose-600 border-rose-200 hover:bg-rose-50 justify-center"
+                  className="w-full text-amber-600 border-amber-200 hover:bg-amber-50 justify-center"
                 >
-                  Delete Staff
+                  Suspend Account
                 </Button>
-                <Button variant="outline" onClick={() => setSelectedUser(null)} className="w-full justify-center bg-white">
-                  Close
-                </Button>
-              </div>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  handleDeleteStaff(selectedUser.id, selectedUser.fullName || `${selectedUser.firstName} ${selectedUser.lastName}`);
+                }}
+                className="w-full text-rose-600 border-rose-200 hover:bg-rose-50 justify-center"
+              >
+                Delete Staff
+              </Button>
+              <Button variant="outline" onClick={() => setSelectedUser(null)} className="w-full justify-center bg-white">
+                Close
+              </Button>
             </div>
           </div>
+        </div>
       )}
-        </>
-      );
+    </>
+  );
 }
