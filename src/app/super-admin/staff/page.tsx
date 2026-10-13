@@ -18,22 +18,21 @@ import {
   MoreVertical,
   Eye,
   Edit,
-  Download,
   UserPlus,
   Filter,
   X
 } from "lucide-react";
-import { superAdminService, UserProfileResponse } from "@/services/superadmin.service";
+import { superAdminService, StaffResponseDto } from "@/services/superadmin.service";
 import toast from "react-hot-toast";
 
 export default function StaffManagementPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [activeTab, setActiveTab] = useState("All staff");
-  const [users, setUsers] = useState<UserProfileResponse[]>([]);
+  const [users, setUsers] = useState<StaffResponseDto[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
-  const [selectedUser, setSelectedUser] = useState<UserProfileResponse | null>(null);
+  const [selectedUser, setSelectedUser] = useState<StaffResponseDto | null>(null);
 
   const [searchQuery, setSearchQuery] = useState("");
   const [roleFilter, setRoleFilter] = useState("All roles");
@@ -59,8 +58,8 @@ export default function StaffManagementPage() {
 
   const updateUserStatus = async (id: string, status: string) => {
     try {
-      await superAdminService.updateUserStatus(id, status);
-      toast.success(`User status updated to ${status}`);
+      await superAdminService.updateStaffStatus(id, status);
+      toast.success(`Staff status updated to ${status}`);
       setOpenDropdownId(null);
       fetchUsers();
     } catch (error) {
@@ -68,21 +67,24 @@ export default function StaffManagementPage() {
     }
   };
 
-  const handleExportList = () => {
-    toast.success("Downloading staff list...");
-    setTimeout(() => {
-      const csvContent = "data:text/csv;charset=utf-8," 
-        + "Name,Email,Role,Status\n" 
-        + users.map(u => `${u.fullName || (u.firstName ? u.firstName + ' ' + u.lastName : 'Unknown')},${u.email},${u.role},${formatStatus(u.accountStatus)}`).join("\n");
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", "staff_list.csv");
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    }, 1000);
+  const handleDeleteStaff = async (id: string, name?: string) => {
+    if (!window.confirm(`Are you sure you want to delete staff member "${name || id}"? This action cannot be undone.`)) {
+      return;
+    }
+    try {
+      await superAdminService.deleteStaff(id);
+      toast.success("Staff member deleted successfully");
+      setOpenDropdownId(null);
+      if (selectedUser?.id === id) {
+        setSelectedUser(null);
+      }
+      fetchUsers();
+    } catch (error) {
+      console.error("Failed to delete staff member", error);
+      toast.error("Failed to delete staff member");
+    }
   };
+
 
   const formatStatus = (status: string) => {
     if (!status) return "Unknown";
@@ -93,12 +95,12 @@ export default function StaffManagementPage() {
     return status;
   };
 
-  const recentlyAddedFilter = (user: UserProfileResponse) => {
+  const recentlyAddedFilter = (user: StaffResponseDto) => {
     if (!user.createdAt) return false;
     const createdAt = new Date(user.createdAt);
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-    return createdAt >= sevenDaysAgo;
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    return createdAt >= thirtyDaysAgo;
   };
 
   const tabs = [
@@ -195,11 +197,25 @@ export default function StaffManagementPage() {
 
   return (
     <>
-      {/* Header Section Removed as requested */}
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
 
+      {/* Page Header Toolbar */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900">Staff Management</h1>
+          <p className="text-sm text-slate-500">Monitor hospital clinical and administrative staff, duty shifts, and departmental assignments.</p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link href="/super-admin/staff/add">
+            <Button variant="primary" size="sm" leftIcon={<UserPlus size={16} />}>
+              Add Staff
+            </Button>
+          </Link>
+        </div>
+      </div>
+
       {/* Metrics Row */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
         <StatCard
           title="Total Staff"
           value={totalCount.toLocaleString()}
@@ -228,12 +244,6 @@ export default function StaffManagementPage() {
           iconBgColor="bg-rose-50 text-rose-600 "
           subtitle="Flagged for security review"
         />
-      </div>
-
-      <div className="flex justify-end mb-4">
-        <Button variant="primary" leftIcon={<UserPlus size={16} />} onClick={() => router.push('/super-admin/staff/add')}>
-          Add staff
-        </Button>
       </div>
 
       {/* Tabs */}
@@ -302,9 +312,10 @@ export default function StaffManagementPage() {
       </div>
 
       {/* Data Table */}
-      <Table>
-        <TableHeader>
-          <TableRow>
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
+        <table className="w-full text-left text-sm text-slate-600">
+          <TableHeader>
+            <TableRow>
             <TableHead className="w-12 text-center">ON</TableHead>
             <TableHead>USER</TableHead>
             <TableHead>USER ID</TableHead>
@@ -339,24 +350,24 @@ export default function StaffManagementPage() {
                 </div>
               </TableCell>
               <TableCell>
-                <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">{user.id ? user.id.substring(0, 8) : "N/A"}</span>
+                <span className="text-slate-500 text-xs font-medium uppercase tracking-wider">{user.staffId || (user.id ? user.id.substring(0, 8) : "N/A")}</span>
               </TableCell>
               <TableCell>
                 {getRoleBadge(user.role)}
               </TableCell>
               <TableCell>
-                <span className="text-[#0A2540] font-medium">—</span>
+                <span className="text-[#0A2540] font-medium">{user.department || user.branchCode || "General HQ"}</span>
               </TableCell>
               <TableCell>
                 {getStatusBadge(formatStatus(user.accountStatus))}
               </TableCell>
               <TableCell>
                 <span className="text-[#0A2540] font-medium">
-                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Unknown"}
+                  {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "—"}
                 </span>
               </TableCell>
               <TableCell>
-                <span className="text-[#0A2540] font-medium">Unknown</span>
+                <span className="text-[#0A2540] font-medium">{user.currentShift || "Standard"}</span>
               </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-1">
@@ -406,7 +417,7 @@ export default function StaffManagementPage() {
                           </button>
 
                           <button 
-                            onClick={() => { setOpenDropdownId(null); toast.error("Delete staff not implemented yet"); }}
+                            onClick={() => handleDeleteStaff(user.id, user.fullName || `${user.firstName} ${user.lastName}`)}
                             className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 font-medium transition-colors"
                           >
                             Delete Staff
@@ -419,16 +430,17 @@ export default function StaffManagementPage() {
               </TableCell>
             </TableRow>
           ))}
-        </TableBody>
-      </Table>
-      
-      <TablePagination 
-        currentPage={currentPage}
-        totalPages={totalPages}
-        totalRecords={totalRecords}
-        pageSize={itemsPerPage}
-        onPageChange={setCurrentPage}
-      />
+          </TableBody>
+        </table>
+        
+        <TablePagination 
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalRecords={totalRecords}
+          pageSize={itemsPerPage}
+          onPageChange={setCurrentPage}
+        />
+      </div>
       </div>
       {selectedUser && (
         <div className="fixed inset-0 z-50 flex justify-end">
@@ -465,12 +477,32 @@ export default function StaffManagementPage() {
 
               <div className="space-y-4">
                 <div>
-                  <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">User ID</p>
-                  <p className="font-medium text-[#0A2540]">{selectedUser.id}</p>
+                  <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Staff ID</p>
+                  <p className="font-medium text-[#0A2540]">{selectedUser.staffId || selectedUser.id}</p>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">System ID</p>
+                  <p className="font-mono text-xs text-slate-500">{selectedUser.id}</p>
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Role</p>
                   <div>{getRoleBadge(selectedUser.role)}</div>
+                </div>
+                <div>
+                  <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Department</p>
+                  <p className="font-medium text-[#0A2540]">{selectedUser.department || selectedUser.branchCode || "General HQ"}</p>
+                </div>
+                {selectedUser.phone && (
+                  <div>
+                    <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Phone</p>
+                    <p className="font-medium text-[#0A2540]">{selectedUser.phone}</p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Duty Status / Shift</p>
+                  <p className="font-medium text-[#0A2540]">
+                    {selectedUser.dutyStatus || "Active"} • {selectedUser.currentShift || "Standard"}
+                  </p>
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-400 mb-1 uppercase tracking-wider">Status</p>
@@ -498,6 +530,27 @@ export default function StaffManagementPage() {
                   Approve Account
                 </Button>
               )}
+              {formatStatus(selectedUser.accountStatus) === "Active" && (
+                <Button 
+                  variant="outline"
+                  onClick={() => {
+                    updateUserStatus(selectedUser.id, 'SUSPENDED');
+                    setSelectedUser(null);
+                  }}
+                  className="w-full text-amber-600 border-amber-200 hover:bg-amber-50 justify-center"
+                >
+                  Suspend Account
+                </Button>
+              )}
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  handleDeleteStaff(selectedUser.id, selectedUser.fullName || `${selectedUser.firstName} ${selectedUser.lastName}`);
+                }}
+                className="w-full text-rose-600 border-rose-200 hover:bg-rose-50 justify-center"
+              >
+                Delete Staff
+              </Button>
               <Button variant="outline" onClick={() => setSelectedUser(null)} className="w-full justify-center bg-white">
                 Close
               </Button>

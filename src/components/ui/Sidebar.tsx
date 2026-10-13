@@ -123,30 +123,7 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "User Management", href: "/super-admin/users", icon: Users },
           { title: "Staff Management", href: "/super-admin/staff", icon: Users },
           { title: "Roles & Permissions", href: "/super-admin/roles", icon: ShieldAlert },
-          { title: "Hospital Management", href: "/super-admin/hospitals", icon: Building2 },
-          { title: "Doctor Management", href: "/super-admin/doctors", icon: User },
-          { title: "Pharmacy Management", href: "/super-admin/pharmacy", icon: Pill },
-          { title: "Laboratory Management", href: "/super-admin/laboratories", icon: FlaskConical },
-          { title: "Insurance Management", href: "/super-admin/insurance", icon: ShieldAlert },
-          { title: "Settings", href: "/super-admin/settings", icon: Settings },
-        ],
-      },
-    ];
-  }
-
-  // Super Admin
-  if (roleUpper === "SUPER_ADMIN") {
-    return [
-      {
-        groupTitle: "Super Admin",
-        items: [
-          { title: "Super Admin Dashboard", href: "/super-admin/dashboard", icon: LayoutDashboard },
-          { title: "System Analytics", href: "/super-admin/analytics", icon: TrendingUp },
-          { title: "Audit Logs", href: "/super-admin/audit-logs", icon: ClipboardCheck },
-          { title: "User Management", href: "/super-admin/users", icon: Users },
-          { title: "Staff Management", href: "/super-admin/staff", icon: Users },
-          { title: "Roles & Permissions", href: "/super-admin/roles", icon: ShieldAlert },
-          { title: "Hospital Management", href: "/super-admin/hospitals", icon: Building2 },
+          { title: "Hospital Branch Management", href: "/super-admin/branches", icon: Building2 },
           { title: "Doctor Management", href: "/super-admin/doctors", icon: User },
           { title: "Pharmacy Management", href: "/super-admin/pharmacy", icon: Pill },
           { title: "Laboratory Management", href: "/super-admin/laboratories", icon: FlaskConical },

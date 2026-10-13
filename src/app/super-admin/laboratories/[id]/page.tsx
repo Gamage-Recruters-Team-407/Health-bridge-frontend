@@ -1,10 +1,13 @@
 "use client";
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { superAdminService, LaboratoryResponseDto } from "@/services/superadmin.service";
+import toast from "react-hot-toast";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import {
   ChevronRight,
   Clock,
@@ -14,8 +17,20 @@ import {
 } from "lucide-react";
 
 export default function LaboratoryReviewPage() {
+  const router = useRouter();
   const params = useParams();
-  const id = params?.id || "1";
+  const id = params?.id as string;
+  const [lab, setLab] = useState<LaboratoryResponseDto | null>(null);
+
+  useEffect(() => {
+    if (id) {
+      superAdminService.getLaboratoryById(id)
+        .then(data => setLab(data))
+        .catch(err => console.error(err));
+    }
+  }, [id]);
+
+  if (!lab) return <div className="p-8">Loading...</div>;
 
   return (
     <>
@@ -38,20 +53,20 @@ export default function LaboratoryReviewPage() {
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 mb-1">
                   <Link href="/super-admin/laboratories" className="hover:text-slate-600 transition-colors">Lab Registrations</Link>
                   <ChevronRight size={14} />
-                  <span className="text-[#0A2540] dark:text-slate-200">GreenLine Diagnostics</span>
+                  <span className="text-[#0A2540] dark:text-slate-200">{lab.name}</span>
                 </div>
 
                 {/* Title */}
                 <div className="flex flex-wrap items-center gap-4 mb-2">
                   <h1 className="text-3xl font-bold text-[#0A2540] dark:text-white tracking-tight">
-                    GreenLine Diagnostics
+                    {lab.name}
                   </h1>
                 </div>
 
                 {/* Info Text */}
                 <div className="flex items-center gap-4 text-xs font-medium text-slate-500">
-                  <span>License LAB-WP-2291</span>
-                  <span>Submitted 2 days ago</span>
+                  <span>License {lab.license}</span>
+                  <span>Submitted {lab.requestDate || "Unknown"}</span>
                 </div>
               </div>
             </div>
@@ -70,31 +85,31 @@ export default function LaboratoryReviewPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Owner / Contact Person</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">S. Perera</p>
+                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.owner}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Registration No.</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">LAB-WP-2291</p>
+                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.license}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email</p>
-                    <a href="mailto:contact@greenline-labs.lk" className="text-sm font-bold text-[#0052CC] hover:underline">contact@greenline-labs.lk</a>
+                    <a href={`mailto:${lab.email}`} className="text-sm font-bold text-[#0052CC] hover:underline">{lab.email}</a>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Phone</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">+94 77 213 4590</p>
+                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.phone}</p>
                   </div>
                   <div className="md:col-span-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Registered Address</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-slate-300">No. 45, Colombo Road, Negombo, Western Province, Sri Lanka</p>
+                    <p className="text-sm font-medium text-[#0A2540] dark:text-slate-300">{lab.address}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lab Category</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">Clinical Pathology & Diagnostics</p>
+                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.category}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Years in Operation</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">6 years</p>
+                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.yearsInOperation}</p>
                   </div>
                 </div>
               </Card>
@@ -247,11 +262,37 @@ export default function LaboratoryReviewPage() {
 
               {/* Danger Actions */}
               <div className="flex items-center justify-end gap-3 pt-4">
-                <Button variant="outline" className="font-bold text-red-600 bg-red-50 hover:bg-red-100 border-red-50 px-6 py-2.5 rounded-xl">
+                <Button 
+                  variant="outline" 
+                  onClick={async () => {
+                    try {
+                      await superAdminService.updateLaboratoryStatus(id, "Suspended");
+                      toast.success("Laboratory marked as Suspended");
+                      router.push("/super-admin/laboratories");
+                    } catch {
+                      toast.error("Failed to suspend laboratory");
+                    }
+                  }}
+                  className="font-bold text-amber-600 bg-amber-50 hover:bg-amber-100 border-amber-100 px-6 py-2.5 rounded-xl"
+                >
                   Suspend
                 </Button>
-                <Button variant="primary" className="font-bold bg-[#B91C1C] hover:bg-red-800 border-none px-6 py-2.5 rounded-xl text-white">
-                  Deactivate & Delete
+                <Button 
+                  variant="primary" 
+                  onClick={async () => {
+                    if (confirm("Are you sure you want to reject this laboratory registration?")) {
+                      try {
+                        await superAdminService.updateLaboratoryStatus(id, "Rejected");
+                        toast.success("Laboratory registration rejected");
+                        router.push("/super-admin/laboratories");
+                      } catch {
+                        toast.error("Failed to reject laboratory");
+                      }
+                    }
+                  }}
+                  className="font-bold bg-[#B91C1C] hover:bg-red-800 border-none px-6 py-2.5 rounded-xl text-white"
+                >
+                  Reject & Deactivate
                 </Button>
               </div>
 

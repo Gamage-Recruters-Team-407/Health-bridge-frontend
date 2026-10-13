@@ -68,14 +68,20 @@ export default function EditUserPage() {
     setIsSubmitting(true);
     
     try {
-      await superAdminService.updateUserDetails(userId, formData);
+      const computedFullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+      await superAdminService.updateUserDetails(userId, {
+        ...formData,
+        fullName: computedFullName || formData.firstName.trim()
+      });
       setIsSubmitting(false);
       setIsSuccess(true);
+      toast.success("User updated successfully!");
       setTimeout(() => {
         router.push("/super-admin/users");
       }, 1500);
-    } catch (error) {
-      toast.error("Failed to update user");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to update user";
+      toast.error(msg);
       setIsSubmitting(false);
     }
   };
