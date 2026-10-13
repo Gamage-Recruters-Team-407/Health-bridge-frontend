@@ -157,8 +157,8 @@ export default function ResultsPage() {
                 </button>
             </div>
 
-            <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl p-6 max-w-3xl space-y-4 shadow-sm">
-                <div className="grid grid-cols-3 gap-3">
+            <form onSubmit={handleSave} className="bg-white border border-slate-200 rounded-xl p-6 w-full space-y-4 shadow-sm">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     <input placeholder="Test Order ID" value={form.testOrderId} required
                            onChange={(e) => setForm({ ...form, testOrderId: e.target.value })} className={inputClass} />
                     <input placeholder="Sample ID" value={form.sampleId} required
@@ -197,7 +197,7 @@ export default function ResultsPage() {
                     <h3 className="text-sm font-semibold text-slate-700 mb-2">Parameters</h3>
                     <div className="space-y-2">
                         {parameters.map((p, i) => (
-                            <div key={i} className="grid grid-cols-5 gap-2 items-center">
+                            <div key={i} className="grid grid-cols-1 md:grid-cols-5 gap-3 items-center">
                                 <input placeholder="Name" value={p.parameterName}
                                        onChange={(e) => updateParam(i, "parameterName", e.target.value)} className={inputClass} />
                                 <input placeholder="Value" value={p.value}

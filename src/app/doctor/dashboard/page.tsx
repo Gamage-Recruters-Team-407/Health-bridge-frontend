@@ -2,13 +2,13 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { CalendarDays, CircleDollarSign, Stethoscope, UserRound, UsersRound, PlaneTakeoff, ArrowRight, Video } from "lucide-react";
 import DoctorStatsCard from "@/features/doctor/components/DoctorStatsCard";
 import PageHeader from "@/features/doctor/components/PageHeader";
 import StatusBadge from "@/features/doctor/components/StatusBadge";
-import { getDoctorProfile, getEarnings } from "@/features/doctor/services/doctorService";
-import type { Doctor, Earnings } from "@/features/doctor/types";
+import { getDoctorProfile, getEarnings, getLeaves } from "@/features/doctor/services/doctorService";
+import type { Doctor, DoctorLeave, Earnings } from "@/features/doctor/types";
 import { appointmentService } from "@/services/appointmentService";
 import type { DoctorSession } from "@/types/appointment";
 
@@ -17,8 +17,7 @@ export default function DoctorDashboardPage() {
   const [earnings, setEarnings] = useState<Earnings | null>(null);
   const [sessions, setSessions] = useState<DoctorSession[]>([]);
   const [sessionsLoading, setSessionsLoading] = useState(true);
-  const [todayAppointmentsCount, setTodayAppointmentsCount] = useState<number>(0);
-  const [remainingSlotsCount, setRemainingSlotsCount] = useState<number>(0);
+  const [leaves, setLeaves] = useState<DoctorLeave[]>([]);
 
   useEffect(() => {
     let active = true;
@@ -53,21 +52,11 @@ export default function DoctorDashboardPage() {
       .getMySessions()
       .then((data) => {
         if (!active) return;
-        const list = data || [];
-        setSessions(list);
-        
-        const today = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
-        const todaysSessions = list.filter(s => s.sessionDate === today && !["CANCELLED", "HOLIDAY"].includes(s.status));
-        const booked = todaysSessions.reduce((acc, s) => acc + (s.activeAppointments || 0), 0);
-        const remaining = todaysSessions.reduce((acc, s) => acc + (s.remainingAppointments || 0), 0);
-        setTodayAppointmentsCount(booked);
-        setRemainingSlotsCount(remaining);
+        setSessions(data || []);
       })
       .catch(() => {
         if (active) {
           setSessions([]);
-          setTodayAppointmentsCount(0);
-          setRemainingSlotsCount(0);
         }
       })
       .finally(() => {
@@ -82,10 +71,58 @@ export default function DoctorDashboardPage() {
       })
       .catch(() => {});
 
+    getLeaves()
+      .then((data) => {
+        if (active) setLeaves(data || []);
+      })
+      .catch(() => {});
+
     return () => {
       active = false;
     };
   }, []);
+
+  const todayDateStr = useMemo(() => {
+    return new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Colombo", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  }, []);
+
+  const todaysSessions = useMemo(() => {
+    return sessions.filter((s) => s.sessionDate === todayDateStr && !["CANCELLED", "HOLIDAY"].includes(s.status));
+  }, [sessions, todayDateStr]);
+
+  const upcomingSessions = useMemo(() => {
+    return sessions.filter((s) => s.sessionDate >= todayDateStr && !["CANCELLED", "HOLIDAY"].includes(s.status));
+  }, [sessions, todayDateStr]);
+
+  const totalBookedAppointments = useMemo(() => {
+    return sessions.reduce((acc, s) => acc + (s.activeAppointments || 0), 0);
+  }, [sessions]);
+
+  const bookedToday = useMemo(() => {
+    return todaysSessions.reduce((acc, s) => acc + (s.activeAppointments || 0), 0);
+  }, [todaysSessions]);
+
+  const remainingToday = useMemo(() => {
+    return todaysSessions.reduce((acc, s) => acc + (s.remainingAppointments || 0), 0);
+  }, [todaysSessions]);
+
+  const appointmentCount = totalBookedAppointments > 0 
+    ? totalBookedAppointments 
+    : (earnings ? earnings.todayAppointments : bookedToday);
+
+  const appointmentDetail = bookedToday > 0
+    ? `${bookedToday} scheduled today · ${totalBookedAppointments} total booked`
+    : totalBookedAppointments > 0
+      ? `0 scheduled today · ${totalBookedAppointments} total booked`
+      : (todaysSessions.length === 0 ? "No sessions scheduled today" : `${remainingToday} slots remaining today`);
+
+  const totalLeaves = leaves.length;
+  const pendingLeaves = leaves.filter((l) => l.status?.toLowerCase() === "pending").length;
+  const leaveDetail = totalLeaves === 0
+    ? "No active leave requests"
+    : pendingLeaves > 0
+      ? `${pendingLeaves} pending approval`
+      : `${totalLeaves} approved`;
 
   const todayStr = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   const doctorName = doctor?.fullName || "Doctor";
@@ -99,9 +136,9 @@ export default function DoctorDashboardPage() {
       />
       <section className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <DoctorStatsCard 
-          label="Today's appointments" 
-          value={earnings ? String(earnings.todayAppointments) : String(todayAppointmentsCount)}
-          detail={remainingSlotsCount > 0 ? `${remainingSlotsCount} slots remaining` : "No active slots remaining"} 
+          label="Appointments" 
+          value={String(appointmentCount)}
+          detail={appointmentDetail} 
           icon={UsersRound} 
         />
         <DoctorStatsCard 
@@ -112,10 +149,10 @@ export default function DoctorDashboardPage() {
           tone="amber" 
         />
         <DoctorStatsCard 
-          label="Patient rating" 
-          value={doctor?.rating ? `${doctor.rating} / 5` : "5.0 / 5"} 
-          detail="From verified patient reviews" 
-          icon={Stethoscope} 
+          label="Leave count" 
+          value={String(totalLeaves)} 
+          detail={leaveDetail} 
+          icon={PlaneTakeoff} 
           tone="rose" 
         />
       </section>
@@ -134,12 +171,12 @@ export default function DoctorDashboardPage() {
           <div className="divide-y divide-slate-100">
             {sessionsLoading ? (
               <div className="p-6 text-center text-sm text-slate-500">Loading schedule...</div>
-            ) : sessions.length === 0 ? (
+            ) : upcomingSessions.length === 0 ? (
               <div className="p-8 text-center text-sm text-slate-500">
                 No upcoming sessions created yet.
               </div>
             ) : (
-              sessions.map((slot) => {
+              upcomingSessions.map((slot) => {
                 const dateObj = new Date(`${slot.sessionDate}T00:00:00`);
                 const isValidDate = !isNaN(dateObj.getTime());
                 return (
