@@ -27,7 +27,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  MoreHorizontal
+  MoreHorizontal,
+  Search
 } from "lucide-react";
 
 
@@ -38,6 +39,7 @@ export default function AuditLogsPage() {
   const [isDownloading, setIsDownloading] = useState(false);
 
   // Pagination & Filtering state
+  const [searchQuery, setSearchQuery] = useState("");
   const [filterDate, setFilterDate] = useState("");
   const [filterModule, setFilterModule] = useState("All Modules");
   const [filterRole, setFilterRole] = useState("All Roles");
@@ -78,55 +80,66 @@ export default function AuditLogsPage() {
     }
   };
   const renderStatusBadge = (status: string) => {
-    if (status === "Success") {
+    if (status?.toLowerCase() === "success") {
       return (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-cyan-100 text-cyan-600 text-[10px] font-bold">
-          {status}
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-600 text-[11px] font-bold">
+          Success
         </span>
       );
     }
-    if (status === "Failed") {
+    if (status?.toLowerCase() === "failed") {
       return (
-        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-red-100 text-red-600 text-[10px] font-bold">
-          {status}
+        <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-red-50 text-red-600 text-[11px] font-bold">
+          Failed
         </span>
       );
     }
-    return <span className="text-xs">{status}</span>;
+    return <span className="text-xs text-slate-600 font-medium">{status}</span>;
   };
 
   const renderSeverityBadge = (severity: string) => {
-    switch (severity) {
-      case "Normal":
-      case "Info":
+    switch (severity?.toLowerCase()) {
+      case "normal":
+      case "info":
+      case "low":
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-100 text-[#0052CC] text-[10px] font-bold">
-            {severity}
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-[11px] font-bold">
+            Normal
           </span>
         );
-      case "Medium":
+      case "medium":
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full bg-orange-100 text-[#C2410C] text-[10px] font-bold">
-            {severity}
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-[11px] font-bold">
+            Medium
           </span>
         );
-      case "High":
+      case "high":
+      case "critical":
         return (
-          <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-700 text-white text-[10px] font-bold">
-            {severity}
+          <span className="inline-flex items-center px-2.5 py-1 rounded-full bg-red-50 text-red-700 text-[11px] font-bold">
+            High
           </span>
         );
       default:
-        return <span className="text-xs">{severity}</span>;
+        return <span className="text-xs text-slate-600 font-medium">{severity}</span>;
     }
   };
 
   // Filter logs
   const filteredLogs = logs.filter(log => {
-    if (filterDate && !log.timestamp.startsWith(filterDate)) return false;
+    if (searchQuery) {
+      const q = searchQuery.toLowerCase();
+      const matchUser = log.user?.toLowerCase().includes(q);
+      const matchAction = log.actionDetails?.toLowerCase().includes(q);
+      const matchEvent = log.event?.toLowerCase().includes(q);
+      const matchRef = log.refId?.toLowerCase().includes(q);
+      const matchIp = log.ipDevice?.toLowerCase().includes(q);
+      if (!matchUser && !matchAction && !matchEvent && !matchRef && !matchIp) return false;
+    }
+    if (filterDate && !log.timestamp?.startsWith(filterDate)) return false;
     if (filterModule !== "All Modules" && log.module !== filterModule) return false;
     if (filterRole !== "All Roles" && log.role !== filterRole) return false;
-    if (filterSeverity !== "All Levels" && log.severity !== filterSeverity) return false;
+    if (filterSeverity !== "All Levels" && log.severity?.toLowerCase() !== filterSeverity.toLowerCase()) return false;
     return true;
   });
 
@@ -143,6 +156,26 @@ export default function AuditLogsPage() {
     <>
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">Audit Logs</h1>
+            <p className="text-slate-500 mt-1 text-sm">
+              Comprehensive security trails, administrative activities, and system transactions across all nodes
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleDownloadReport}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={16} />
+              {isDownloading ? "Generating Report..." : "Generate Report"}
+            </button>
+          </div>
+        </div>
+
         <div className="w-full space-y-6">
 
           {/* Metrics Row (6 Cards) */}
@@ -198,18 +231,6 @@ export default function AuditLogsPage() {
 
           </div>
 
-          <div className="flex justify-end">
-            <Button 
-              variant="primary" 
-              leftIcon={<FileBarChart size={16} />} 
-              className="font-bold bg-[#0052CC] hover:bg-blue-700 px-5 rounded-lg h-11 shadow-sm disabled:opacity-50"
-              onClick={handleDownloadReport}
-              disabled={isDownloading}
-            >
-              {isDownloading ? "Generating..." : "Generate Report"}
-            </Button>
-          </div>
-
           {/* Advanced Filters */}
           <Card className="p-6 rounded-xl border border-slate-200 shadow-sm bg-white">
             <div className="flex items-center gap-2 mb-4">
@@ -217,7 +238,20 @@ export default function AuditLogsPage() {
               <h2 className="text-sm font-bold text-[#0A2540]">Advanced Filters</h2>
             </div>
             
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Search Logs</label>
+                <div className="relative">
+                  <Input 
+                    type="text" 
+                    placeholder="Search user, action, IP..."
+                    className="h-10 text-sm w-full pl-9" 
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                  />
+                  <Search size={14} className="absolute left-3 top-3 text-slate-400 pointer-events-none" />
+                </div>
+              </div>
               <div>
                 <label className="block text-[11px] font-bold text-slate-500 mb-1.5">Date Filter</label>
                 <Input 
@@ -303,38 +337,36 @@ export default function AuditLogsPage() {
                       <tr key={log.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors last:border-b-0">
                         <td className="py-4 px-4 pl-6 align-top">
                           <div className="flex flex-col">
-                            <span className="text-[11px] text-slate-700 whitespace-nowrap">{dateStr}</span>
-                            <span className="text-[11px] text-slate-500 whitespace-nowrap">{timeStr}</span>
+                            <span className="text-[12px] font-semibold text-slate-800 whitespace-nowrap">{dateStr}</span>
+                            <span className="text-[11px] text-slate-400 whitespace-nowrap">{timeStr}</span>
                           </div>
                         </td>
                         <td className="py-4 px-4 align-top">
                           <span className="text-[12px] font-bold text-[#0A2540]">{log.user}</span>
                         </td>
                         <td className="py-4 px-4 align-top">
-                          <span className="text-[12px] text-slate-600 whitespace-pre-wrap">{log.role?.replace(" ", "\n")}</span>
+                          <span className="text-[12px] font-medium text-slate-600 whitespace-nowrap">{log.role}</span>
                         </td>
                         <td className="py-4 px-4 align-top">
-                          <span className="text-[12px] font-medium text-slate-700 whitespace-pre-wrap">{log.event?.replace(/ /g, "\n")}</span>
+                          <span className="text-[12px] font-semibold text-slate-900">{log.event}</span>
                         </td>
                         <td className="py-4 px-4 align-top">
-                          <span className="text-[12px] text-slate-600 whitespace-pre-wrap">{log.module?.replace(" & ", " &\n")}</span>
+                          <span className="text-[12px] font-medium text-slate-600">{log.module}</span>
                         </td>
                         <td className="py-4 px-4 align-top">
-                          <span className="text-[12px] text-slate-700 max-w-[200px] inline-block">{log.actionDetails}</span>
+                          <span className="text-[12px] text-slate-700 max-w-[280px] inline-block leading-relaxed">{log.actionDetails}</span>
                         </td>
                         <td className="py-4 px-4 align-top">
                           {log.refId && log.refId !== "—" ? (
-                            <a href="#" className="text-[12px] font-bold text-[#0052CC] hover:underline whitespace-pre-wrap">
-                              {log.refId.replace("-", "-\n")}
-                            </a>
+                            <span className="text-[12px] font-bold font-mono text-[#0052CC]">
+                              {log.refId}
+                            </span>
                           ) : (
                             <span className="text-[12px] font-bold text-slate-400">{log.refId || "—"}</span>
                           )}
                         </td>
                         <td className="py-4 px-4 align-top">
-                          <div className="flex flex-col">
-                            <span className="text-[11px] text-slate-600">{log.ipDevice || "Unknown"}</span>
-                          </div>
+                          <span className="text-[11px] text-slate-500 font-mono">{log.ipDevice || "Unknown"}</span>
                         </td>
                         <td className="py-4 px-4 align-top">
                           {renderStatusBadge(log.status)}

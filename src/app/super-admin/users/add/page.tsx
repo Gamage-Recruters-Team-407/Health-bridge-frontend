@@ -4,24 +4,61 @@ import React, { useState } from "react";
 import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { superAdminService } from "@/services/superadmin.service";
+import toast from "react-hot-toast";
 
 export default function AddUserPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [formData, setFormData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phoneNumber: "",
+    role: "PATIENT",
+    password: ""
+  });
+  const [confirmPassword, setConfirmPassword] = useState("");
   
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!formData.password || formData.password.length < 8) {
+      toast.error("Password must be at least 8 characters long");
+      return;
+    }
+    if (formData.password !== confirmPassword) {
+      toast.error("Passwords do not match");
+      return;
+    }
+
     setIsSubmitting(true);
     
-    // Simulate API call for now (Will be wired to backend later)
-    setTimeout(() => {
+    try {
+      const computedFullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
+      await superAdminService.createUser({
+        ...formData,
+        fullName: computedFullName || formData.firstName.trim(),
+        confirmPassword
+      });
       setIsSubmitting(false);
       setIsSuccess(true);
+      toast.success("User created successfully!");
       setTimeout(() => {
         router.push("/super-admin/users");
       }, 1500);
-    }, 1000);
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to create user. Email may already exist.";
+      toast.error(msg);
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData(prev => ({
+      ...prev,
+      [e.target.name]: e.target.value
+    }));
   };
 
   if (isSuccess) {
@@ -59,13 +96,39 @@ export default function AddUserPage() {
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="md:col-span-2">
-              <label className="block text-sm font-bold text-slate-700 mb-2">Full Name <span className="text-red-500">*</span></label>
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">First Name</label>
               <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <User className="h-5 w-5 text-slate-400" />
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="w-5 h-5 text-slate-400" />
                 </div>
-                <input required type="text" className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="e.g. John Doe" />
+                <input 
+                  type="text"
+                  name="firstName"
+                  required
+                  value={formData.firstName}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition-all text-sm"
+                  placeholder="e.g. Kasuni"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-bold text-slate-700">Last Name</label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="w-5 h-5 text-slate-400" />
+                </div>
+                <input 
+                  type="text"
+                  name="lastName"
+                  required
+                  value={formData.lastName}
+                  onChange={handleChange}
+                  className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-blue-600 focus:ring-2 focus:ring-blue-600/20 outline-none transition-all text-sm"
+                  placeholder="e.g. Gamage"
+                />
               </div>
             </div>
 
@@ -75,7 +138,7 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Mail className="h-5 w-5 text-slate-400" />
                 </div>
-                <input required type="email" className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="e.g. user@healthbridge.lk" />
+                <input required type="email" name="email" value={formData.email} onChange={handleChange} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="e.g. user@healthbridge.lk" />
               </div>
             </div>
 
@@ -85,7 +148,7 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Phone className="h-5 w-5 text-slate-400" />
                 </div>
-                <input required type="tel" className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="+1 (555) 000-0000" />
+                <input required type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="+1 (555) 000-0000" />
               </div>
             </div>
 
@@ -95,7 +158,7 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <ShieldCheck className="h-5 w-5 text-slate-400" />
                 </div>
-                <select required defaultValue="" className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white appearance-none">
+                <select required name="role" value={formData.role} onChange={handleChange} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white appearance-none">
                   <option value="" disabled>Select a role...</option>
                   <option value="DOCTOR">Doctor</option>
                   <option value="PATIENT">Patient</option>
@@ -127,7 +190,16 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
                 </div>
-                <input required type="password" minLength={8} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white" placeholder="Minimum 8 characters" />
+                <input 
+                  required 
+                  type="password" 
+                  name="password"
+                  value={formData.password}
+                  onChange={handleChange}
+                  minLength={8} 
+                  className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white" 
+                  placeholder="Minimum 8 characters" 
+                />
               </div>
             </div>
 
@@ -137,7 +209,16 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
                 </div>
-                <input required type="password" minLength={8} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white" placeholder="Retype password" />
+                <input 
+                  required 
+                  type="password" 
+                  name="confirmPassword"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  minLength={8} 
+                  className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white" 
+                  placeholder="Retype password" 
+                />
               </div>
             </div>
           </div>

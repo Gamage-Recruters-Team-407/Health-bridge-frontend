@@ -4,16 +4,16 @@ import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
-import axios from "@/lib/axios";
+import { superAdminService } from "@/services/superadmin.service";
 import { toast } from "react-hot-toast";
 
-import { 
-  RotateCcw, Save, Pin, Globe, Shield, Bell, Cloud, CloudUpload, Check
+import {
+  RotateCcw, Save, Pin, Wrench, Shield, Check
 } from "lucide-react";
 
 const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange?: () => void }) => {
   return (
-    <button 
+    <button
       type="button"
       role="switch"
       aria-checked={checked}
@@ -37,17 +37,6 @@ const ToggleSwitch = ({ checked, onChange }: { checked: boolean; onChange?: () =
     </button>
   );
 };
-
-// Simple select mock
-const CustomSelect = ({ value, options, onChange }: { value: string, options: string[], onChange: (v: string) => void }) => (
-  <select 
-    value={value} 
-    onChange={(e) => onChange(e.target.value)}
-    className="h-11 w-full rounded-lg border border-slate-200 bg-white px-3 text-[13px] font-bold text-[#0A2540] shadow-sm focus:border-[#0052CC] focus:outline-none focus:ring-1 focus:ring-[#0052CC]"
-  >
-    {options.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-  </select>
-);
 
 const FormGroup = ({ label, description, children }: { label: string, description: string, children: React.ReactNode }) => (
   <div className="flex flex-col gap-1.5">
@@ -75,25 +64,15 @@ const SettingsCard = ({ icon: Icon, title, children, headerAction }: any) => (
 export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  
+
   // State for all settings
   const [settings, setSettings] = useState({
-    system_name: "Health Bridge AI Healthcare System",
+    system_name: "Health Bridge System",
     system_email: "admin@healthbridge.com",
-    time_zone: "(UTC+5:30) Asia/Colombo",
-    date_format: "DD/MM/YYYY",
-    time_format: "24-Hour",
-    language: "English",
-    currency: "USD",
+    maintenance_mode: false,
+    system_announcement: "Scheduled system maintenance tonight at 11:00 PM EST",
     tfa: false,
-    session_timeout: "30",
-    password_expiry: "90",
-    max_login_attempts: "5",
-    email_alerts: true,
-    sms_alerts: true,
-    push_alerts: true,
-    appointment_reminders: true,
-    prescription_refills: true
+    session_timeout: "30"
   });
 
   useEffect(() => {
@@ -103,16 +82,19 @@ export default function SettingsPage() {
   const fetchSettings = async () => {
     try {
       setLoading(true);
-      const res = await axios.get('/api/admin/system-settings');
-      
+      const data = await superAdminService.getSystemSettings();
+
       const newSettings = { ...settings };
-      res.data.forEach((setting: any) => {
-        const val = setting.settingValue;
-        if (val === 'true') newSettings[setting.settingKey as keyof typeof settings] = true as never;
-        else if (val === 'false') newSettings[setting.settingKey as keyof typeof settings] = false as never;
-        else newSettings[setting.settingKey as keyof typeof settings] = val as never;
+      data.forEach((setting) => {
+        const key = setting.settingKey as keyof typeof settings;
+        if (key in newSettings) {
+          const val = setting.settingValue;
+          if (val === 'true') newSettings[key] = true as never;
+          else if (val === 'false') newSettings[key] = false as never;
+          else newSettings[key] = val as never;
+        }
       });
-      
+
       setSettings(newSettings);
     } catch (error) {
       console.error("Failed to fetch settings", error);
@@ -124,23 +106,16 @@ export default function SettingsPage() {
   const handleSave = async () => {
     try {
       setSaving(true);
-      // Save each setting (In a real app you might want a batch update endpoint, but this works with your current backend)
       const promises = Object.entries(settings).map(([key, value]) => {
-        return axios.put(`/api/admin/system-settings/${key}`, {
+        return superAdminService.updateSystemSetting(key, {
           settingKey: key,
           settingValue: value.toString(),
-          category: "General", 
-          description: "Updated from frontend"
-        }).catch(err => {
-          // If it doesn't exist, POST it instead
-          if (err.response?.status === 404) {
-             return axios.post(`/api/admin/system-settings`, {
-                settingKey: key,
-                settingValue: value.toString(),
-                category: "General",
-                description: "Created from frontend"
-             });
-          }
+          category: key.includes("maintenance") || key.includes("announcement") 
+            ? "Maintenance" 
+            : key === "tfa" || key === "session_timeout" 
+            ? "Security" 
+            : "General",
+          description: key.replace(/_/g, " ")
         });
       });
 
@@ -157,9 +132,9 @@ export default function SettingsPage() {
   const handleReset = async () => {
     if (!confirm("Are you sure you want to reset all settings to their defaults?")) return;
     try {
-      await axios.post('/api/admin/system-settings/reset');
+      await superAdminService.resetSystemSettings();
       toast.success("Settings reset to defaults!");
-      fetchSettings(); // Refresh
+      fetchSettings();
     } catch (error) {
       toast.error("Failed to reset settings");
     }
@@ -182,7 +157,7 @@ export default function SettingsPage() {
           <Button onClick={handleReset} variant="outline" leftIcon={<RotateCcw size={14} />} className="font-bold text-[#0A2540] border-slate-200 bg-white">
             Reset to Default
           </Button>
-          <Button onClick={handleSave} disabled={saving} variant="primary" leftIcon={<Save size={14} />} className="font-bold bg-[#16A34A] text-white">
+          <Button onClick={handleSave} disabled={saving} variant="primary" leftIcon={<Save size={14} />} className="font-bold bg-[#0052CC] hover:bg-blue-700 text-white shadow-sm">
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
         </div>
@@ -199,17 +174,25 @@ export default function SettingsPage() {
         </div>
       </SettingsCard>
 
-      <SettingsCard icon={Globe} title="Regional Settings">
+      <SettingsCard icon={Wrench} title="System Status & Maintenance">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-          <FormGroup label="Time Zone" description="System-wide default time zone">
-            <CustomSelect value={settings.time_zone} onChange={(v) => handleChange('time_zone', v)} options={["(UTC+5:30) Asia/Colombo", "(UTC+0:00) London"]} />
-          </FormGroup>
-          <FormGroup label="Language" description="Preferred language for the system interface">
-            <CustomSelect value={settings.language} onChange={(v) => handleChange('language', v)} options={["English", "Sinhala", "Tamil", "French"]} />
+          <div className="flex flex-col gap-1.5">
+            <div className="flex items-center justify-between h-11">
+              <label className="text-[12px] font-bold text-[#0A2540]">Maintenance Mode</label>
+              <ToggleSwitch checked={settings.maintenance_mode} onChange={() => handleChange('maintenance_mode', !settings.maintenance_mode)} />
+            </div>
+            <p className="text-[11px] font-medium text-slate-500 mt-0.5">Restrict system access to Super Admins only</p>
+          </div>
+          <FormGroup label="System Announcement Banner" description="Show a global alert bar at the top of all dashboards">
+            <Input 
+              value={settings.system_announcement} 
+              onChange={(e) => handleChange('system_announcement', e.target.value)} 
+              placeholder="Scheduled system maintenance tonight at 11:00 PM EST" 
+            />
           </FormGroup>
         </div>
       </SettingsCard>
-      
+
       <SettingsCard icon={Shield} title="Security Settings">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
           <div className="flex flex-col gap-1.5">
