@@ -3,7 +3,7 @@
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
 import { Search, RefreshCw } from "lucide-react";
-import { Sidebar } from "@/components/ui/Sidebar"; // ඔබේ Sidebar component එක පිහිටි path එක
+import { Sidebar } from "@/components/ui/Sidebar";
 import { usePharmacyId } from "@/hooks/usePharmacyId";
 import { getInventoryByPharmacy, getAllMedicines, updateStock } from "@/services/pharmacyService";
 import type { InventoryItem, Medicine } from "@/types/pharmacy";
@@ -291,16 +291,9 @@ export default function ExpiryManagementPage() {
                                 type="button"
                                 onClick={() => void handleRefresh()}
                                 disabled={loading}
-                                className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition"
+                                className="flex items-center gap-1.5 px-3.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm disabled:opacity-50 transition cursor-pointer"
                             >
                                 <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} /> Refresh
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setSearch("")}
-                                className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-semibold hover:bg-blue-700 shadow-sm transition"
-                            >
-                                Review Queue
                             </button>
                         </div>
                     </div>
@@ -317,8 +310,8 @@ export default function ExpiryManagementPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expiring in 30 Days</span>
                                 <span className="text-[10px] font-medium text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/50">
-                  Immediate Action
-                </span>
+                                    Immediate Action
+                                </span>
                             </div>
                             <div className="text-3xl font-bold text-slate-900 mt-3">{loading ? "…" : metrics.expiringIn30}</div>
                         </div>
@@ -327,8 +320,8 @@ export default function ExpiryManagementPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expiring in 60 Days</span>
                                 <span className="text-[10px] font-medium text-amber-600 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200/50">
-                  Attention
-                </span>
+                                    Attention
+                                </span>
                             </div>
                             <div className="text-3xl font-bold text-slate-900 mt-3">{loading ? "…" : metrics.expiringIn60}</div>
                         </div>
@@ -337,8 +330,8 @@ export default function ExpiryManagementPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Expired Medicines</span>
                                 <span className="text-[10px] font-medium text-rose-700 bg-rose-100 px-2 py-0.5 rounded-full">
-                  Quarantined
-                </span>
+                                    Quarantined
+                                </span>
                             </div>
                             <div className="text-3xl font-bold text-slate-900 mt-3">{loading ? "…" : metrics.expired}</div>
                         </div>
@@ -347,8 +340,8 @@ export default function ExpiryManagementPage() {
                             <div className="flex items-center justify-between">
                                 <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Stock Value at Risk</span>
                                 <span className="text-[10px] font-medium text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                  Estimated
-                </span>
+                                    Estimated
+                                </span>
                             </div>
                             <div className="text-3xl font-bold text-slate-900 mt-3">
                                 LKR {loading ? "…" : metrics.valueAtRisk.toLocaleString()}
@@ -437,19 +430,19 @@ export default function ExpiryManagementPage() {
                                                         {item.daysLeft <= 0 ? "Expired" : `${item.daysLeft}d`}
                                                     </td>
                                                     <td className="px-5 py-4 text-center">
-                              <span
-                                  className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
-                                      item.status === "Critical"
-                                          ? "bg-rose-50 text-rose-700 border border-rose-200/50"
-                                          : item.status === "Warning"
-                                              ? "bg-amber-50 text-amber-700 border border-amber-200/50"
-                                              : item.status === "Expired"
-                                                  ? "bg-rose-100 text-rose-800"
-                                                  : "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
-                                  }`}
-                              >
-                                {item.status}
-                              </span>
+                                                        <span
+                                                            className={`inline-flex rounded-full px-2.5 py-0.5 text-[10px] font-semibold ${
+                                                                item.status === "Critical"
+                                                                    ? "bg-rose-50 text-rose-700 border border-rose-200/50"
+                                                                    : item.status === "Warning"
+                                                                        ? "bg-amber-50 text-amber-700 border border-amber-200/50"
+                                                                        : item.status === "Expired"
+                                                                            ? "bg-rose-100 text-rose-800"
+                                                                            : "bg-emerald-50 text-emerald-700 border border-emerald-200/50"
+                                                            }`}
+                                                        >
+                                                            {item.status}
+                                                        </span>
                                                     </td>
                                                     <td className="px-5 py-4 text-right">
                                                         <button
@@ -458,7 +451,7 @@ export default function ExpiryManagementPage() {
                                                                 e.stopPropagation();
                                                                 setSelectedItem(item);
                                                             }}
-                                                            className="text-xs font-semibold text-blue-600 hover:text-blue-800"
+                                                            className="text-xs font-semibold text-blue-600 hover:text-blue-800 cursor-pointer"
                                                         >
                                                             Inspect
                                                         </button>
@@ -499,8 +492,8 @@ export default function ExpiryManagementPage() {
                                             Selected Batch Inspection
                                         </h3>
                                         <span className="text-[10px] font-bold text-rose-600 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200/50">
-                      {selectedItem.status}
-                    </span>
+                                            {selectedItem.status}
+                                        </span>
                                     </div>
 
                                     <div className="text-xs space-y-1">
@@ -518,7 +511,7 @@ export default function ExpiryManagementPage() {
                                             type="button"
                                             disabled={actionLoading}
                                             onClick={() => alert(`Return process initiated for Batch ${selectedItem.batchNumber}`)}
-                                            className="w-full py-2.5 px-3 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition"
+                                            className="w-full py-2.5 px-3 border border-slate-200 bg-white rounded-xl text-xs font-medium text-slate-700 hover:bg-slate-50 shadow-sm transition cursor-pointer"
                                         >
                                             Return to Supplier
                                         </button>
@@ -526,7 +519,7 @@ export default function ExpiryManagementPage() {
                                             type="button"
                                             disabled={actionLoading}
                                             onClick={() => void handleQuarantineDispose()}
-                                            className="w-full py-2.5 px-3 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-sm transition disabled:opacity-50"
+                                            className="w-full py-2.5 px-3 bg-red-600 text-white rounded-xl text-xs font-bold hover:bg-red-700 shadow-sm transition disabled:opacity-50 cursor-pointer"
                                         >
                                             {actionLoading ? "Processing..." : "Quarantine / Dispose"}
                                         </button>

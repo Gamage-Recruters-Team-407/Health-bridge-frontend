@@ -28,7 +28,7 @@ function mapDashboard(response: AnalyticsDashboardResponseDto): AnalyticsDashboa
     revenue: response.revenueTrend.map(({ month, revenue }) => ({ month, revenue: revenue / 1_000_000 })),
     resources: response.resourceUtilization,
     departmentPerformance: response.departmentPerformance,
-    operationalSummary: response.operationalSummary.map((row) => ({ ...row, revenue: row.revenue / 1_000_000 })),
+    operationalSummary: response.operationalSummary.map((row) => ({ ...row, revenue: row.revenue === null ? null : row.revenue / 1_000_000 })),
   };
 }
 

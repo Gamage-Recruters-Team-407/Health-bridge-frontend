@@ -40,6 +40,19 @@ beforeEach(() => {
 });
 
 describe("shared API integration contracts", () => {
+  it("sends a cookie-backed session token when local storage is empty", () => {
+    vi.stubGlobal("window", {});
+    vi.stubGlobal("localStorage", { getItem: vi.fn(() => null) });
+    vi.stubGlobal("document", { cookie: "healthbridge_token=cookie-session" });
+    try {
+      const requestInterceptor = mocks.requestUse.mock.calls[0][0];
+      const config = requestInterceptor({ headers: {}, method: "get", url: "/doctors/me" });
+      expect(config.headers.Authorization).toBe("Bearer cookie-session");
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("configures request and response interceptors", () => {
     expect(mocks.requestUse).toHaveBeenCalledOnce();
     expect(mocks.responseUse).toHaveBeenCalledOnce();

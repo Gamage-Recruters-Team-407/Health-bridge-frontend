@@ -1,11 +1,8 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse } from "axios";
-import { clearAuthData } from "@/lib/auth";
-
-const TOKEN_KEY = "healthbridge_token";
-const USER_KEY = "healthbridge_user";
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+import { clearAuthData, getToken } from "@/lib/auth";
+const API_BASE_URL = typeof window !== 'undefined' ? '/api' : (process.env.NEXT_PUBLIC_API_BASE_URL
     || process.env.NEXT_PUBLIC_API_URL
-    || 'http://localhost:8088/api';
+    || 'http://127.0.0.1:8088/api');
 
 export function isMissingDoctorSessionsEndpoint(error: unknown): boolean {
     return axios.isAxiosError(error)
@@ -70,9 +67,7 @@ class ApiClient {
         // ============================================================
         this.client.interceptors.request.use(
             (config) => {
-                const token = typeof window !== 'undefined'
-                    ? localStorage.getItem(TOKEN_KEY)
-                    : null;
+                const token = getToken();
 
                 if (token) {
                     config.headers.Authorization = `Bearer ${token}`;
@@ -178,6 +173,10 @@ class ApiClient {
                 // ============================================================
                 // 403 - Forbidden
                 // ============================================================
+                else if (status === 503) {
+                    console.warn(`Service unavailable: ${method} ${url}. ${getApiErrorMessage(error, "Please try again shortly.")}`);
+                }
+
                 else if (status === 403) {
                     console.error(`🚫 403 Forbidden: ${method} ${url}`);
                 }

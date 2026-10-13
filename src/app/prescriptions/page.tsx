@@ -97,7 +97,7 @@ export default function PrescriptionsPage() {
 
   if (loading) {
     return (
-      <div className="flex min-h-64 items-center justify-center">
+      <div className="flex min-h-64 items-center justify-center" role="status" aria-live="polite">
         <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
       </div>
     );
@@ -115,7 +115,7 @@ export default function PrescriptionsPage() {
         {user?.role === "DOCTOR" && (
           <Link
             href="/prescriptions/create"
-            className="inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
+            className="inline-flex cursor-pointer items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-300 focus-visible:ring-offset-2"
           >
             <Plus className="h-4 w-4" /> Create Prescription
           </Link>
@@ -124,20 +124,22 @@ export default function PrescriptionsPage() {
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative max-w-md flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
           <input
             type="text"
             placeholder="Search by patient, doctor, or Rx number..."
+            aria-label="Search prescriptions"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+            className="w-full cursor-text rounded-xl border border-slate-200 bg-white py-2.5 pl-10 pr-9 text-sm outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
           />
           {search && (
             <button
               type="button"
               onClick={() => setSearch("")}
-              className="absolute right-3 top-1/2 -translate-y-1/2 rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600"
+              className="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer rounded-full p-0.5 text-slate-400 transition hover:bg-slate-100 hover:text-slate-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
               aria-label="Clear search"
+              title="Clear search"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -161,43 +163,57 @@ export default function PrescriptionsPage() {
                 ? "You don't have any prescriptions yet."
                 : "No prescriptions in the system."}
             </p>
+            {search && (
+              <button
+                type="button"
+                onClick={() => setSearch("")}
+                className="mt-4 cursor-pointer rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold
+                 text-slate-700 transition hover:bg-slate-50 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300"
+              >
+                Clear search
+              </button>
+            )}
           </div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="bg-slate-50 text-slate-600">
                 <tr>
-                  <th className="px-6 py-4 font-semibold">Rx Number</th>
-                  <th className="px-6 py-4 font-semibold">Patient</th>
-                  <th className="px-6 py-4 font-semibold">Doctor</th>
-                  <th className="px-6 py-4 font-semibold">Date Issued</th>
-                  <th className="px-6 py-4 font-semibold">Valid Until</th>
-                  <th className="px-6 py-4 font-semibold text-right">Actions</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Rx Number</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Patient</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Doctor</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Date Issued</th>
+                  <th className="px-6 py-4 font-semibold whitespace-nowrap">Valid Until</th>
+                  <th className="px-6 py-4 font-semibold text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
                 {currentItems.map((p) => (
                   <tr key={p.id} className="transition hover:bg-slate-50/80">
-                    <td className="px-6 py-4 font-medium text-slate-900">{p.prescriptionNumber}</td>
+                    <td className="px-6 py-4 font-medium text-slate-900 whitespace-nowrap">{p.prescriptionNumber}</td>
                     <td className="px-6 py-4 text-slate-600">{p.patientName}</td>
                     <td className="px-6 py-4 text-slate-600">{p.doctorName || "-"}</td>
-                    <td className="px-6 py-4 text-slate-500">{new Date(p.createdAt).toLocaleDateString()}</td>
-                    <td className="px-6 py-4 text-slate-500">
+                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">{new Date(p.createdAt).toLocaleDateString()}</td>
+                    <td className="px-6 py-4 text-slate-500 whitespace-nowrap">
                       {p.validUntil ? new Date(p.validUntil).toLocaleDateString() : "-"}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
                         <Link
                           href={`/prescriptions/${p.id}`}
-                          className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-blue-50 hover:text-blue-600"
+                          className="cursor-pointer rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-blue-50
+                           hover:text-blue-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200"
                           title="View"
+                          aria-label={`View prescription ${p.prescriptionNumber}`}
                         >
                           <Eye className="h-4 w-4" />
                         </Link>
                         <Link
                           href={`/prescriptions/${p.id}/download`}
-                          className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-emerald-50 hover:text-emerald-600"
+                          className="cursor-pointer rounded-lg border border-slate-200 p-2 text-slate-600 transition
+                           hover:bg-emerald-50 hover:text-emerald-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-200"
                           title="Download"
+                          aria-label={`Download prescription ${p.prescriptionNumber}`}
                         >
                           <Download className="h-4 w-4" />
                         </Link>
@@ -205,16 +221,20 @@ export default function PrescriptionsPage() {
                           <>
                             <Link
                               href={`/prescriptions/${p.id}/edit`}
-                              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-amber-50 hover:text-amber-600"
+                              className="cursor-pointer rounded-lg border border-slate-200 p-2 text-slate-600 transition
+                               hover:bg-amber-50 hover:text-amber-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-200"
                               title="Edit"
+                              aria-label={`Edit prescription ${p.prescriptionNumber}`}
                             >
                               <Pencil className="h-4 w-4" />
                             </Link>
                             <button
                               onClick={() => setConfirmDeleteId(p.id)}
                               disabled={deletingId === p.id}
-                              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-rose-50 hover:text-rose-600 disabled:opacity-50 cursor-pointer"
+                              className="rounded-lg border border-slate-200 p-2 text-slate-600 transition hover:bg-rose-50
+                               hover:text-rose-600 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200 disabled:cursor-not-allowed disabled:opacity-50 cursor-pointer"
                               title="Delete"
+                              aria-label={`Delete prescription ${p.prescriptionNumber}`}
                             >
                               {deletingId === p.id ? (
                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -242,14 +262,20 @@ export default function PrescriptionsPage() {
               <button
                 onClick={() => setCurrentPage((p) => p - 1)}
                 disabled={currentPage === 1}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50 disabled:opacity-50"
+                aria-label="Previous page"
+                title="Previous page"
+                className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold transition
+                 hover:bg-slate-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronLeft className="h-4 w-4" />
               </button>
               <button
                 onClick={() => setCurrentPage((p) => p + 1)}
                 disabled={currentPage === totalPages}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold transition hover:bg-slate-50 disabled:opacity-50"
+                aria-label="Next page"
+                title="Next page"
+                className="cursor-pointer rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold transition
+                 hover:bg-slate-50 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-300 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <ChevronRight className="h-4 w-4" />
               </button>
