@@ -187,15 +187,14 @@ const getNavGroups = (role: string): NavGroup[] => {
           { title: "Order Management", href: "/pharmacy/orders", icon: ClipboardList },
           { title: "Medicine Inventory", href: "/pharmacy/inventory", icon: Pill },
           { title: "Add/ Edit Medicine", href: "/pharmacy/medicines/new", icon: Plus },
-          { title: "Low Stock Alerts", href: "/pharmacy/inventory/low-stock", icon: AlertTriangle },
-          { title: "Expiry Management", href: "/pharmacy/inventory/expiry", icon: CalendarClock },
+          { title: "Low Stock Alerts", href: "/pharmacy/low-stock", icon: AlertTriangle },
+          { title: "Expiry Management", href: "/pharmacy/expiry", icon: CalendarClock },
           { title: "Deliveries", href: "/pharmacy/deliveries", icon: Truck },
           { title: "Reports", href: "/pharmacy/reports", icon: FileSpreadsheet },
         ],
       },
     ];
   }
-
   // Lab Officer
   if (roleUpper === "LAB_OFFICER") {
     return [
