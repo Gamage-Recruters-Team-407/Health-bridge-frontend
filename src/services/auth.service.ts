@@ -46,17 +46,21 @@ export interface AuthResponseData {
 export const authService = {
   async register(payload: RegisterPayload): Promise<AuthResponseData> {
     const response = await apiClient.post<AuthResponseData>("/auth/register", payload);
+    const resolvedEmail = (response.email || payload.email).trim().toLowerCase();
     
     if (response.token) {
       saveAuthData(response.token, {
         id: response.id,
         fullName: response.fullName,
-        email: response.email,
+        email: resolvedEmail,
         role: response.role,
       });
     }
     
-    return response;
+    return {
+      ...response,
+      email: resolvedEmail,
+    };
   },
 
   async login(payload: LoginPayload): Promise<AuthResponseData> {
