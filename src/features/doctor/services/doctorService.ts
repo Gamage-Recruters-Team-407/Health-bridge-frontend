@@ -284,7 +284,7 @@ export async function getLeaves(): Promise<DoctorLeave[]> {
     const defaultLeaves: DoctorLeave[] = [
       {
         id: "6ac55691c74af305d6ce0abb",
-        leaveType: "Sick Leave",
+        leaveType: "Sick  ",
         startDate: "2026-10-07",
         endDate: "2026-10-08",
         reason: "fever",
