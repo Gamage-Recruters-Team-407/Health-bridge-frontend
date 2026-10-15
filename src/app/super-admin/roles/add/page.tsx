@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
 import { 
-  ArrowLeft, Shield, Save, ShieldAlert, Check
+  ArrowLeft, Shield, Save, ShieldAlert, Check, AlertCircle
 } from "lucide-react";
 import { superAdminService } from "@/services/superadmin.service";
 import toast from "react-hot-toast";
@@ -47,6 +47,7 @@ const FormGroup = ({ label, required, children }: { label: string, required?: bo
 export default function AddRolePage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   
   const [roleData, setRoleData] = useState({
     name: "",
@@ -64,6 +65,7 @@ export default function AddRolePage() {
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!roleData.name) {
       toast.error("Role Name is required");
       return;
@@ -95,9 +97,10 @@ export default function AddRolePage() {
       
       toast.success("Role created successfully!");
       router.push("/super-admin/roles");
-    } catch (error) {
-      console.error(error);
-      toast.error("Failed to create role");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to create role. Role name may already exist.";
+      setErrorMessage(msg);
+      toast.error(msg);
     } finally {
       setSaving(false);
     }
@@ -154,6 +157,17 @@ export default function AddRolePage() {
           </Button>
         </div>
       </div>
+
+      {/* Inline Error Banner */}
+      {errorMessage && (
+        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+          <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <p className="font-semibold text-red-800">Unable to create role</p>
+            <p className="text-red-600 text-xs mt-0.5">{errorMessage}</p>
+          </div>
+        </div>
+      )}
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
         

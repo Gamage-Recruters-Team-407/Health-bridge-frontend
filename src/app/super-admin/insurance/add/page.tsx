@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Building2, ShieldCheck, User, ArrowLeft, Globe, FileText, CheckCircle2 } from "lucide-react";
+import { Building2, ShieldCheck, User, ArrowLeft, Globe, FileText, CheckCircle2, Save, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { superAdminService } from "@/services/superadmin.service";
@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 export default function AddInsuranceProviderPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     licenseNo: "",
@@ -21,6 +22,7 @@ export default function AddInsuranceProviderPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     setIsSubmitting(true);
 
     try {
@@ -38,16 +40,18 @@ export default function AddInsuranceProviderPage() {
       };
 
       await superAdminService.createInsuranceProvider(payload);
-      toast.success("Insurance provider added successfully!");
+      toast.success("Insurance provider saved successfully!");
       router.push("/super-admin/insurance");
-    } catch (error) {
-      console.error("Failed to add provider", error);
-      toast.error("Failed to add insurance provider");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to save insurance provider. License number or company name may already exist.";
+      setErrorMessage(msg);
+      toast.error(msg);
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (errorMessage) setErrorMessage(null);
     setFormData((prev) => ({
       ...prev,
       [e.target.name]: e.target.value,
@@ -74,6 +78,18 @@ export default function AddInsuranceProviderPage() {
 
       <div className="w-full">
         <form onSubmit={handleSubmit} className="space-y-8">
+
+          {/* Inline Error Banner */}
+          {errorMessage && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-red-800">Unable to save insurance provider</p>
+                <p className="text-red-600 text-xs mt-0.5">{errorMessage}</p>
+              </div>
+            </div>
+          )}
+
           {/* Section 1: Company Information */}
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -88,7 +104,7 @@ export default function AddInsuranceProviderPage() {
                 <label className="text-sm font-bold text-slate-700">Company Name *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Building2 size={16} className="text-slate-400" />
+                    <Building2 size={16} className={errorMessage?.toLowerCase().includes("name") ? "text-red-500" : "text-slate-400"} />
                   </div>
                   <input
                     type="text"
@@ -96,7 +112,11 @@ export default function AddInsuranceProviderPage() {
                     required
                     value={formData.name}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20 outline-none transition-all text-sm"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none transition-all text-sm ${
+                      errorMessage?.toLowerCase().includes("name")
+                        ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-red-50/20 text-red-900"
+                        : "border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20"
+                    }`}
                     placeholder="e.g. Ceylinco Healthcare Insurance"
                   />
                 </div>
@@ -106,7 +126,7 @@ export default function AddInsuranceProviderPage() {
                 <label className="text-sm font-bold text-slate-700">License Number *</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <FileText size={16} className="text-slate-400" />
+                    <FileText size={16} className={errorMessage?.toLowerCase().includes("license") ? "text-red-500" : "text-slate-400"} />
                   </div>
                   <input
                     type="text"
@@ -114,10 +134,17 @@ export default function AddInsuranceProviderPage() {
                     required
                     value={formData.licenseNo}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20 outline-none transition-all text-sm"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none transition-all text-sm ${
+                      errorMessage?.toLowerCase().includes("license")
+                        ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-red-50/20 text-red-900"
+                        : "border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20"
+                    }`}
                     placeholder="e.g. LCN-2026-CH01"
                   />
                 </div>
+                {errorMessage?.toLowerCase().includes("license") && (
+                  <p className="text-xs text-red-600 font-medium mt-1">{errorMessage}</p>
+                )}
               </div>
 
               <div className="space-y-2">
@@ -220,12 +247,12 @@ export default function AddInsuranceProviderPage() {
               {isSubmitting ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                  <span>Adding Provider...</span>
+                  <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={16} />
-                  <span>Add Provider</span>
+                  <Save size={16} />
+                  <span>Save Provider</span>
                 </>
               )}
             </button>

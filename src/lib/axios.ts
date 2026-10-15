@@ -199,6 +199,16 @@ class ApiClient {
                 }
 
                 // ============================================================
+                // 400 / 409 - Validation & Conflict Errors (handled gracefully by page UI)
+                // ============================================================
+                else if (status === 400 || status === 409) {
+                    console.warn(`⚠️ Validation Warning (${status}): ${method} ${url}`);
+                    if (error.response?.data?.message) {
+                        console.warn('   Details:', error.response?.data?.message);
+                    }
+                }
+
+                // ============================================================
                 // Other Errors
                 // ============================================================
                 else {

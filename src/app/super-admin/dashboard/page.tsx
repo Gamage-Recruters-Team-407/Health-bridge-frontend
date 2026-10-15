@@ -29,12 +29,12 @@ import {
 } from "recharts";
 import Link from "next/link";
 import { superAdminService, SuperAdminStatsDto, SuperAdminGrowthDto } from "@/services/superadmin.service";
+import toast from "react-hot-toast";
 
 export default function AdminDashboardPage() {
   const [userName, setUserName] = useState("Super Admin");
   const [stats, setStats] = useState<SuperAdminStatsDto | null>(null);
   const [chartData, setChartData] = useState<SuperAdminGrowthDto[]>([]);
-  const [pendingCardScreen, setPendingCardScreen] = useState<0 | 1>(0);
   const [formattedDate, setFormattedDate] = useState("Loading...");
   const [formattedTime, setFormattedTime] = useState("");
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
@@ -46,7 +46,7 @@ export default function AdminDashboardPage() {
         const user = JSON.parse(userStr);
         setUserName(user.fullName || user.username || "Super Admin");
       } catch (e) {
-        console.error("Failed to parse user", e);
+        console.warn("Failed to parse user", e);
       }
     }
 
@@ -58,7 +58,7 @@ export default function AdminDashboardPage() {
         const growth = await superAdminService.getGrowthData();
         setChartData(growth);
       } catch (error) {
-        console.error("Failed to fetch super admin dashboard stats:", error);
+        console.warn("Failed to fetch super admin dashboard stats:", error);
       }
     };
 
@@ -90,8 +90,10 @@ export default function AdminDashboardPage() {
     try {
       setIsGeneratingReport(true);
       await superAdminService.downloadDashboardReport();
+      toast.success("Dashboard report downloaded successfully!");
     } catch (error) {
-      console.error("Failed to generate dashboard report:", error);
+      console.warn("Failed to generate dashboard report:", error);
+      toast.error("Failed to generate dashboard report. Please try again.");
     } finally {
       setIsGeneratingReport(false);
     }

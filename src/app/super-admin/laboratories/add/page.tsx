@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Building2, Mail, Phone, FileText, ArrowLeft, MapPin, Briefcase, User, Calendar } from "lucide-react";
+import { Building2, Mail, Phone, FileText, ArrowLeft, MapPin, Briefcase, User, Calendar, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { superAdminService } from "@/services/superadmin.service";
@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 export default function AddLaboratoryPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -23,19 +24,23 @@ export default function AddLaboratoryPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     setIsSubmitting(true);
     
     try {
       await superAdminService.createLaboratory(formData);
       toast.success("Laboratory created successfully!");
       router.push("/super-admin/laboratories");
-    } catch (error) {
-      toast.error("Failed to create laboratory");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to create laboratory. License or name may already exist.";
+      setErrorMessage(msg);
+      toast.error(msg);
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (errorMessage) setErrorMessage(null);
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
@@ -58,6 +63,17 @@ export default function AddLaboratoryPage() {
 
       <div className="w-full">
         <form onSubmit={handleSubmit} className="space-y-8">
+
+          {/* Inline Error Banner */}
+          {errorMessage && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-red-800">Unable to create laboratory</p>
+                <p className="text-red-600 text-xs mt-0.5">{errorMessage}</p>
+              </div>
+            </div>
+          )}
           
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
