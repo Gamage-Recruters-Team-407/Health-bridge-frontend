@@ -223,34 +223,34 @@ export default function UserManagementPage() {
             title="Total Users"
             value={totalUsers.toString()}
             icon={<Users size={24} />}
-            iconBgColor="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+            iconBgColor="bg-emerald-50 text-emerald-600"
             trend={{ value: "Live", isPositive: true, label: "from database" }}
           />
           <StatCard
             title="Active Accounts"
             value={activeUsers.toString()}
             icon={<CheckCircle size={24} />}
-            iconBgColor="bg-blue-50 text-blue-600 dark:bg-blue-950/50 dark:text-blue-400"
+            iconBgColor="bg-blue-50 text-blue-600"
             subtitle={`${activePercentage} of total base`}
           />
           <StatCard
             title="Pending Approval"
             value={pendingUsers.toString()}
             icon={<Clock size={24} />}
-            iconBgColor="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
+            iconBgColor="bg-amber-50 text-amber-600"
             subtitle="Needs registration review"
           />
           <StatCard
             title="Suspended"
             value={suspendedUsers.toString()}
             icon={<Ban size={24} />}
-            iconBgColor="bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
+            iconBgColor="bg-rose-50 text-rose-600"
             subtitle="Flagged for security review"
           />
         </div>
 
         {/* Tabs */}
-        <div className="flex items-center gap-8 border-b border-slate-200 dark:border-slate-800 mb-6">
+        <div className="flex items-center gap-8 border-b border-slate-200 mb-6">
           {tabs.map((tab) => (
             <button
               key={tab.name}
@@ -262,8 +262,8 @@ export default function UserManagementPage() {
                 }
               }}
               className={`pb-4 text-sm font-semibold transition-colors relative ${activeTab === tab.name
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  ? "text-emerald-600"
+                  : "text-slate-500 hover:text-slate-700"
                 }`}
             >
               {tab.name}
@@ -271,7 +271,7 @@ export default function UserManagementPage() {
                 {tab.count}
               </span>
               {activeTab === tab.name && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-t-full" />
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 rounded-t-full" />
               )}
             </button>
           ))}
@@ -289,7 +289,7 @@ export default function UserManagementPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <select
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-40"
               value={filterRole}
               onChange={(e) => { setFilterRole(e.target.value); setCurrentPage(1); }}
             >
@@ -298,7 +298,7 @@ export default function UserManagementPage() {
               ))}
             </select>
             <select
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-40"
               value={filterStatus}
               onChange={(e) => { setFilterStatus(e.target.value); setCurrentPage(1); }}
             >
@@ -307,7 +307,7 @@ export default function UserManagementPage() {
               ))}
             </select>
             <select
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-48"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-48"
               value={filterInstitution}
               onChange={(e) => { setFilterInstitution(e.target.value); setCurrentPage(1); }}
             >
@@ -319,8 +319,9 @@ export default function UserManagementPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
-          <table className="w-full text-left text-sm text-slate-600">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600 min-w-[950px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12 text-center">ON</TableHead>
@@ -352,7 +353,7 @@ export default function UserManagementPage() {
                   </TableCell>
                   <TableCell>
                     <div>
-                      <p className="font-bold text-[#0A2540] dark:text-white">{user.fullName}</p>
+                      <p className="font-bold text-[#0A2540]">{user.fullName}</p>
                       <p className="text-xs text-slate-500">{user.email}</p>
                     </div>
                   </TableCell>
@@ -363,7 +364,7 @@ export default function UserManagementPage() {
                     {getRoleBadge(user.role)}
                   </TableCell>
                   <TableCell>
-                    <span className="text-[#0A2540] dark:text-slate-300 font-medium">
+                    <span className="text-[#0A2540] font-medium">
                       {user.branch || "General / HQ"}
                     </span>
                   </TableCell>
@@ -371,12 +372,12 @@ export default function UserManagementPage() {
                     {getStatusBadge(formatStatus(user.accountStatus))}
                   </TableCell>
                   <TableCell>
-                    <span className="text-[#0A2540] dark:text-slate-300 font-medium">
+                    <span className="text-[#0A2540] font-medium">
                       {user.createdAt ? new Date(user.createdAt).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "Unknown"}
                     </span>
                   </TableCell>
                   <TableCell>
-                    <span className="text-[#0A2540] dark:text-slate-300 font-medium">Unknown</span>
+                    <span className="text-[#0A2540] font-medium">Unknown</span>
                   </TableCell>
                   <TableCell className="text-right">
                     <div className="flex items-center justify-end gap-1">
@@ -432,6 +433,7 @@ export default function UserManagementPage() {
               ))}
             </TableBody>
           </table>
+        </div>
 
           <TablePagination
             currentPage={currentPage}

@@ -155,25 +155,25 @@ export default function PharmacyManagementPage() {
     <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
       
       {/* Header Section */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-[#0A2540] dark:text-white tracking-tight">
+          <h1 className="text-2xl sm:text-3xl font-bold text-[#0A2540] tracking-tight">
             Pharmacy Management
           </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
             Network-wide overview of active pharmacies, inventory reserves, consumption trends, and critical stock alerts.
           </p>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-slate-200 dark:border-slate-800 gap-6">
+      <div className="flex border-b border-slate-200 gap-6">
         <button
           onClick={() => setActiveTab("overview")}
           className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "overview"
-              ? "border-[#0052CC] text-[#0052CC] dark:text-blue-400 dark:border-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              ? "border-[#0052CC] text-[#0052CC]"
+              : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
           <Pill size={16} />
@@ -183,14 +183,14 @@ export default function PharmacyManagementPage() {
           onClick={() => setActiveTab("branches")}
           className={`pb-3 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${
             activeTab === "branches"
-              ? "border-[#0052CC] text-[#0052CC] dark:text-blue-400 dark:border-blue-400"
-              : "border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+              ? "border-[#0052CC] text-[#0052CC]"
+              : "border-transparent text-slate-500 hover:text-slate-700"
           }`}
         >
           <Building2 size={16} />
           Registered Pharmacies
           {pharmacies.length > 0 && (
-            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+            <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
               {pharmacies.length}
             </span>
           )}
@@ -202,8 +202,8 @@ export default function PharmacyManagementPage() {
           
           {/* Pharmacy Branch Selector Bar */}
           {pharmacies.length > 0 && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm">
-              <div className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-white border border-slate-200 rounded-2xl shadow-sm">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <Building2 size={18} className="text-[#0052CC]" />
                 <span className="font-semibold">Selected Branch:</span>
               </div>
@@ -211,7 +211,7 @@ export default function PharmacyManagementPage() {
                 <select
                   value={selectedPharmacyId}
                   onChange={(e) => handleBranchChange(e.target.value)}
-                  className="w-full px-4 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-800 dark:text-slate-200 appearance-none outline-none focus:border-[#0052CC] transition-colors"
+                  className="w-full px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 appearance-none outline-none focus:border-[#0052CC] transition-colors"
                 >
                   {pharmacies.map((pharm) => (
                     <option key={pharm.id} value={pharm.id}>
@@ -235,7 +235,7 @@ export default function PharmacyManagementPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-500 mb-1">Medicines in stock</p>
-                <p className="text-2xl font-bold text-[#0A2540] dark:text-white mb-2">
+                <p className="text-2xl font-bold text-[#0A2540] mb-2">
                   {isLoading ? "..." : totalStock.toLocaleString()}
                 </p>
                 <p className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
@@ -250,7 +250,7 @@ export default function PharmacyManagementPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-500 mb-1">Low-stock items</p>
-                <p className="text-2xl font-bold text-[#0A2540] dark:text-white mb-2">
+                <p className="text-2xl font-bold text-[#0A2540] mb-2">
                   {isLoading ? "..." : lowStockCount}
                 </p>
                 <p className="text-[10px] font-bold text-red-500 flex items-center gap-0.5">
@@ -265,7 +265,7 @@ export default function PharmacyManagementPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-500 mb-1">Expiring in 30 days</p>
-                <p className="text-2xl font-bold text-[#0A2540] dark:text-white mb-2">
+                <p className="text-2xl font-bold text-[#0A2540] mb-2">
                   {isLoading ? "..." : expiringCount}
                 </p>
                 <p className="text-[10px] font-bold text-amber-600">
@@ -280,7 +280,7 @@ export default function PharmacyManagementPage() {
               </div>
               <div>
                 <p className="text-xs font-semibold text-slate-500 mb-1">Active Deliveries</p>
-                <p className="text-2xl font-bold text-[#0A2540] dark:text-white mb-2">
+                <p className="text-2xl font-bold text-[#0A2540] mb-2">
                   {isLoading ? "..." : activeDeliveriesCount}
                 </p>
                 <p className="text-[10px] font-bold text-emerald-600 flex items-center gap-0.5">
@@ -298,7 +298,7 @@ export default function PharmacyManagementPage() {
             <div className="lg:col-span-2 space-y-6">
               <Card className="p-6">
                 <div className="flex items-center justify-between mb-8">
-                  <h3 className="text-sm font-bold text-[#0A2540] dark:text-white">Drug consumption trend</h3>
+                  <h3 className="text-sm font-bold text-[#0A2540]">Drug consumption trend</h3>
                   <div className="flex items-center gap-1 text-xs font-bold text-[#0052CC]">
                     Last 7 days
                   </div>
@@ -364,7 +364,7 @@ export default function PharmacyManagementPage() {
             <div className="lg:col-span-1">
               <Card className="p-6 h-full flex flex-col">
                 <div className="flex items-center justify-between mb-6">
-                  <h3 className="text-sm font-bold text-[#0A2540] dark:text-white">Stock alerts</h3>
+                  <h3 className="text-sm font-bold text-[#0A2540]">Stock alerts</h3>
                   <span className="text-xs font-semibold text-slate-400">
                     {lowStock.length} items
                   </span>
@@ -377,13 +377,13 @@ export default function PharmacyManagementPage() {
                     <div className="py-12 text-center text-xs text-slate-500 font-medium">No active stock alerts for this pharmacy</div>
                   ) : (
                     lowStock.slice(0, 6).map((item, idx, arr) => (
-                      <div key={item.id} className={`flex items-center justify-between py-3.5 ${idx !== arr.length - 1 ? 'border-b border-slate-100 dark:border-slate-800' : ''}`}>
+                      <div key={item.id} className={`flex items-center justify-between py-3.5 ${idx !== arr.length - 1 ? 'border-b border-slate-100' : ''}`}>
                         <div className="flex items-start gap-3">
                           <div className="mt-0.5 w-4 h-6 rounded-sm bg-slate-200 flex flex-col justify-end overflow-hidden shrink-0">
                             <div className={`w-full ${item.quantity === 0 ? 'bg-red-500 h-0' : item.quantity < (item.minimumStock / 2) ? 'bg-red-500 h-1/4' : 'bg-amber-500 h-2/4'}`}></div>
                           </div>
                           <div>
-                            <p className="text-xs font-bold text-[#0A2540] dark:text-white mb-0.5">{item.itemName}</p>
+                            <p className="text-xs font-bold text-[#0A2540] mb-0.5">{item.itemName}</p>
                             <p className="text-[10px] font-medium text-slate-400 uppercase tracking-wider">
                               BATCH {item.batchNumber} <span className="mx-1">•</span> {item.quantity} UNITS LEFT
                             </p>
@@ -405,10 +405,10 @@ export default function PharmacyManagementPage() {
       )}
 
       {activeTab === "branches" && (
-        <Card className="overflow-hidden border border-slate-200 dark:border-slate-800">
+        <Card className="overflow-hidden border border-slate-200">
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
-              <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-200 dark:border-slate-800 text-xs font-bold uppercase text-slate-500 dark:text-slate-400">
+            <table className="w-full text-left text-sm text-slate-600">
+              <thead className="bg-slate-50 border-b border-slate-200 text-xs font-bold uppercase text-slate-500">
                 <tr>
                   <th className="px-6 py-4">Pharmacy Name</th>
                   <th className="px-6 py-4">Reg & License</th>
@@ -419,7 +419,7 @@ export default function PharmacyManagementPage() {
                   <th className="px-6 py-4 text-right">Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-slate-100">
                 {isLoading ? (
                   <tr>
                     <td colSpan={7} className="px-6 py-12 text-center text-slate-400 font-medium">
@@ -434,9 +434,9 @@ export default function PharmacyManagementPage() {
                   </tr>
                 ) : (
                   pharmacies.map((pharm) => (
-                    <tr key={pharm.id} className="hover:bg-slate-50/70 dark:hover:bg-slate-800/40 transition-colors">
+                    <tr key={pharm.id} className="hover:bg-slate-50/70 transition-colors">
                       <td className="px-6 py-4">
-                        <div className="font-bold text-[#0A2540] dark:text-white">
+                        <div className="font-bold text-[#0A2540]">
                           {pharm.name}
                         </div>
                         {pharm.operatingHours && (
@@ -446,7 +446,7 @@ export default function PharmacyManagementPage() {
                         )}
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <div className="text-xs font-semibold text-slate-700">
                           {pharm.registrationNumber}
                         </div>
                         <div className="text-[11px] text-slate-400 font-medium">
@@ -454,7 +454,7 @@ export default function PharmacyManagementPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                        <div className="text-xs font-semibold text-slate-700">
                           {pharm.contactPerson || "N/A"}
                         </div>
                         <div className="text-xs text-slate-400 flex items-center gap-1 mt-0.5">
@@ -463,7 +463,7 @@ export default function PharmacyManagementPage() {
                         </div>
                       </td>
                       <td className="px-6 py-4 text-xs">
-                        <div className="font-semibold text-slate-700 dark:text-slate-300">
+                        <div className="font-semibold text-slate-700">
                           {pharm.city || "—"}
                         </div>
                         <div className="text-slate-400 line-clamp-1">
@@ -500,8 +500,8 @@ export default function PharmacyManagementPage() {
                             disabled={actionLoadingId === pharm.id}
                             className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-colors disabled:opacity-50 ${
                               pharm.active
-                                ? "text-red-600 bg-red-50 hover:bg-red-100 dark:bg-red-950/40"
-                                : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-950/40"
+                                ? "text-red-600 bg-red-50 hover:bg-red-100"
+                                : "text-emerald-700 bg-emerald-50 hover:bg-emerald-100"
                             }`}
                           >
                             {pharm.active ? "Deactivate" : "Activate"}
