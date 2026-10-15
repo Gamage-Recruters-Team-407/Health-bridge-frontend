@@ -81,10 +81,11 @@ export default function RegisterPage() {
         confirmPassword: formData.confirmPassword,
       });
 
+      const registeredEmail = (data.email || formData.email).trim().toLowerCase();
       saveAuthData(data.token, {
         id: data.id,
         fullName: data.fullName,
-        email: data.email,
+        email: registeredEmail,
         role: data.role,
       });
 

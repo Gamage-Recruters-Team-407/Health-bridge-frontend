@@ -131,7 +131,7 @@ export default function DoctorManagementPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#0A2540] dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0A2540]">
               Doctor Management
             </h1>
             <p className="text-sm font-medium text-slate-500">
@@ -153,53 +153,53 @@ export default function DoctorManagementPage() {
             title="Total Doctors"
             value={doctors.length.toString()}
             icon={<Users size={24} />}
-            iconBgColor="bg-blue-50 text-[#0052CC] dark:bg-blue-950/50 dark:text-blue-400"
+            iconBgColor="bg-blue-50 text-[#0052CC]"
           />
           <StatCard
             title="Active Doctors"
             value={doctors.filter(d => d.accountStatus === "Active").length.toString()}
             icon={<CheckCircle2 size={24} />}
-            iconBgColor="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+            iconBgColor="bg-emerald-50 text-emerald-600"
             subtitle="Currently active"
           />
           <StatCard
             title="Suspended Doctors"
             value={doctors.filter(d => d.accountStatus === "Suspended").length.toString()}
             icon={<Ban size={24} />}
-            iconBgColor="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
+            iconBgColor="bg-amber-50 text-amber-600"
             subtitle="Currently suspended"
           />
           <StatCard
             title="Pending Approvals"
             value={doctors.filter(d => d.accountStatus === "Pending").length.toString()}
             icon={<AlertTriangle size={24} />}
-            iconBgColor="bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
+            iconBgColor="bg-rose-50 text-rose-600"
             subtitle="Awaiting review"
           />
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-slate-200 dark:border-slate-800 mb-2">
+        <div className="flex border-b border-slate-200 mb-2">
           {tabs.map((tab) => (
             <button
               key={tab.name}
               onClick={() => { setActiveTab(tab.name); setCurrentPage(1); }}
               className={`pb-3 px-1 mr-6 text-sm font-medium transition-colors relative flex items-center gap-2 ${
                 activeTab === tab.name
-                  ? "text-[#0052CC] dark:text-blue-400"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  ? "text-[#0052CC]"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {tab.name}
               <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                 activeTab === tab.name 
-                  ? "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300" 
-                  : "bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                  ? "bg-blue-100 text-blue-700" 
+                  : "bg-slate-100 text-slate-600"
               }`}>
                 {tab.count}
               </span>
               {activeTab === tab.name && (
-                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0052CC] dark:bg-blue-400 rounded-t-full" />
+                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-[#0052CC] rounded-t-full" />
               )}
             </button>
           ))}
@@ -217,7 +217,7 @@ export default function DoctorManagementPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <select 
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-40"
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
             >
@@ -228,7 +228,7 @@ export default function DoctorManagementPage() {
             </select>
 
             <select 
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-40"
               value={deptFilter}
               onChange={(e) => { setDeptFilter(e.target.value); setCurrentPage(1); }}
             >
@@ -239,7 +239,7 @@ export default function DoctorManagementPage() {
             </select>
 
             <select 
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-40"
               value={branchFilter}
               onChange={(e) => { setBranchFilter(e.target.value); setCurrentPage(1); }}
             >
@@ -251,7 +251,7 @@ export default function DoctorManagementPage() {
           </div>
         </div>
         {/* Data Table */}
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
           <table className="w-full text-left text-sm text-slate-600">
             <TableHeader>
               <TableRow>
@@ -281,7 +281,7 @@ export default function DoctorManagementPage() {
                           {getInitials(doc.name)}
                         </div>
                         <div>
-                          <p className="font-bold text-[#0A2540] dark:text-white text-sm whitespace-nowrap">{doc.name || "Unknown"}</p>
+                          <p className="font-bold text-[#0A2540] text-sm whitespace-nowrap">{doc.name || "Unknown"}</p>
                           <p className="text-xs font-medium text-slate-500">{doc.doctorId}</p>
                         </div>
                       </div>
@@ -289,11 +289,11 @@ export default function DoctorManagementPage() {
                     <TableCell>
                       <div className="flex items-center gap-2">
                         <div className="w-1.5 h-1.5 rounded-full bg-slate-300"></div>
-                        <span className="font-bold text-[#0A2540] dark:text-white">{doc.department || "-"}</span>
+                        <span className="font-bold text-[#0A2540]">{doc.department || "-"}</span>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <p className="font-bold text-[#0A2540] dark:text-white text-sm">{doc.branchId || "-"}</p>
+                      <p className="font-bold text-[#0A2540] text-sm">{doc.branchId || "-"}</p>
                       <p className="text-xs font-medium text-slate-500">{doc.branchCode || "-"}</p>
                     </TableCell>
                     <TableCell>

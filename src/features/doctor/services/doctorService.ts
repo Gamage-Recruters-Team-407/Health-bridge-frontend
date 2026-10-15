@@ -247,8 +247,34 @@ const getLeavesKey = () => {
 };
 
 export async function createLeave(data: LeaveInput): Promise<DoctorLeave> {
-  await delay();
-  const leave: DoctorLeave = { 
+  const doctorId = getDoctorId();
+  const user = getStoredUser();
+  const email = user?.email || "";
+
+  try {
+    const created = await api.post<DoctorLeave>(
+      `/doctors/me/leaves?doctorId=${encodeURIComponent(doctorId)}&email=${encodeURIComponent(email)}`,
+      data
+    );
+    if (created && created.id) {
+      if (typeof window !== "undefined") {
+        const key = getLeavesKey();
+        const stored = localStorage.getItem(key);
+        let list: DoctorLeave[] = [];
+        if (stored) {
+          try { list = JSON.parse(stored); } catch { list = []; }
+        }
+        list = [created, ...list.filter((l) => l.id !== created.id)];
+        localStorage.setItem(key, JSON.stringify(list));
+      }
+      return created;
+    }
+  } catch (error) {
+    console.warn("Backend /doctors/me/leaves POST failed, falling back to local cache:", error);
+  }
+
+  // Graceful offline fallback
+  const fallbackLeave: DoctorLeave = { 
     ...data, 
     id: `leave-${Date.now()}`, 
     status: "Pending", 
@@ -262,15 +288,33 @@ export async function createLeave(data: LeaveInput): Promise<DoctorLeave> {
     if (stored) {
       try { list = JSON.parse(stored); } catch { list = []; }
     }
-    list = [leave, ...list];
+    list = [fallbackLeave, ...list];
     localStorage.setItem(key, JSON.stringify(list));
   }
   
-  return leave;
+  return fallbackLeave;
 }
 
 export async function getLeaves(): Promise<DoctorLeave[]> {
-  await delay();
+  try {
+    const doctorId = getDoctorId();
+    const user = getStoredUser();
+    const email = user?.email || "";
+    const res = await api.get<DoctorLeave[]>(
+      `/doctors/me/leaves?doctorId=${encodeURIComponent(doctorId)}&email=${encodeURIComponent(email)}`
+    );
+    if (Array.isArray(res)) {
+      if (typeof window !== "undefined") {
+        const key = getLeavesKey();
+        localStorage.setItem(key, JSON.stringify(res));
+      }
+      return res;
+    }
+  } catch (error) {
+    console.warn("Backend /doctors/me/leaves GET failed, falling back to local cache:", error);
+  }
+
+  // Graceful offline fallback
   if (typeof window !== "undefined") {
     const key = getLeavesKey();
     const stored = localStorage.getItem(key);
@@ -281,19 +325,6 @@ export async function getLeaves(): Promise<DoctorLeave[]> {
         return [];
       }
     }
-    const defaultLeaves: DoctorLeave[] = [
-      {
-        id: "6ac55691c74af305d6ce0abb",
-        leaveType: "Sick Leave",
-        startDate: "2026-10-07",
-        endDate: "2026-10-08",
-        reason: "fever",
-        status: "Pending",
-        appliedAt: "2026-10-07",
-      },
-    ];
-    localStorage.setItem(key, JSON.stringify(defaultLeaves));
-    return defaultLeaves;
   }
   return [];
 }

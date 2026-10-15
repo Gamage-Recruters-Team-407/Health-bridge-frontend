@@ -79,7 +79,31 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
 
   return (
     <ToastProvider>
-      <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 font-sans antialiased selection:bg-blue-500 dark:text-slate-100 selection:text-white">
+      <div 
+        data-super-admin-workspace="true"
+        style={{ colorScheme: "light" }}
+        className="min-h-screen flex bg-slate-50 text-slate-900 font-sans antialiased selection:bg-blue-500 selection:text-white"
+      >
+        <style dangerouslySetInnerHTML={{ __html: `
+          [data-super-admin-workspace] {
+            --background: #ffffff !important;
+            --foreground: #0f172a !important;
+            color-scheme: light !important;
+            background-color: #f8fafc !important;
+            color: #0f172a !important;
+          }
+          [data-super-admin-workspace] input,
+          [data-super-admin-workspace] select,
+          [data-super-admin-workspace] textarea {
+            color-scheme: light !important;
+            color: #0f172a !important;
+            background-color: #ffffff !important;
+          }
+          [data-super-admin-workspace] option {
+            background-color: #ffffff !important;
+            color: #0f172a !important;
+          }
+        `}} />
         <Sidebar
           collapsed={collapsed}
           onToggleCollapse={() => setCollapsed(!collapsed)}
@@ -97,7 +121,7 @@ export default function SuperAdminLayout({ children }: { children: React.ReactNo
             userRole="SUPER_ADMIN"
           />
 
-          <main className="flex-1 px-4 md:px-6 py-4 w-full space-y-6">
+          <main className="flex-1 px-4 md:px-6 py-4 w-full space-y-6 min-w-0 overflow-x-hidden">
             {children}
           </main>
 

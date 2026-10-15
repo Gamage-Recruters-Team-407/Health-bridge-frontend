@@ -192,12 +192,12 @@ export default function InsuranceManagementPage() {
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0A2540] dark:text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0A2540] tracking-tight">
               Insurance Management
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
               Manage insurance partners, policy coverage verifications, and compliance statuses.
             </p>
           </div>
@@ -220,7 +220,7 @@ export default function InsuranceManagementPage() {
               onClick={() => router.push('/super-admin/insurance/add')}
               className="font-bold text-white bg-[#0052CC] hover:bg-blue-700 shadow-md shadow-[#0052CC]/20"
             >
-              + Add Provider
+              Add Provider
             </Button>
           </div>
         </div>

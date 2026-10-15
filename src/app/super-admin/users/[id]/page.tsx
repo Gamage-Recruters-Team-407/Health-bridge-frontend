@@ -51,14 +51,14 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
               </div>
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3">
-                  <h1 className="text-2xl font-bold text-[#0A2540] dark:text-white">
+                  <h1 className="text-2xl font-bold text-[#0A2540]">
                     Dr. Kavindu Perera
                   </h1>
                   <Badge variant="primary" className="bg-blue-50 text-blue-700 border-blue-200">Doctor</Badge>
                   <Badge variant="success" dot className="bg-emerald-50 text-emerald-700 border-emerald-200">Active</Badge>
                 </div>
                 
-                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600 dark:text-slate-400">
+                <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm text-slate-600">
                   <p>kavindu.perera@healthbridge.lk</p>
                   <p>+94 77 214 5590</p>
                 </div>
@@ -82,7 +82,7 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
               <Button 
                 variant="outline" 
                 leftIcon={<Ban size={16} />} 
-                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300 dark:border-red-900/50 dark:hover:bg-red-950/30 dark:text-red-400"
+                className="text-red-600 border-red-200 hover:bg-red-50 hover:border-red-300"
               >
                 Suspend account
               </Button>
@@ -92,20 +92,20 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
         </Card>
 
         {/* Tabs */}
-        <div className="flex items-center gap-8 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-8 border-b border-slate-200">
           {tabs.map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`pb-4 text-sm font-semibold transition-colors relative ${
                 activeTab === tab
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200"
+                  ? "text-emerald-600"
+                  : "text-slate-500 hover:text-slate-700"
               }`}
             >
               {tab}
               {activeTab === tab && (
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 dark:bg-emerald-400 rounded-t-full" />
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-600 rounded-t-full" />
               )}
             </button>
           ))}
@@ -119,7 +119,7 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
               
               {/* Left Column: Personal Info */}
               <Card className="p-6 lg:col-span-2">
-                <h3 className="text-lg font-bold text-[#0A2540] dark:text-white mb-1">
+                <h3 className="text-lg font-bold text-[#0A2540] mb-1">
                   Personal & account information
                 </h3>
                 <p className="text-sm text-slate-500 mb-6">Basic details on file for this user</p>
@@ -127,27 +127,27 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Full Name</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">Dr. Kavindu Perera</p>
+                    <p className="text-sm font-medium text-[#0A2540]">Dr. Kavindu Perera</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Date of Birth</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">14 Jun 1988</p>
+                    <p className="text-sm font-medium text-[#0A2540]">14 Jun 1988</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">NIC Number</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">881651234V</p>
+                    <p className="text-sm font-medium text-[#0A2540]">881651234V</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Medical Registration No.</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">SLMC-24817</p>
+                    <p className="text-sm font-medium text-[#0A2540]">SLMC-24817</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Specialization</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">Cardiology</p>
+                    <p className="text-sm font-medium text-[#0A2540]">Cardiology</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Linked Institution</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">Colombo General Hospital</p>
+                    <p className="text-sm font-medium text-[#0A2540]">Colombo General Hospital</p>
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Verification Status</p>
@@ -157,48 +157,48 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                   </div>
                   <div>
                     <p className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider mb-1">Account Created</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-white">12 Mar 2026, by Super Admin</p>
+                    <p className="text-sm font-medium text-[#0A2540]">12 Mar 2026, by Super Admin</p>
                   </div>
                 </div>
               </Card>
 
               {/* Right Column: Account Activity */}
               <Card className="p-6 lg:col-span-1">
-                <h3 className="text-lg font-bold text-[#0A2540] dark:text-white mb-1">
+                <h3 className="text-lg font-bold text-[#0A2540] mb-1">
                   Account activity
                 </h3>
                 <p className="text-sm text-slate-500 mb-6">Snapshot of usage on Health Bridge</p>
 
                 <div className="space-y-5 mb-8">
                   <div>
-                    <span className="text-2xl font-bold text-[#0A2540] dark:text-white mr-2">1,204</span>
+                    <span className="text-2xl font-bold text-[#0A2540] mr-2">1,204</span>
                     <span className="text-sm text-slate-500">consultations completed</span>
                   </div>
                   <div>
-                    <span className="text-2xl font-bold text-[#0A2540] dark:text-white mr-2">4.8 / 5</span>
+                    <span className="text-2xl font-bold text-[#0A2540] mr-2">4.8 / 5</span>
                     <span className="text-sm text-slate-500">average patient rating</span>
                   </div>
                   <div>
-                    <span className="text-lg font-bold text-[#0A2540] dark:text-white mr-2">Today, 9:41 AM</span>
+                    <span className="text-lg font-bold text-[#0A2540] mr-2">Today, 9:41 AM</span>
                     <span className="text-sm text-slate-500">last login</span>
                   </div>
                   <div>
-                    <span className="text-lg font-bold text-[#0A2540] dark:text-white mr-2">Colombo, LK</span>
+                    <span className="text-lg font-bold text-[#0A2540] mr-2">Colombo, LK</span>
                     <span className="text-sm text-slate-500">last known location</span>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-sm font-semibold text-[#0A2540] dark:text-slate-300">Two-factor authentication</span>
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <span className="text-sm font-semibold text-[#0A2540]">Two-factor authentication</span>
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Enabled</span>
                   </div>
-                  <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                    <span className="text-sm font-semibold text-[#0A2540] dark:text-slate-300">Email verified</span>
+                  <div className="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <span className="text-sm font-semibold text-[#0A2540]">Email verified</span>
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Verified</span>
                   </div>
                   <div className="flex items-center justify-between pb-1">
-                    <span className="text-sm font-semibold text-[#0A2540] dark:text-slate-300">Phone verified</span>
+                    <span className="text-sm font-semibold text-[#0A2540]">Phone verified</span>
                     <span className="text-[11px] font-bold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">Verified</span>
                   </div>
                 </div>
@@ -208,14 +208,14 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
 
             {/* Recent Login History */}
             <Card className="p-0 overflow-hidden">
-              <div className="p-6 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-lg font-bold text-[#0A2540] dark:text-white mb-1">
+              <div className="p-6 border-b border-slate-100">
+                <h3 className="text-lg font-bold text-[#0A2540] mb-1">
                   Recent login history
                 </h3>
                 <p className="text-sm text-slate-500">Last 5 sign-ins to this account</p>
               </div>
               <Table className="border-0 shadow-none rounded-none w-full">
-                <TableHeader className="bg-[#F8FAFC] dark:bg-slate-900/50">
+                <TableHeader className="bg-[#F8FAFC]">
                   <TableRow className="hover:bg-transparent">
                     <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider py-3">DATE & TIME</TableHead>
                     <TableHead className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider py-3">DEVICE</TableHead>
@@ -226,12 +226,12 @@ export default function UserDetailsPage({ params }: { params: { id: string } }) 
                 </TableHeader>
                 <TableBody>
                   {loginHistory.map((login, idx) => (
-                    <TableRow key={idx} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-900/30">
+                    <TableRow key={idx} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/50">
                       <TableCell className="py-4">
                         <span className="text-xs text-slate-500">{login.time}</span>
                       </TableCell>
                       <TableCell className="py-4">
-                        <span className="text-xs font-semibold text-[#0A2540] dark:text-slate-300">{login.device}</span>
+                        <span className="text-xs font-semibold text-[#0A2540]">{login.device}</span>
                       </TableCell>
                       <TableCell className="py-4">
                         <span className="text-xs text-slate-500">{login.ip}</span>

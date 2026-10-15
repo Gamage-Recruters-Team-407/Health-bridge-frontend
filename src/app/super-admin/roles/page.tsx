@@ -120,7 +120,7 @@ export default function RolesPermissionsPage() {
         {/* Page Header */}
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight text-[#0A2540] dark:text-white">
+            <h1 className="text-2xl font-bold tracking-tight text-[#0A2540]">
               Roles & Permissions
             </h1>
             <p className="text-sm font-medium text-slate-500">
@@ -142,28 +142,28 @@ export default function RolesPermissionsPage() {
             title="Total Roles"
             value={totalRoles.toString()}
             icon={<Shield size={24} />}
-            iconBgColor="bg-blue-50 text-[#0052CC] dark:bg-blue-950/50 dark:text-blue-400"
+            iconBgColor="bg-blue-50 text-[#0052CC]"
             trend={{ value: "Live", isPositive: true, label: "from database" }}
           />
           <StatCard
             title="Active Users"
             value={activeUsersCount.toString()}
             icon={<Users size={24} />}
-            iconBgColor="bg-emerald-50 text-emerald-600 dark:bg-emerald-950/50 dark:text-emerald-400"
+            iconBgColor="bg-emerald-50 text-emerald-600"
             subtitle="Users assigned to roles"
           />
           <StatCard
             title="Custom Roles"
             value={customRoles.toString()}
             icon={<Lock size={24} />}
-            iconBgColor="bg-amber-50 text-amber-600 dark:bg-amber-950/50 dark:text-amber-400"
+            iconBgColor="bg-amber-50 text-amber-600"
             subtitle="Created manually"
           />
           <StatCard
             title="High-Risk Permissions"
             value={highRiskRoles.toString()}
             icon={<AlertTriangle size={24} />}
-            iconBgColor="bg-rose-50 text-rose-600 dark:bg-rose-950/50 dark:text-rose-400"
+            iconBgColor="bg-rose-50 text-rose-600"
             subtitle="Need review"
           />
         </div>
@@ -180,7 +180,7 @@ export default function RolesPermissionsPage() {
           </div>
           <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
             <select 
-              className="h-10 px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-[#0A2540] dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 flex-1 md:w-40"
+              className="h-10 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm text-[#0A2540] focus:outline-none focus:ring-2 focus:ring-blue-100 flex-1 md:w-40"
               value={filterType}
               onChange={(e) => { setFilterType(e.target.value); setCurrentPage(1); }}
             >
@@ -191,7 +191,7 @@ export default function RolesPermissionsPage() {
           </div>
         </div>
 
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
           <table className="w-full text-left text-sm text-slate-600">
             <TableHeader>
               <TableRow>
@@ -215,12 +215,12 @@ export default function RolesPermissionsPage() {
               ) : (
                 paginatedRoles.map((role) => (
                   <TableRow key={role.id}>
-                    <TableCell className="font-medium text-[#0A2540] dark:text-white">
+                    <TableCell className="font-medium text-[#0A2540]">
                       {role.roleId}
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-2">
-                        <span className="font-bold text-[#0A2540] dark:text-white">{role.name}</span>
+                        <span className="font-bold text-[#0A2540]">{role.name}</span>
                         {role.riskLevel === "HIGH" && (
                           <AlertTriangle size={14} className="text-red-500" />
                         )}

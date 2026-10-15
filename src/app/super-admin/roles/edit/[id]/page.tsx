@@ -188,7 +188,7 @@ export default function EditRolePage({ params }: { params: Promise<{ id: string 
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-[24px] font-bold text-[#0A2540] dark:text-white tracking-tight">Edit Role</h1>
+              <h1 className="text-[24px] font-bold text-[#0A2540] tracking-tight">Edit Role</h1>
               <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-600 text-[11px] font-bold border border-slate-200">
                 {roleData.roleId}
               </span>

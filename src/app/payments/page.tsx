@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import DashboardLayout from "@/app/dashboard/layout";
-import { getStoredUser, AuthUser } from "@/lib/auth";
+import { getStoredUser, AuthUser, saveAuthData } from "@/lib/auth";
 import api from "@/lib/axios";
 import { paymentService, PaymentRequestData } from "@/services/paymentService";
 import { prescriptionBillingService, DispensedPrescriptionBill } from "@/services/prescriptionBillingService";
@@ -246,6 +246,26 @@ export default function PaymentsPage() {
     setCardHolderName(currentUser.fullName || "");
     void loadPrescriptionBills(currentUser);
 
+    // Automatically grab the email assigned to the user if missing in storage
+    if (!currentUser.email) {
+      api.get<{ email?: string; fullName?: string }>("/users/profile")
+        .then((profile) => {
+          if (profile?.email) {
+            const updatedUser: AuthUser = {
+              ...currentUser,
+              email: profile.email.trim().toLowerCase(),
+              fullName: profile.fullName || currentUser.fullName,
+            };
+            setUser(updatedUser);
+            const token = localStorage.getItem("healthbridge_token") || "";
+            if (token) {
+              saveAuthData(token, updatedUser);
+            }
+          }
+        })
+        .catch(() => {});
+    }
+
     const handleDispenseEvent = () => {
       void loadPrescriptionBills(currentUser);
     };
@@ -383,7 +403,7 @@ export default function PaymentsPage() {
     e.preventDefault();
     setErrorMsg(null);
 
-    if (!user?.id) {
+    if (!user?.id && !user?.email) {
       setErrorMsg("Session expired. Please log in again.");
       return;
     }
@@ -404,8 +424,11 @@ export default function PaymentsPage() {
 
     setLoading(true);
     try {
+      const userEmail = (user?.email || getStoredUser()?.email || "").trim().toLowerCase();
       const payload: PaymentRequestData = {
-        patientId: user.id,
+        patientId: user?.id || userEmail,
+        patientEmail: userEmail || undefined,
+        email: userEmail || undefined,
         doctorId: category === "CONSULTATION" ? selectedDoctorId : undefined,
         doctorName: category === "CONSULTATION" ? selectedDoctorName : undefined,
         description: description.trim(),
@@ -521,10 +544,13 @@ export default function PaymentsPage() {
     setErrorMsg(null);
     setLoading(true);
     try {
-      if (!user?.id) return;
+      if (!user?.id && !user?.email) return;
       const cleanCard = cardNumber.replace(/\s/g, "");
+      const userEmail = (user?.email || getStoredUser()?.email || "").trim().toLowerCase();
       const payload: PaymentRequestData = {
-        patientId: user.id,
+        patientId: user?.id || userEmail,
+        patientEmail: userEmail || undefined,
+        email: userEmail || undefined,
         doctorId: category === "CONSULTATION" ? selectedDoctorId : undefined,
         doctorName: category === "CONSULTATION" ? selectedDoctorName : undefined,
         description: description.trim(),

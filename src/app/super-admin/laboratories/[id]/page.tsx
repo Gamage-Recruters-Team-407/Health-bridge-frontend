@@ -39,7 +39,7 @@ export default function LaboratoryReviewPage() {
         <div className="max-w-[1200px] mx-auto space-y-8">
 
           {/* Header Profile Section */}
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white dark:bg-slate-900 pb-6 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 bg-white pb-6 border-b border-slate-100">
 
             <div className="flex items-center gap-6">
               {/* Profile Image */}
@@ -53,12 +53,12 @@ export default function LaboratoryReviewPage() {
                 <div className="flex items-center gap-2 text-xs font-bold text-slate-400 mb-1">
                   <Link href="/super-admin/laboratories" className="hover:text-slate-600 transition-colors">Lab Registrations</Link>
                   <ChevronRight size={14} />
-                  <span className="text-[#0A2540] dark:text-slate-200">{lab.name}</span>
+                  <span className="text-[#0A2540]">{lab.name}</span>
                 </div>
 
                 {/* Title */}
                 <div className="flex flex-wrap items-center gap-4 mb-2">
-                  <h1 className="text-3xl font-bold text-[#0A2540] dark:text-white tracking-tight">
+                  <h1 className="text-3xl font-bold text-[#0A2540] tracking-tight">
                     {lab.name}
                   </h1>
                 </div>
@@ -80,16 +80,16 @@ export default function LaboratoryReviewPage() {
 
               {/* Overview Card */}
               <Card className="p-8 rounded-3xl border border-slate-100 shadow-sm">
-                <h2 className="text-lg font-bold text-[#0A2540] dark:text-white mb-6">Overview</h2>
+                <h2 className="text-lg font-bold text-[#0A2540] mb-6">Overview</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-y-6 gap-x-8">
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Owner / Contact Person</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.owner}</p>
+                    <p className="text-sm font-bold text-[#0A2540]">{lab.owner}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Registration No.</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.license}</p>
+                    <p className="text-sm font-bold text-[#0A2540]">{lab.license}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Email</p>
@@ -97,19 +97,19 @@ export default function LaboratoryReviewPage() {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Phone</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.phone}</p>
+                    <p className="text-sm font-bold text-[#0A2540]">{lab.phone}</p>
                   </div>
                   <div className="md:col-span-2">
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Registered Address</p>
-                    <p className="text-sm font-medium text-[#0A2540] dark:text-slate-300">{lab.address}</p>
+                    <p className="text-sm font-medium text-[#0A2540]">{lab.address}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Lab Category</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.category}</p>
+                    <p className="text-sm font-bold text-[#0A2540]">{lab.category}</p>
                   </div>
                   <div>
                     <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Years in Operation</p>
-                    <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">{lab.yearsInOperation}</p>
+                    <p className="text-sm font-bold text-[#0A2540]">{lab.yearsInOperation}</p>
                   </div>
                 </div>
               </Card>
@@ -117,8 +117,8 @@ export default function LaboratoryReviewPage() {
               {/* Documents Card */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3 mb-2 px-1">
-                  <h2 className="text-lg font-bold text-[#0A2540] dark:text-white">Legal & registration documents</h2>
-                  <span className="px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[10px] font-bold">4 files</span>
+                  <h2 className="text-lg font-bold text-[#0A2540]">Legal & registration documents</h2>
+                  <span className="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[10px] font-bold">4 files</span>
                 </div>
 
                 <Card className="p-4 rounded-2xl border border-slate-100 shadow-sm flex items-center justify-between">
@@ -127,7 +127,7 @@ export default function LaboratoryReviewPage() {
                       <div className="px-1.5 py-0.5 rounded bg-red-500 text-white text-[9px] font-bold tracking-wider">PDF</div>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-white mb-0.5">Business_Registration_Certificate.pdf</p>
+                      <p className="text-sm font-bold text-[#0A2540] mb-0.5">Business_Registration_Certificate.pdf</p>
                       <p className="text-[11px] font-medium text-slate-400">842 KB · Uploaded 2 days ago</p>
                     </div>
                   </div>
@@ -143,7 +143,7 @@ export default function LaboratoryReviewPage() {
                       <div className="px-1.5 py-0.5 rounded bg-red-500 text-white text-[9px] font-bold tracking-wider">PDF</div>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-white mb-0.5">Laboratory_Operating_License.pdf</p>
+                      <p className="text-sm font-bold text-[#0A2540] mb-0.5">Laboratory_Operating_License.pdf</p>
                       <p className="text-[11px] font-medium text-slate-400">1.1 MB · Uploaded 2 days ago <span className="text-slate-300">·</span> Verified</p>
                     </div>
                   </div>
@@ -159,7 +159,7 @@ export default function LaboratoryReviewPage() {
                       <div className="px-1.5 py-0.5 rounded bg-red-500 text-white text-[9px] font-bold tracking-wider">PDF</div>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-white mb-0.5">Tax_Compliance_Certificate.pdf</p>
+                      <p className="text-sm font-bold text-[#0A2540] mb-0.5">Tax_Compliance_Certificate.pdf</p>
                       <p className="text-[11px] font-medium text-slate-400">390 KB · Uploaded 2 days ago</p>
                     </div>
                   </div>
@@ -175,7 +175,7 @@ export default function LaboratoryReviewPage() {
                       <div className="px-1.5 py-0.5 rounded bg-red-500 text-white text-[9px] font-bold tracking-wider">PDF</div>
                     </div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-white mb-0.5">Owner_NIC_Copy.pdf</p>
+                      <p className="text-sm font-bold text-[#0A2540] mb-0.5">Owner_NIC_Copy.pdf</p>
                       <p className="text-[11px] font-medium text-slate-400">210 KB · Uploaded 2 days ago</p>
                     </div>
                   </div>
@@ -194,31 +194,31 @@ export default function LaboratoryReviewPage() {
 
               {/* Checklist Card */}
               <Card className="p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <h3 className="text-base font-bold text-[#0A2540] dark:text-white mb-6">Document checklist</h3>
+                <h3 className="text-base font-bold text-[#0A2540] mb-6">Document checklist</h3>
 
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
                     <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Business registration on file</span>
+                    <span className="text-sm font-medium text-slate-700">Business registration on file</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Operating license on file</span>
+                    <span className="text-sm font-medium text-slate-700">Operating license on file</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <CheckCircle2 size={16} className="text-emerald-500 mt-0.5 shrink-0" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Tax certificate on file</span>
+                    <span className="text-sm font-medium text-slate-700">Tax certificate on file</span>
                   </div>
                   <div className="flex items-start gap-3">
                     <AlertCircle size={16} className="text-orange-500 mt-0.5 shrink-0" />
-                    <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Insurance certificate missing</span>
+                    <span className="text-sm font-medium text-slate-700">Insurance certificate missing</span>
                   </div>
                 </div>
               </Card>
 
               {/* Activity Card */}
               <Card className="p-6 rounded-3xl border border-slate-100 shadow-sm">
-                <h3 className="text-base font-bold text-[#0A2540] dark:text-white mb-6">Activity</h3>
+                <h3 className="text-base font-bold text-[#0A2540] mb-6">Activity</h3>
 
                 <div className="relative pl-4 space-y-6 before:content-[''] before:absolute before:left-5 before:top-2 before:bottom-2 before:w-[1px] before:bg-slate-200">
 
@@ -226,7 +226,7 @@ export default function LaboratoryReviewPage() {
                   <div className="relative flex items-start gap-4">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1 shrink-0 z-10"></div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">Registration submitted</p>
+                      <p className="text-sm font-bold text-[#0A2540]">Registration submitted</p>
                       <p className="text-[11px] font-medium text-slate-400">2 days ago · by S. Perera</p>
                     </div>
                   </div>
@@ -235,16 +235,16 @@ export default function LaboratoryReviewPage() {
                   <div className="relative flex items-start gap-4">
                     <div className="w-2.5 h-2.5 rounded-full bg-emerald-500 mt-1 shrink-0 z-10"></div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">Documents uploaded</p>
+                      <p className="text-sm font-bold text-[#0A2540]">Documents uploaded</p>
                       <p className="text-[11px] font-medium text-slate-400">2 days ago · 4 files</p>
                     </div>
                   </div>
 
                   {/* Step 3 */}
                   <div className="relative flex items-start gap-4">
-                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 mt-1 shrink-0 z-10 ring-4 ring-white dark:ring-slate-900"></div>
+                    <div className="w-2.5 h-2.5 rounded-full bg-slate-300 mt-1 shrink-0 z-10 ring-4 ring-white"></div>
                     <div>
-                      <p className="text-sm font-bold text-[#0A2540] dark:text-slate-200">Awaiting admin review</p>
+                      <p className="text-sm font-bold text-[#0A2540]">Awaiting admin review</p>
                       <p className="text-[11px] font-medium text-slate-400">Current status</p>
                     </div>
                   </div>
@@ -254,7 +254,7 @@ export default function LaboratoryReviewPage() {
 
               {/* Notes Card */}
               <Card className="p-6 rounded-3xl border border-slate-100 shadow-sm min-h-[150px] flex flex-col">
-                <h3 className="text-base font-bold text-[#0A2540] dark:text-white mb-4">Notes</h3>
+                <h3 className="text-base font-bold text-[#0A2540] mb-4">Notes</h3>
                 <p className="text-[13px] font-medium text-slate-400 leading-relaxed">
                   No internal notes yet. Notes added here are only visible to admins, not the laboratory.
                 </p>

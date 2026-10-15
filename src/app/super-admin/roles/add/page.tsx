@@ -133,7 +133,7 @@ export default function AddRolePage() {
             </button>
           </Link>
           <div>
-            <h1 className="text-[24px] font-bold text-[#0A2540] dark:text-white tracking-tight">Create New Role</h1>
+            <h1 className="text-[24px] font-bold text-[#0A2540] tracking-tight">Create New Role</h1>
             <p className="text-sm font-medium text-slate-500">Configure basic details and access permissions</p>
           </div>
         </div>
