@@ -7,6 +7,16 @@ import { Bell, Clock, CheckCircle2 } from "lucide-react";
 import { reminderService } from "@/services/reminderService";
 import { Reminder } from "@/types/reminder";
 
+// Helper to convert military time "14:00:00" to "2:00 PM"
+const formatTime = (timeStr: string) => {
+  if (!timeStr) return "";
+  const [hourStr, minStr] = timeStr.split(":");
+  let hour = parseInt(hourStr, 10);
+  const ampm = hour >= 12 ? "PM" : "AM";
+  hour = hour % 12 || 12;
+  return `${hour}:${minStr} ${ampm}`;
+};
+
 export default function MedicationRemindersPage() {
   const router = useRouter();
   const [user, setUser] = useState<AuthUser | null>(null);
@@ -57,6 +67,20 @@ export default function MedicationRemindersPage() {
 
   const remainingCount = reminders.filter(r => r.status === "PENDING").length;
 
+  // MULTI-TIER SORTING LOGIC:
+  // 1. Group active (PENDING) tasks at the top, completed/skipped tasks at the bottom.
+  // 2. Sort chronologically by time within those groups.
+  const sortedReminders = [...reminders].sort((a, b) => {
+    // Priority 1: Pending tasks float to the top
+    if (a.status === "PENDING" && b.status !== "PENDING") return -1;
+    if (a.status !== "PENDING" && b.status === "PENDING") return 1;
+    
+    // Priority 2: Chronological time sort
+    const timeA = a.scheduledTime || "";
+    const timeB = b.scheduledTime || "";
+    return timeA.localeCompare(timeB);
+  });
+
   return (
     <>
       <main className="flex-1 p-6 sm:p-10 w-full">
@@ -80,10 +104,10 @@ export default function MedicationRemindersPage() {
             </div>
 
             <div className="divide-y divide-slate-100">
-              {reminders.length === 0 ? (
+              {sortedReminders.length === 0 ? (
                  <div className="p-8 text-center text-slate-500">No reminders scheduled for today.</div>
               ) : (
-                reminders.map((reminder) => (
+                sortedReminders.map((reminder) => (
                   <div key={reminder.id} className="p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 hover:bg-slate-50/50 transition">
                     <div className="flex items-start gap-4">
                       <div className={`p-3 rounded-full flex-shrink-0 ${
@@ -98,8 +122,8 @@ export default function MedicationRemindersPage() {
                           {reminder.medicineName} ({reminder.dosage})
                         </h4>
                         <div className="flex items-center gap-3 mt-1 text-sm text-slate-500">
-                          <span className="font-semibold text-slate-700">{reminder.scheduledTime}</span>
-                          <span>•</span>
+                          <span className="font-semibold text-slate-700">{formatTime(reminder.scheduledTime)}</span>
+                          <span>&bull;</span>
                           <span>{reminder.instructions}</span>
                         </div>
                       </div>
