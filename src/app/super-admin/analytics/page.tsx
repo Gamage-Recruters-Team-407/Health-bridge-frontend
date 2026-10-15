@@ -3,7 +3,8 @@
 import React, { useState, useEffect } from "react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
-import { superAdminService, SuperAdminGrowthDto, SuperAdminStatsDto, UserProfileResponse, SystemAnalyticsDto } from "@/services/superadmin.service";
+import { superAdminService, SuperAdminGrowthDto, SuperAdminStatsDto, UserProfileResponse, SystemAnalyticsDto, DoctorProfileResponse } from "@/services/superadmin.service";
+import { branchService, Branch } from "@/services/branchService";
 
 import { 
   ComposedChart,
@@ -54,33 +55,27 @@ const renderCustomDot = (props: any, dataLength: number) => {
   return null;
 };
 
-// Mock data removed in favor of live API data
-
-const topHospitalsData = [
-  { rank: 1, name: "Apollo Hospital", icon: Building2, doctors: 125, appts: "3,450", revenue: "$320K" },
-  { rank: 2, name: "MediCare Hospital", icon: Building2, doctors: 98, appts: "2,800", revenue: "$250K" },
-  { rank: 3, name: "City Hospital", icon: Building2, doctors: 45, appts: "1,200", revenue: "$120K" },
-  { rank: 4, name: "General Medical", icon: Building2, doctors: 38, appts: "950", revenue: "$95K" },
-];
-
 export default function SystemAnalyticsPage() {
   const [growthData, setGrowthData] = useState<SuperAdminGrowthDto[]>([]);
   const [stats, setStats] = useState<SuperAdminStatsDto | null>(null);
-  const [hospitals, setHospitals] = useState<UserProfileResponse[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [doctors, setDoctors] = useState<DoctorProfileResponse[]>([]);
   const [analytics, setAnalytics] = useState<SystemAnalyticsDto | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [growth, dashboardStats, users, analyticsData] = await Promise.all([
+        const [growth, dashboardStats, branchList, doctorList, analyticsData] = await Promise.all([
           superAdminService.getGrowthData(),
           superAdminService.getDashboardStats(),
-          superAdminService.getAllUsers(),
+          branchService.getAllBranches(),
+          superAdminService.getAllDoctors().catch(() => []),
           superAdminService.getSystemAnalytics()
         ]);
         setGrowthData(growth);
         setStats(dashboardStats);
-        setHospitals(users.filter((u: UserProfileResponse) => u.role === 'HOSPITAL').slice(0, 5));
+        setBranches(branchList);
+        setDoctors(doctorList);
         setAnalytics(analyticsData);
       } catch (error) {
         console.error("Failed to fetch data", error);
@@ -121,7 +116,25 @@ export default function SystemAnalyticsPage() {
     <>
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
         
-
+        {/* Header Section */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-slate-900">System Analytics</h1>
+            <p className="text-slate-500 mt-1 text-sm">
+              Live platform performance, multi-branch engagement, and feature adoption across HealthBridge
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={handleDownloadReport}
+              disabled={isDownloading}
+              className="flex items-center gap-2 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={16} />
+              {isDownloading ? "Generating Report..." : "Generate Report"}
+            </button>
+          </div>
+        </div>
 
         {/* Main Content Area */}
         <div className="w-full space-y-6">
@@ -142,10 +155,10 @@ export default function SystemAnalyticsPage() {
 
             <Card className="p-6 rounded-2xl border border-slate-200/60 shadow-sm bg-white">
               <div className="flex justify-between items-start mb-6">
-                <p className="text-sm font-bold text-slate-600">Registered Hospitals</p>
+                <p className="text-sm font-bold text-slate-600">Registered Branches</p>
                 <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-[#0052CC]"><Building2 size={16} /></div>
               </div>
-              <p className="text-3xl font-bold text-[#0A2540] mb-3">{stats?.totalHospitals.toLocaleString() || '0'}</p>
+              <p className="text-3xl font-bold text-[#0A2540] mb-3">{(stats?.totalBranches ?? (stats as any)?.totalHospitals ?? 0).toLocaleString()}</p>
               <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-green-50 text-green-600 text-[11px] font-bold">
                 ↑ 5%
               </span>
@@ -173,17 +186,6 @@ export default function SystemAnalyticsPage() {
               </span>
             </Card>
 
-          </div>
-
-          <div className="flex justify-end">
-            <button 
-              onClick={handleDownloadReport}
-              disabled={isDownloading}
-              className="flex items-center gap-2 px-4 py-2 bg-[#0052CC] text-white rounded-lg text-[13px] font-bold hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
-            >
-              <Download size={14} />
-              {isDownloading ? "Generating..." : "Generate Report"}
-            </button>
           </div>
 
           {/* Platform Growth Line Chart */}
@@ -393,7 +395,7 @@ export default function SystemAnalyticsPage() {
                 <tbody>
                   {analytics?.modulePerformance?.map((row, idx) => {
                     let Icon = Users;
-                    if (row.name === "Hospitals") Icon = Building2;
+                    if (row.name === "Branches" || row.name === "Hospitals") Icon = Building2;
                     if (row.name === "Doctors") Icon = Stethoscope;
                     if (row.name === "Pharmacies") Icon = Pill;
                     if (row.name === "Labs") Icon = FlaskConical;
@@ -435,7 +437,7 @@ export default function SystemAnalyticsPage() {
                         </td>
                         <td className="py-5 pr-6 text-right">
                           <a 
-                            href={`/super-admin/${row.name === 'Patients' ? 'users' : row.name === 'Labs' ? 'laboratories' : row.name === 'Pharmacies' ? 'pharmacy' : row.name.toLowerCase()}`} 
+                            href={`/super-admin/${row.name === 'Patients' ? 'users' : row.name === 'Labs' ? 'laboratories' : row.name === 'Pharmacies' ? 'pharmacy' : row.name === 'Hospitals' || row.name === 'Branches' ? 'branches' : row.name.toLowerCase()}`} 
                             className="text-[11px] font-bold text-[#0052CC] hover:underline"
                           >
                             [Details]
@@ -450,46 +452,82 @@ export default function SystemAnalyticsPage() {
 
           </Card>
 
-          {/* Top Performing Hospitals */}
+          {/* Top Performing Branches */}
           <Card className="p-8 rounded-2xl border border-slate-200/60 shadow-sm bg-white overflow-hidden">
-            <h2 className="text-[15px] font-bold text-[#0A2540] mb-6">Top Performing Hospitals</h2>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-[15px] font-bold text-[#0A2540]">Top Performing Branches</h2>
+                <p className="text-xs text-slate-500 mt-0.5">Active network branches and resource distribution</p>
+              </div>
+              <a href="/super-admin/branches" className="text-xs font-bold text-blue-600 hover:text-blue-700">
+                View all branches
+              </a>
+            </div>
             
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
                   <tr className="border-b border-slate-100">
-                    <th className="pb-4 text-[11px] font-bold text-slate-400 pl-4 w-16">#</th>
-                    <th className="pb-4 text-[11px] font-bold text-slate-400">Hospital</th>
+                    <th className="pb-4 text-[11px] font-bold text-slate-400 pl-4 w-12">#</th>
+                    <th className="pb-4 text-[11px] font-bold text-slate-400">Branch Name</th>
+                    <th className="pb-4 text-[11px] font-bold text-slate-400">City / Location</th>
                     <th className="pb-4 text-[11px] font-bold text-slate-400">Doctors</th>
-                    <th className="pb-4 text-[11px] font-bold text-slate-400">Appts</th>
-                    <th className="pb-4 text-[11px] font-bold text-slate-400">Revenue</th>
+                    <th className="pb-4 text-[11px] font-bold text-slate-400">Capacity</th>
+                    <th className="pb-4 text-[11px] font-bold text-slate-400">Emergency</th>
+                    <th className="pb-4 text-[11px] font-bold text-slate-400 text-right pr-4">Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {hospitals.length === 0 ? (
+                  {branches.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-[13px] font-medium text-slate-500 bg-slate-50/30 rounded-lg">
-                        No hospitals registered yet.
+                      <td colSpan={7} className="py-8 text-center text-[13px] font-medium text-slate-500 bg-slate-50/30 rounded-lg">
+                        No branches registered yet.
                       </td>
                     </tr>
                   ) : (
-                    hospitals.map((hospital, index) => {
+                    branches.map((branch, index) => {
+                      const branchDoctors = doctors.filter(
+                        (d) => d.branchId === branch.id || d.branchCode === branch.branchCode
+                      ).length;
+
                       return (
-                        <tr key={hospital.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors last:border-0">
+                        <tr key={branch.id} className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors last:border-0">
                           <td className="py-5 pl-4 text-[13px] font-bold text-[#0A2540]">{index + 1}</td>
                           <td className="py-5">
                             <div className="flex items-center gap-3">
-                              <div className="w-6 h-6 rounded bg-slate-100 flex items-center justify-center text-slate-500">
-                                <Building2 size={12} />
+                              <div className="w-8 h-8 rounded-lg bg-blue-50 flex items-center justify-center text-blue-600 shrink-0">
+                                <Building2 size={16} />
                               </div>
-                              <span className="text-[13px] font-bold text-[#0A2540]">{hospital.fullName}</span>
+                              <div>
+                                <span className="text-[13px] font-bold text-[#0A2540] block">{branch.branchName}</span>
+                                <span className="text-xs text-slate-400 font-mono">{branch.branchCode}</span>
+                              </div>
                             </div>
                           </td>
-                          <td className="py-5 text-[13px] font-medium text-slate-600">N/A</td>
-                          <td className="py-5 text-[13px] font-medium text-slate-600">N/A</td>
-                          <td className="py-5 text-[13px] font-bold text-[#0A2540]">Rs. 0</td>
+                          <td className="py-5 text-[13px] font-medium text-slate-600">{branch.city || branch.address || "Sri Lanka"}</td>
+                          <td className="py-5">
+                            <span className="text-[13px] font-bold text-slate-900">{branchDoctors}</span>
+                            <span className="text-xs text-slate-500 ml-1">doctors</span>
+                          </td>
+                          <td className="py-5 text-[13px] font-medium text-slate-600">
+                            {branch.totalBeds ? `${branch.totalBeds} beds` : "N/A"}
+                          </td>
+                          <td className="py-5">
+                            <span className={`inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                              branch.emergencyReady ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                            }`}>
+                              {branch.emergencyReady ? "Ready" : "Standard"}
+                            </span>
+                          </td>
+                          <td className="py-5 pr-4 text-right">
+                            <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-bold ${
+                              branch.status === "ACTIVE" ? "bg-emerald-50 text-emerald-600" : "bg-slate-100 text-slate-500"
+                            }`}>
+                              {branch.status === "ACTIVE" ? "Active" : "Inactive"}
+                            </span>
+                          </td>
                         </tr>
-                      )
+                      );
                     })
                   )}
                 </tbody>

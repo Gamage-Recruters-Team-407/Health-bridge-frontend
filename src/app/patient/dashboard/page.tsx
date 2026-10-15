@@ -229,7 +229,20 @@ export default function PatientDashboardPage() {
                 {appointments.length === 0 ? (
                     <div className="py-6 text-center text-sm text-zinc-500">No appointments found.</div>
                 ) : (
-                    appointments.slice(0, 2).map((app, index) => {
+                    [...appointments]
+                      .sort((a, b) => {
+                        const isAActive = a.status === 'UPCOMING' || a.status === 'BOOKED';
+                        const isBActive = b.status === 'UPCOMING' || b.status === 'BOOKED';
+
+                        // Priority 1: Active appointments float to the top
+                        if (isAActive && !isBActive) return -1;
+                        if (!isAActive && isBActive) return 1;
+
+                        // Priority 2: Sort chronologically (most recent first)
+                        return new Date(`${b.date}T${b.sessionTime}`).getTime() - new Date(`${a.date}T${a.sessionTime}`).getTime();
+                      })
+                      .slice(0, 2)
+                      .map((app, index) => {
                       const isCancelled = app.status === 'CANCELLED' || app.status === 'NO_SHOW';
                       const isActive = app.status === 'UPCOMING' || app.status === 'BOOKED';
                       

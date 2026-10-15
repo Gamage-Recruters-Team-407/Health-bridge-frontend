@@ -159,7 +159,9 @@ class ApiClient {
                 // 401 - Unauthorized
                 // ============================================================
                 else if (status === 401) {
-                    console.error(`🔐 401 Unauthorized: ${method} ${url}`);
+                    if (!url?.includes('/auth/login')) {
+                        console.error(`🔐 401 Unauthorized: ${method} ${url}`);
+                    }
 
                     if (typeof window !== 'undefined') {
                         const isLoginPage = window.location.pathname === "/login";
