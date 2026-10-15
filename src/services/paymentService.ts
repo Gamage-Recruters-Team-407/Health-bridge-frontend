@@ -2,6 +2,8 @@ import { apiClient } from './apiClient';
 
 export interface PaymentRequestData {
   patientId: string;
+  patientEmail?: string;
+  email?: string;
   doctorId?: string;
   doctorName?: string;
   description: string;

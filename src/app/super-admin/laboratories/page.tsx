@@ -138,12 +138,12 @@ export default function LaboratoryRegistrationsPage() {
       <div className="flex flex-col gap-6 w-full p-4 sm:p-6 lg:p-8">
 
         {/* Page Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200">
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-[#0A2540] dark:text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-bold text-[#0A2540] tracking-tight">
               Laboratory Management
             </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1 font-medium">
+            <p className="text-xs sm:text-sm text-slate-500 mt-1 font-medium">
               Manage medical laboratory registrations, licensing verifications, and operating statuses.
             </p>
           </div>
@@ -153,7 +153,7 @@ export default function LaboratoryRegistrationsPage() {
             onClick={() => router.push('/super-admin/laboratories/add')}
             className="font-bold text-white bg-[#0052CC] hover:bg-blue-700 shadow-md shadow-[#0052CC]/20"
           >
-            + Add Laboratory
+            Add Laboratory
           </Button>
         </div>
 
@@ -244,8 +244,9 @@ export default function LaboratoryRegistrationsPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
-          <table className="w-full text-left text-sm text-slate-600">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600 min-w-[950px]">
             <TableHeader>
               <TableRow>
               <TableHead className="w-12 text-center">ON</TableHead>
@@ -363,6 +364,7 @@ export default function LaboratoryRegistrationsPage() {
             ))}
           </TableBody>
         </table>
+      </div>
 
         <TablePagination 
           currentPage={currentPage}
