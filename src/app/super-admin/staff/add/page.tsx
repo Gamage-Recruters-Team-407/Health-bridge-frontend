@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck, Building, Briefcase } from "lucide-react";
+import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck, Building, Briefcase, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { superAdminService } from "@/services/superadmin.service";
@@ -10,6 +10,7 @@ import toast from "react-hot-toast";
 export default function AddStaffPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -23,19 +24,23 @@ export default function AddStaffPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     setIsSubmitting(true);
     
     try {
       await superAdminService.createStaff(formData);
       toast.success("Staff member created successfully!");
       router.push("/super-admin/staff");
-    } catch (error) {
-      toast.error("Failed to create staff member");
+    } catch (error: any) {
+      const msg = error?.response?.data?.message || "Failed to create staff member. Email or Staff ID may already exist.";
+      setErrorMessage(msg);
+      toast.error(msg);
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (errorMessage) setErrorMessage(null);
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
@@ -61,6 +66,17 @@ export default function AddStaffPage() {
       <div className="flex-1 w-full max-w-4xl mx-auto p-6 lg:p-8">
         
         <form onSubmit={handleSubmit} className="space-y-8">
+
+          {/* Inline Error Banner */}
+          {errorMessage && (
+            <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+              <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+              <div className="flex-1">
+                <p className="font-semibold text-red-800">Unable to create staff member</p>
+                <p className="text-red-600 text-xs mt-0.5">{errorMessage}</p>
+              </div>
+            </div>
+          )}
           
           <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center gap-3">
@@ -112,7 +128,7 @@ export default function AddStaffPage() {
                 <label className="text-sm font-bold text-slate-700">Email Address</label>
                 <div className="relative">
                   <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Mail size={16} className="text-slate-400" />
+                    <Mail size={16} className={errorMessage?.toLowerCase().includes("email") ? "text-red-500" : "text-slate-400"} />
                   </div>
                   <input 
                     type="email"
@@ -120,10 +136,17 @@ export default function AddStaffPage() {
                     required
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20 outline-none transition-all text-sm"
+                    className={`w-full pl-10 pr-4 py-2.5 rounded-xl border outline-none transition-all text-sm ${
+                      errorMessage?.toLowerCase().includes("email")
+                        ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-red-50/20 text-red-900"
+                        : "border-slate-200 focus:border-[#0052CC] focus:ring-2 focus:ring-[#0052CC]/20"
+                    }`}
                     placeholder="email@healthbridge.com"
                   />
                 </div>
+                {errorMessage?.toLowerCase().includes("email") && (
+                  <p className="text-xs text-red-600 font-medium mt-1">{errorMessage}</p>
+                )}
               </div>
 
               <div className="space-y-2">

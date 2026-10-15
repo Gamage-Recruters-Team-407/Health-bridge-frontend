@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck } from "lucide-react";
+import { User, Mail, Phone, Lock, UserPlus, ArrowLeft, CheckCircle2, ShieldCheck, AlertCircle } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { superAdminService } from "@/services/superadmin.service";
@@ -11,6 +11,7 @@ export default function AddUserPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
@@ -20,9 +21,10 @@ export default function AddUserPage() {
     password: ""
   });
   const [confirmPassword, setConfirmPassword] = useState("");
-  
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage(null);
     if (!formData.password || formData.password.length < 8) {
       toast.error("Password must be at least 8 characters long");
       return;
@@ -33,7 +35,7 @@ export default function AddUserPage() {
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const computedFullName = `${formData.firstName.trim()} ${formData.lastName.trim()}`.trim();
       await superAdminService.createUser({
@@ -49,12 +51,14 @@ export default function AddUserPage() {
       }, 1500);
     } catch (error: any) {
       const msg = error?.response?.data?.message || "Failed to create user. Email may already exist.";
+      setErrorMessage(msg);
       toast.error(msg);
       setIsSubmitting(false);
     }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    if (errorMessage) setErrorMessage(null);
     setFormData(prev => ({
       ...prev,
       [e.target.name]: e.target.value
@@ -87,14 +91,25 @@ export default function AddUserPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden transition-all">
-        
+
+        {/* Inline Error Banner */}
+        {errorMessage && (
+          <div className="mx-6 sm:mx-8 mt-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm font-medium flex items-start gap-3 animate-in fade-in slide-in-from-top-1 duration-200">
+            <AlertCircle className="w-5 h-5 text-red-500 shrink-0 mt-0.5" />
+            <div className="flex-1">
+              <p className="font-semibold text-red-800">Unable to create user</p>
+              <p className="text-red-600 text-xs mt-0.5">{errorMessage}</p>
+            </div>
+          </div>
+        )}
+
         {/* User Details Section */}
         <div className="p-6 sm:p-8 border-b border-slate-100">
           <h2 className="text-lg font-bold text-slate-900 mb-6 flex items-center gap-2">
             <User className="w-5 h-5 text-blue-600" />
             User Details
           </h2>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <label className="text-sm font-bold text-slate-700">First Name</label>
@@ -102,7 +117,7 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="w-5 h-5 text-slate-400" />
                 </div>
-                <input 
+                <input
                   type="text"
                   name="firstName"
                   required
@@ -120,7 +135,7 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <User className="w-5 h-5 text-slate-400" />
                 </div>
-                <input 
+                <input
                   type="text"
                   name="lastName"
                   required
@@ -136,10 +151,25 @@ export default function AddUserPage() {
               <label className="block text-sm font-bold text-slate-700 mb-2">Email Address <span className="text-red-500">*</span></label>
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="h-5 w-5 text-slate-400" />
+                  <Mail className={`h-5 w-5 ${errorMessage?.toLowerCase().includes("email") ? "text-red-500" : "text-slate-400"}`} />
                 </div>
-                <input required type="email" name="email" value={formData.email} onChange={handleChange} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="e.g. user@healthbridge.lk" />
+                <input
+                  required
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className={`pl-12 w-full rounded-xl border px-4 py-3.5 text-sm font-medium transition-all outline-none ${
+                    errorMessage?.toLowerCase().includes("email")
+                      ? "border-red-400 focus:border-red-500 focus:ring-2 focus:ring-red-200 bg-red-50/20 text-red-900"
+                      : "border-slate-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                  }`}
+                  placeholder="e.g. user@healthbridge.lk"
+                />
               </div>
+              {errorMessage?.toLowerCase().includes("email") && (
+                <p className="text-xs text-red-600 font-medium mt-1.5">{errorMessage}</p>
+              )}
             </div>
 
             <div>
@@ -148,7 +178,7 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Phone className="h-5 w-5 text-slate-400" />
                 </div>
-                <input required type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="+1 (555) 000-0000" />
+                <input required type="tel" name="phoneNumber" value={formData.phoneNumber} onChange={handleChange} className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none" placeholder="+94 xx xxx xxxx" />
               </div>
             </div>
 
@@ -182,7 +212,7 @@ export default function AddUserPage() {
             </h2>
             <p className="text-sm font-medium text-slate-500 mt-1">Set the initial password for this user. They can change it later.</p>
           </div>
-          
+
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-bold text-slate-700 mb-2">Password <span className="text-red-500">*</span></label>
@@ -190,15 +220,15 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
                 </div>
-                <input 
-                  required 
-                  type="password" 
+                <input
+                  required
+                  type="password"
                   name="password"
                   value={formData.password}
                   onChange={handleChange}
-                  minLength={8} 
-                  className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white" 
-                  placeholder="Minimum 8 characters" 
+                  minLength={8}
+                  className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                  placeholder="Minimum 8 characters"
                 />
               </div>
             </div>
@@ -209,15 +239,15 @@ export default function AddUserPage() {
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
                 </div>
-                <input 
-                  required 
-                  type="password" 
+                <input
+                  required
+                  type="password"
                   name="confirmPassword"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  minLength={8} 
-                  className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white" 
-                  placeholder="Retype password" 
+                  minLength={8}
+                  className="pl-12 w-full rounded-xl border border-slate-200 px-4 py-3.5 text-sm font-medium focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all outline-none bg-white"
+                  placeholder="Retype password"
                 />
               </div>
             </div>
@@ -229,8 +259,8 @@ export default function AddUserPage() {
           <Link href="/super-admin/users" className="px-6 py-3 text-sm font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors">
             Cancel
           </Link>
-          <button 
-            type="submit" 
+          <button
+            type="submit"
             disabled={isSubmitting}
             className="px-8 py-3 bg-[#0052CC] hover:bg-blue-700 text-white text-sm font-bold rounded-xl transition-all shadow-md hover:shadow-lg disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2"
           >
