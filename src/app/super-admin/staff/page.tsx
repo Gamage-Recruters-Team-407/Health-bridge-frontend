@@ -264,8 +264,9 @@ export default function StaffManagementPage() {
         </div>
 
         {/* Data Table */}
-        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between">
-          <table className="w-full text-left text-sm text-slate-600">
+        <div className="bg-white border border-slate-200 rounded-2xl shadow-sm min-h-[500px] flex flex-col justify-between overflow-hidden">
+          <div className="w-full overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600 min-w-[950px]">
             <TableHeader>
               <TableRow>
                 <TableHead className="w-12 text-center">ON</TableHead>
@@ -382,6 +383,7 @@ export default function StaffManagementPage() {
               ))}
             </TableBody>
           </table>
+        </div>
 
           <TablePagination
             currentPage={currentPage}
