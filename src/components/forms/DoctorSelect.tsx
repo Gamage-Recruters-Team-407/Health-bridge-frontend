@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { Search, X, Loader2, UserCheck } from "lucide-react";
-import axios from "axios";
+import { apiClient } from "@/services/apiClient";
 
 interface Doctor {
   id?: string;
@@ -12,6 +12,8 @@ interface Doctor {
   email?: string;
   specialization?: string;
   department?: string;
+  role?: string;
+  phoneNumber?: string;
 }
 
 interface DoctorSelectProps {
@@ -22,13 +24,6 @@ interface DoctorSelectProps {
   disabled?: boolean;
 }
 
-const FALLBACK_DOCTORS: Doctor[] = [
-  { id: "DOC-001", name: "Dr. Sarah Perera", specialization: "Cardiology", email: "sarah@healthbridge.lk" },
-  { id: "DOC-002", name: "Dr. Kumara Silva", specialization: "General Medicine", email: "kumara@healthbridge.lk" },
-  { id: "DOC-003", name: "Dr. Ananya Fernando", specialization: "Pediatrics", email: "ananya@healthbridge.lk" },
-  { id: "DOC-004", name: "Dr. Nuwan Jayasinghe", specialization: "Neurology", email: "nuwan@healthbridge.lk" }
-];
-
 export const DoctorSelect: React.FC<DoctorSelectProps> = ({
   value,
   onChange,
@@ -38,10 +33,12 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
 }) => {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [doctors, setDoctors] = useState<Doctor[]>(FALLBACK_DOCTORS);
+  const [doctors, setDoctors] = useState<Doctor[]>([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
+  // ✅ Filter doctors based on search query
   const filtered = useMemo(() => {
     if (!query.trim()) {
       return doctors.slice(0, 10);
@@ -51,11 +48,17 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
       .filter((d) => {
         const docName = (d.name || d.fullName || "").toLowerCase();
         const docSpec = (d.specialization || d.department || "").toLowerCase();
-        return docName.includes(lower) || docSpec.includes(lower);
+        const docEmail = (d.email || "").toLowerCase();
+        return (
+          docName.includes(lower) ||
+          docSpec.includes(lower) ||
+          docEmail.includes(lower)
+        );
       })
       .slice(0, 10);
   }, [query, doctors]);
 
+  // ✅ Get currently selected doctor
   const selected = useMemo(() => {
     if (!value || doctors.length === 0) return null;
     return (
@@ -64,26 +67,80 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
           d.id === value ||
           d._id === value ||
           d.name === value ||
-          d.fullName === value
+          d.fullName === value ||
+          d.email === value
       ) ?? null
     );
   }, [value, doctors]);
 
+  // ✅ Fetch doctors from backend
   useEffect(() => {
     let cancelled = false;
 
     const fetchDoctors = async () => {
       setLoading(true);
+      setError(null);
       try {
-        const res = await axios.get("http://127.0.0.1:8088/api/doctors");
-        if (!cancelled && res.data) {
-          const dataArray = Array.isArray(res.data) ? res.data : res.data.content || [];
-          if (dataArray.length > 0) {
-            setDoctors(dataArray);
+        // ✅ Use apiClient (handles auth token + base URL)
+        console.log("🔍 Fetching doctors from /doctors...");
+        const res = await apiClient.get<any>("/doctors");
+        console.log("📥 Doctors API response:", res);
+
+        if (cancelled) return;
+
+        // ✅ Handle multiple response formats
+        let dataArray: Doctor[] = [];
+        if (Array.isArray(res)) {
+          dataArray = res;
+        } else if (res?.content && Array.isArray(res.content)) {
+          dataArray = res.content;
+        } else if (res?.data && Array.isArray(res.data)) {
+          dataArray = res.data;
+        } else if (res?.data?.content && Array.isArray(res.data.content)) {
+          dataArray = res.data.content;
+        }
+
+        console.log("📋 Raw data array:", dataArray);
+
+        // ✅ Filter to only show doctors
+        const realDoctors = dataArray.filter((d: Doctor) => {
+          // If role exists, it must be DOCTOR
+          if (d.role) {
+            return d.role.toUpperCase().includes("DOCTOR");
+          }
+          // If no role field, include it (assume it's from doctor endpoint)
+          return true;
+        });
+
+        console.log("✅ Filtered doctors:", realDoctors.length, realDoctors);
+
+        if (!cancelled) {
+          setDoctors(realDoctors);
+          if (realDoctors.length === 0) {
+            setError("No doctor accounts found in database");
           }
         }
-      } catch (err) {
-        console.error("Failed to load doctors, using fallback:", err);
+      } catch (err: any) {
+        console.error("❌ Failed to load doctors:", err);
+        if (!cancelled) {
+          setDoctors([]);
+          // ✅ Better error messages based on status
+          if (err?.response?.status === 401) {
+            setError("Authentication required. Please login again.");
+          } else if (err?.response?.status === 403) {
+            setError("You don't have permission to view doctors.");
+          } else if (err?.response?.status === 404) {
+            setError("Doctors endpoint not found. Check API URL.");
+          } else if (err?.code === "ERR_NETWORK") {
+            setError("Cannot connect to server. Is backend running?");
+          } else {
+            setError(
+              err?.response?.data?.message ||
+                err?.message ||
+                "Failed to load doctors"
+            );
+          }
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -96,9 +153,13 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
     };
   }, []);
 
+  // ✅ Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     };
@@ -106,10 +167,12 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
     return () => document.removeEventListener("mousedown", handleClick);
   }, []);
 
+  // ✅ Handle doctor selection
   const handleSelect = useCallback(
     (doctor: Doctor) => {
       const docName = doctor.name || doctor.fullName || "Doctor";
-      const docId = doctor.id || doctor._id || docName;
+      const docId = doctor.id || doctor._id || doctor.email || docName;
+      console.log("✅ Selected doctor:", { docId, docName });
       onChange(docId, docName);
       setIsOpen(false);
       setQuery("");
@@ -117,6 +180,7 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
     [onChange]
   );
 
+  // ✅ Clear selection
   const handleClear = useCallback(() => {
     onChange("", "");
     setQuery("");
@@ -128,6 +192,7 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
         Prepared By (Doctor) {required && <span className="text-red-500">*</span>}
       </label>
 
+      {/* Selected doctor display */}
       {selected ? (
         <div className="flex items-center justify-between px-4 py-2.5 rounded-xl border border-blue-300 bg-blue-50">
           <div className="flex items-center gap-3">
@@ -139,7 +204,9 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
                 {selected.name || selected.fullName}
               </p>
               <p className="text-xs text-slate-500">
-                {selected.specialization || selected.department || "General Medicine"}
+                {selected.specialization ||
+                  selected.department ||
+                  "General Medicine"}
               </p>
             </div>
           </div>
@@ -166,8 +233,10 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
         </button>
       )}
 
+      {/* Dropdown */}
       {isOpen && (
         <div className="absolute z-50 mt-2 w-full rounded-xl bg-white border border-slate-200 shadow-2xl max-h-72 overflow-hidden">
+          {/* Search input */}
           <div className="p-2 border-b border-slate-100">
             <input
               type="text"
@@ -179,23 +248,38 @@ export const DoctorSelect: React.FC<DoctorSelectProps> = ({
             />
           </div>
 
+          {/* Doctor list */}
           <div className="max-h-56 overflow-y-auto">
             {loading ? (
               <div className="p-4 text-center">
                 <Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-600" />
-                <p className="text-xs text-slate-500 mt-2">Loading doctors...</p>
+                <p className="text-xs text-slate-500 mt-2">
+                  Loading doctors...
+                </p>
+              </div>
+            ) : error ? (
+              <div className="p-4 text-center">
+                <p className="text-xs text-red-600 font-medium">{error}</p>
+                <p className="text-[10px] text-slate-400 mt-1">
+                  Check browser console (F12) for details
+                </p>
               </div>
             ) : filtered.length === 0 ? (
               <div className="p-4 text-center">
-                <p className="text-xs text-slate-500">No doctors found</p>
+                <p className="text-xs text-slate-500">
+                  {doctors.length === 0
+                    ? "No doctor accounts found in database"
+                    : "No matching doctors found"}
+                </p>
               </div>
             ) : (
               filtered.map((d, index) => {
                 const docName = d.name || d.fullName || "Doctor";
-                const docSpec = d.specialization || d.department || "General Medicine";
+                const docSpec =
+                  d.specialization || d.department || "General Medicine";
                 return (
                   <button
-                    key={d.id || d._id || index}
+                    key={d.id || d._id || d.email || index}
                     type="button"
                     onClick={() => handleSelect(d)}
                     className="w-full flex items-center gap-3 px-3 py-2 hover:bg-blue-50 transition text-left"
