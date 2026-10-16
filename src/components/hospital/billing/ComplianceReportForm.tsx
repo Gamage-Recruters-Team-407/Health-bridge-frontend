@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { ComplianceReportRequest } from "@/types/hospital";
 import HospitalSelect from "@/components/forms/HospitalSelect";
+import DoctorSelect from "@/components/forms/DoctorSelect";
 import { Shield } from "lucide-react";
 
 interface ComplianceReportFormProps {
@@ -167,21 +168,15 @@ export const ComplianceReportForm: React.FC<ComplianceReportFormProps> = ({
             </select>
           </div>
 
-          {/* Prepared By */}
+          {/* Prepared By (Doctor Select Dropdown) */}
           <div>
-            <label className="block text-sm font-medium text-slate-700 mb-1">
-              Prepared By <span className="text-red-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="preparedBy"
+            <DoctorSelect
               value={formData.preparedBy}
-              onChange={handleChange}
+              onChange={(id, name) => {
+                setFormData((prev) => ({ ...prev, preparedBy: name }));
+                setErrors((prev) => ({ ...prev, preparedBy: "" }));
+              }}
               required
-              placeholder="Dr. Sarah Perera"
-              className={`w-full rounded-xl border px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition ${
-                errors.preparedBy ? "border-red-500 border-2" : "border-slate-200"
-              }`}
             />
             {errors.preparedBy && (
               <p className="mt-1 text-xs text-red-600">{errors.preparedBy}</p>
@@ -241,3 +236,5 @@ export const ComplianceReportForm: React.FC<ComplianceReportFormProps> = ({
     </form>
   );
 };
+
+export default ComplianceReportForm;

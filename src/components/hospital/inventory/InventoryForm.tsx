@@ -61,9 +61,7 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validate()) return;
-
     await onSubmit(formData);
   };
 
@@ -86,15 +84,12 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
-      {/* ============================================================ */}
       {/* HOSPITAL INFORMATION */}
-      {/* ============================================================ */}
       <div>
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
           Hospital Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* ✅ Hospital Select (Smart Dropdown) */}
           <div className="md:col-span-2">
             <HospitalSelect
               value={formData.hospitalId}
@@ -111,15 +106,12 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
         </div>
       </div>
 
-      {/* ============================================================ */}
       {/* ITEM INFORMATION */}
-      {/* ============================================================ */}
       <div>
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
           Item Information
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Item Code */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Item Code <span className="text-red-500">*</span>
@@ -140,7 +132,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             )}
           </div>
 
-          {/* Item Name */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Item Name <span className="text-red-500">*</span>
@@ -161,7 +152,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             )}
           </div>
 
-          {/* Category */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Category <span className="text-red-500">*</span>
@@ -182,7 +172,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             )}
           </div>
 
-          {/* Unit */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Unit <span className="text-red-500">*</span>
@@ -205,15 +194,12 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
         </div>
       </div>
 
-      {/* ============================================================ */}
       {/* STOCK DETAILS */}
-      {/* ============================================================ */}
       <div>
         <h3 className="text-sm font-bold text-slate-700 uppercase tracking-wider mb-3 pb-2 border-b border-slate-100">
           Stock Details
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {/* Quantity */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Quantity <span className="text-red-500">*</span>
@@ -230,7 +216,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             />
           </div>
 
-          {/* Reorder Level */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Reorder Level <span className="text-red-500">*</span>
@@ -247,7 +232,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             />
           </div>
 
-          {/* Unit Cost */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Unit Cost (Rs.) <span className="text-red-500">*</span>
@@ -278,7 +262,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             </p>
           </div>
 
-          {/* Supplier */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Supplier
@@ -293,7 +276,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             />
           </div>
 
-          {/* Expiry Date */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Expiry Date
@@ -307,7 +289,6 @@ export const InventoryForm: React.FC<InventoryFormProps> = ({
             />
           </div>
 
-          {/* Location */}
           <div>
             <label className="block text-sm font-medium text-slate-700 mb-1">
               Location
